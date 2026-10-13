@@ -293,9 +293,12 @@ export const FilmPage: React.FC = () => {
                 {director && (
                   <div className="text-xs text-lb-muted whitespace-nowrap ml-1">
                     Directed by{' '}
-                    <span className="font-semibold text-lb-muted">
+                    <Link
+                      to={`/actor/${director.id}`}
+                      className="font-semibold text-lb-muted hover:text-white underline underline-offset-2 decoration-lb-muted/40 hover:decoration-white transition-colors"
+                    >
                       {director.name}
-                    </span>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -396,7 +399,12 @@ export const FilmPage: React.FC = () => {
                         <span className="text-lb-muted uppercase block text-[10px] font-bold">
                           Director
                         </span>
-                        <span className="text-white font-medium">{director.name}</span>
+                        <Link
+                          to={`/actor/${director.id}`}
+                          className="text-white font-medium hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
+                        >
+                          {director.name}
+                        </Link>
                       </div>
                     )}
                     {writers && writers.length > 0 && (
@@ -405,7 +413,17 @@ export const FilmPage: React.FC = () => {
                           Writers
                         </span>
                         <span className="text-white font-medium">
-                          {writers.map((w) => w.name).join(', ')}
+                          {writers.map((w, i) => (
+                            <span key={w.id}>
+                              {i > 0 && ', '}
+                              <Link
+                                to={`/actor/${w.id}`}
+                                className="hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
+                              >
+                                {w.name}
+                              </Link>
+                            </span>
+                          ))}
                         </span>
                       </div>
                     )}
@@ -415,7 +433,17 @@ export const FilmPage: React.FC = () => {
                           Producers
                         </span>
                         <span className="text-white font-medium">
-                          {producers.map((p) => p.name).join(', ')}
+                          {producers.map((p, i) => (
+                            <span key={p.id}>
+                              {i > 0 && ', '}
+                              <Link
+                                to={`/actor/${p.id}`}
+                                className="hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
+                              >
+                                {p.name}
+                              </Link>
+                            </span>
+                          ))}
                         </span>
                       </div>
                     )}
@@ -424,7 +452,12 @@ export const FilmPage: React.FC = () => {
                         <span className="text-lb-muted uppercase block text-[10px] font-bold">
                           Cinematography
                         </span>
-                        <span className="text-white font-medium">{dop.name}</span>
+                        <Link
+                          to={`/actor/${dop.id}`}
+                          className="text-white font-medium hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
+                        >
+                          {dop.name}
+                        </Link>
                       </div>
                     )}
                     {composer && (
@@ -432,7 +465,12 @@ export const FilmPage: React.FC = () => {
                         <span className="text-lb-muted uppercase block text-[10px] font-bold">
                           Original Score
                         </span>
-                        <span className="text-white font-medium">{composer.name}</span>
+                        <Link
+                          to={`/actor/${composer.id}`}
+                          className="text-white font-medium hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
+                        >
+                          {composer.name}
+                        </Link>
                       </div>
                     )}
                   </div>
