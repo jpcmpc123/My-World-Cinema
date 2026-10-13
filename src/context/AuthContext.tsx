@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+﻿import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Perfil ainda não existe (trigger pode ter falhado): cria via upsert mínimo
+    // Perfil ainda nÃ£o existe (trigger pode ter falhado): cria via upsert mÃ­nimo
     const baseUsername = (fallbackEmail ? fallbackEmail.split('@')[0] : 'user')
       .toLowerCase()
       .replace(/[^a-z0-9_]/g, '')
@@ -64,8 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
       if (data.session?.user) {
-        // Aguarda o PERFIL (não só a sessão) antes de liberar o primeiro render,
-        // senão páginas como /:username renderizam 1 frame com o fallback local
+        // Aguarda o PERFIL (nÃ£o sÃ³ a sessÃ£o) antes de liberar o primeiro render,
+        // senÃ£o pÃ¡ginas como /:username renderizam 1 frame com o fallback local
         // (username de demo) antes do perfil chegar.
         await loadProfile(data.session.user.id, data.session.user.email);
       }
@@ -106,7 +106,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!supabase) return { error: 'Supabase is not configured.' };
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo:
+          window.location.origin +
+          (window.location.pathname.match(/^\/[^/]*\//)?.[0] ?? '/'),
+      },
     });
     return { error: error ? error.message : null };
   };
@@ -117,8 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(null);
   };
 
-  // Bloqueia o primeiro render até a sessão do Supabase ser resolvida:
-  // evita "flash" dos dados locais/demonstração em páginas que dependem da conta.
+  // Bloqueia o primeiro render atÃ© a sessÃ£o do Supabase ser resolvida:
+  // evita "flash" dos dados locais/demonstraÃ§Ã£o em pÃ¡ginas que dependem da conta.
   if (loading) {
     return (
       <div className="min-h-screen bg-[#14181c] flex items-center justify-center">
