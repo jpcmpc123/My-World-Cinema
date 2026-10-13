@@ -1,4 +1,4 @@
-﻿# MyWorld — My World Cinema
+# MyWorld — My World Cinema
 
 **MyWorld** é uma rede social original de descoberta de filmes: registre o que você assistiu, avalie com estrelas, escreva críticas, monte listas, organize seu diário de cinema e descubra o próximo filme da sua vida. Construído com **React 19**, **Vite**, **TypeScript**, **Tailwind CSS v4** e dados em tempo real da **API do TMDb**.
 
