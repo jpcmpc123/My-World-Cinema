@@ -40,7 +40,7 @@ export const ListsPage: React.FC = () => {
             {/* Overlapping poster fan */}
             <div className="flex items-center -space-x-8 mb-4 overflow-hidden pt-1 pb-2">
               {list.movies.slice(0, 5).map((m, idx) => (
-                <img
+                <img loading="lazy" decoding="async"
                   key={idx}
                   src={tmdb.getImageUrl(m.poster_path, 'w185')}
                   alt={m.title}

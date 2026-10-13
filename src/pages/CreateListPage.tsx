@@ -175,7 +175,7 @@ export const CreateListPage: React.FC = () => {
                     onClick={() => addMovie(m)}
                     className="p-2.5 flex items-center gap-3 hover:bg-lb-elevated cursor-pointer group w-full text-left"
                   >
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={tmdb.getImageUrl(m.poster_path, 'w92')}
                       alt={m.title}
                       className="w-8 h-12 object-cover rounded bg-lb-elevated"
@@ -206,7 +206,7 @@ export const CreateListPage: React.FC = () => {
                   </span>
                 )}
 
-                <img
+                <img loading="lazy" decoding="async"
                   src={tmdb.getImageUrl(item.poster_path, 'w92')}
                   alt={item.title}
                   className="w-10 h-15 object-cover rounded shadow"

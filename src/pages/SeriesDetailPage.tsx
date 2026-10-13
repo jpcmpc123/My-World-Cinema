@@ -90,7 +90,7 @@ export const SeriesDetailPage: React.FC = () => {
   const similar = show.recommendations?.results?.slice(0, 6) ?? [];
 
   const backdropUrl = show.backdrop_path
-    ? tmdb.getBackdropUrl(show.backdrop_path, 'original')
+    ? tmdb.getBackdropUrl(show.backdrop_path, 'w1280')
     : null;
   const posterUrl = show.poster_path ? tmdb.getImageUrl(show.poster_path, 'w500') : '';
 
@@ -123,7 +123,7 @@ export const SeriesDetailPage: React.FC = () => {
           <div className="w-full md:w-[230px] flex-shrink-0 flex flex-col items-center md:items-start">
             <div className="w-[230px] h-[345px] rounded-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.8)] border border-[#303840] bg-lb-surface flex-shrink-0">
               {posterUrl ? (
-                <img src={posterUrl} alt={show.title} className="w-full h-full object-cover" />
+                <img loading="lazy" decoding="async" src={posterUrl} alt={show.title} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center p-4 text-center text-xs text-lb-muted">
                   {show.title}

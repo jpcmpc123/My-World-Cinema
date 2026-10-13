@@ -449,7 +449,7 @@ export const FilmsPage: React.FC = () => {
                 className="bg-lb-surface border border-lb-elevated hover:border-lb-border-light rounded p-3 flex gap-4 transition-colors group"
               >
                 <Link to={`/film/${movie.id}`} className="shrink-0">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={tmdb.getImageUrl(movie.poster_path, 'w185')}
                     alt={movie.title}
                     className="w-14 h-21 object-cover rounded shadow border border-white/10 group-hover:border-lb-green transition-colors"

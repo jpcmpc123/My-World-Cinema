@@ -115,7 +115,17 @@ export function ActorPage() {
       {/* Header */}
       <div className="mb-4">
         <div className="text-[11px] font-bold uppercase tracking-widest text-lb-muted mb-1">
-          Films starring
+          {(() => {
+            switch (person.known_for_department) {
+              case 'Directing': return 'Films directed by';
+              case 'Writing': return 'Films written by';
+              case 'Production': return 'Films produced by';
+              case 'Camera': return 'Films shot by';
+              case 'Sound': return 'Films scored by';
+              case 'Editing': return 'Films edited by';
+              default: return 'Films starring';
+            }
+          })()}
         </div>
         <h1 className="text-3xl md:text-4xl font-bold text-white">{person.name}</h1>
       </div>
@@ -211,7 +221,7 @@ export function ActorPage() {
         {/* Right: Sidebar */}
         <aside className="w-full lg:w-56 xl:w-64 flex-shrink-0 flex flex-col gap-4">
           {person.profile_path && (
-            <img
+            <img loading="lazy" decoding="async"
               src={tmdb.getProfileUrl(person.profile_path, 'h632')}
               alt={person.name}
               className="w-full max-w-64 lg:max-w-none mx-auto rounded border border-lb-elevated shadow-md object-cover"

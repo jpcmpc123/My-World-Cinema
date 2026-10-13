@@ -58,7 +58,7 @@ export const ListDetailPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 text-xs text-lb-muted">
-              <img
+              <img loading="lazy" decoding="async"
                 src={list.author.avatarUrl}
                 alt={list.author.displayName}
                 className="w-5 h-5 rounded-full object-cover"
@@ -115,7 +115,7 @@ export const ListDetailPage: React.FC = () => {
 
             {/* Poster */}
             <Link to={`/film/${m.id}`} className="shrink-0">
-              <img
+              <img loading="lazy" decoding="async"
                 src={tmdb.getImageUrl(m.poster_path, 'w185')}
                 alt={m.title}
                 className="w-16 h-24 sm:w-20 sm:h-30 object-cover rounded shadow border border-white/10 group-hover:border-lb-green transition-colors"

@@ -132,7 +132,7 @@ export const WatchlistPage: React.FC = () => {
                     : 'border-lb-green scale-100 shadow-[0_0_20px_rgba(0,224,84,0.3)]'
                 }`}
               >
-                <img
+                <img loading="lazy" decoding="async"
                   src={tmdb.getImageUrl(shuffledMovie.poster_path, 'w500')}
                   alt={shuffledMovie.title}
                   className="w-full h-full object-cover"

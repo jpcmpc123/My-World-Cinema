@@ -148,7 +148,7 @@ export const ProfilePage: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 pt-2 pb-4">
         {/* Avatar & User Details */}
         <div className="flex items-center gap-5">
-          <img
+          <img loading="lazy" decoding="async"
             src={viewAvatar}
             alt={viewUsername}
             className="w-24 h-24 rounded-full object-cover border border-lb-border-light shadow-xl"
@@ -268,7 +268,7 @@ export const ProfilePage: React.FC = () => {
                   >
                     {movie ? (
                       <Link to={`/film/${movie.id}`} title={movie.title}>
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={tmdb.getImageUrl(movie.poster_path, 'w500')}
                           alt={movie.title}
                           className="w-full h-full object-cover hover:opacity-90 transition-opacity"
@@ -311,7 +311,7 @@ export const ProfilePage: React.FC = () => {
                   <div key={`recent-${log.id}-${idx}`} className="group">
                     <div className="aspect-[2/3] bg-lb-surface rounded-xs overflow-hidden border border-white/12 hover:border-white transition-all shadow-md">
                       <Link to={`/film/${log.movieId}`}>
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={tmdb.getImageUrl(log.moviePoster, 'w500')}
                           alt={log.movieTitle}
                           className="w-full h-full object-cover"
@@ -350,7 +350,7 @@ export const ProfilePage: React.FC = () => {
                       style={{ zIndex: 10 - i }}
                     >
                       {m.poster_path ? (
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={m.poster_path.startsWith('http') ? m.poster_path : tmdb.getImageUrl(m.poster_path, 'w185')}
                           alt={m.title}
                           title={m.title}

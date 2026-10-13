@@ -99,7 +99,7 @@ export const DiaryPage: React.FC = () => {
                       {/* Poster */}
                       <td className="py-3 px-3">
                         <Link to={`/film/${entry.movieId}`}>
-                          <img
+                          <img loading="lazy" decoding="async"
                             src={tmdb.getImageUrl(entry.moviePoster, 'w92')}
                             alt={entry.movieTitle}
                             className="w-9 h-13 object-cover rounded shadow border border-white/10 group-hover:border-lb-green transition-colors"

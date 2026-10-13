@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Eye, Star, Heart, ChevronDown } from 'lucide-react';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
@@ -334,7 +334,7 @@ export const FilmsHubPage: React.FC = () => {
                     to={`/film/${m.id}`}
                     className="p-2 flex items-center gap-2.5 hover:bg-lb-elevated block"
                   >
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={tmdb.getImageUrl(m.poster_path, 'w92')}
                       alt={m.title}
                       className="w-7 h-10 object-cover rounded bg-lb-bg shrink-0"

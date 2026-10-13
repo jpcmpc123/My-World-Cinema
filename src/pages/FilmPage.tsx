@@ -163,7 +163,7 @@ export const FilmPage: React.FC = () => {
 
   const backdropUrl =
     override?.backdrop ||
-    (movie.backdrop_path ? tmdb.getBackdropUrl(movie.backdrop_path, 'original') : null);
+    (movie.backdrop_path ? tmdb.getBackdropUrl(movie.backdrop_path, 'w1280') : null);
 
   const posterUrl =
     override?.poster ||
@@ -191,7 +191,7 @@ export const FilmPage: React.FC = () => {
       {backdropUrl && (
         <div className="absolute top-0 left-0 right-0 h-[480px] md:h-[540px] overflow-hidden -z-0 pointer-events-none flex justify-center">
           <div className="relative w-full max-w-[1150px] h-full">
-            <img
+            <img loading="lazy" decoding="async"
               src={backdropUrl}
               alt={movie.title}
               className="w-full h-full object-cover object-[center_25%]"
@@ -225,7 +225,7 @@ export const FilmPage: React.FC = () => {
           <div className="w-full md:w-[230px] flex-shrink-0 flex flex-col items-center md:items-start">
             {/* Film Poster (230x345px standard) */}
             <div className="w-[230px] h-[345px] rounded-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.8)] border border-[#303840] bg-lb-surface flex-shrink-0">
-              <img
+              <img loading="lazy" decoding="async"
                 src={posterUrl}
                 alt={movie.title}
                 className="w-full h-full object-cover"
@@ -567,7 +567,7 @@ export const FilmPage: React.FC = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <img
+                          <img loading="lazy" decoding="async"
                             src={rev.author.avatarUrl}
                             alt=""
                             className="w-6 h-6 rounded-full object-cover border border-lb-elevated"

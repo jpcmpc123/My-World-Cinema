@@ -313,7 +313,7 @@ const ProfileTab: React.FC = () => {
                 className="aspect-[2/3] rounded overflow-hidden bg-lb-bg border border-lb-elevated hover:border-lb-green transition-colors cursor-pointer relative group"
               >
                 {id && movie?.poster ? (
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={tmdb.getImageUrl(movie.poster, 'w185')}
                     alt={movie.title}
                     className="w-full h-full object-cover group-hover:opacity-60 transition-opacity"
@@ -418,7 +418,7 @@ const AvatarTab: React.FC = () => {
     <div className="flex flex-col md:flex-row gap-10 items-start">
       {/* Current avatar preview */}
       <div className="flex flex-col items-center gap-3">
-        <img
+        <img loading="lazy" decoding="async"
           src={avatarSrc}
           alt="Current avatar"
           className="w-40 h-40 rounded-full object-cover border-2 border-lb-elevated bg-lb-bg shadow-xl"
