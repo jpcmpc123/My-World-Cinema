@@ -60,24 +60,8 @@ export function ActorPage() {
     })();
   }, [id]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-40">
-        <Loader2 className="w-8 h-8 animate-spin text-lb-green" />
-      </div>
-    );
-  }
-
-  if (error || !person) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center space-y-2">
-        <p className="text-white font-semibold">{error || 'Person not found.'}</p>
-        <p className="text-xs text-lb-muted">The requested actor could not be loaded.</p>
-      </div>
-    );
-  }
-
   // Décadas disponíveis com base na filmografia carregada
+  // (hooks ANTES dos early returns — regra dos hooks do React)
   const decades = useMemo(() => {
     const set = new Set<string>();
     films.forEach((f) => {
@@ -108,6 +92,23 @@ export function ActorPage() {
 
   const selectCls =
     'bg-[#202830] border border-lb-elevated text-white text-[11px] uppercase font-bold tracking-wider px-3 py-1.5 rounded cursor-pointer focus:outline-none focus:border-lb-green';
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-40">
+        <Loader2 className="w-8 h-8 animate-spin text-lb-green" />
+      </div>
+    );
+  }
+
+  if (error || !person) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-20 text-center space-y-2">
+        <p className="text-white font-semibold">{error || 'Person not found.'}</p>
+        <p className="text-xs text-lb-muted">The requested actor could not be loaded.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
