@@ -73,4 +73,21 @@ No terminal do projeto (`Cloneleterboxd`), execute:
 npm run dev
 ```
 
-Acesse no seu navegador: `http://localhost:5173`
+Acesse no seu navegador: `http://localhost:5173`.
+
+---
+
+## 🌐 Site no ar
+
+**[https://jpcmpc123.github.io/My-World-Cinema/](https://jpcmpc123.github.io/My-World-Cinema/)** — hospedado 100% grátis e permanente no GitHub Pages.
+
+## ✏️ Editar online (sem instalar nada)
+
+1. Acesse [github.com/jpcmpc123/My-World-Cinema](https://github.com/jpcmpc123/My-World-Cinema) e pressione **`.`** (ponto) — abre o VS Code no navegador (github.dev).
+2. Edite os arquivos, dê **commit** direto pela web (Ctrl+Shift+G → commit na branch `main`),
+3. O GitHub Actions builda e publica automaticamente.
+
+## 🚀 Deploy automático
+
+Cada push na `main` dispara o workflow [.github/workflows/deploy.yml](.github/workflows/deploy.yml) que builda e publica no GitHub Pages.
+
