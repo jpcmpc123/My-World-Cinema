@@ -28,16 +28,6 @@ pnpm dev
 
 Acesse `http://localhost:5173`.
 
-## Site no ar
-
-**https://jpcmpc123.github.io/My-World-Cinema/** — hospedado 100% grátis e permanente no GitHub Pages.
-
-## Editar online
-
-1. Acesse https://github.com/jpcmpc123/My-World-Cinema e pressione `.` (VS Code no navegador).
-2. Edite e faça commit na `main`.
-3. O GitHub Actions builda e publica automaticamente.
-
 ## Backend
 
 Autenticação e banco via **Supabase** (migrations em `supabase/`).
