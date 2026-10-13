@@ -25,6 +25,20 @@ export interface TMDBMovie {
   popularity: number;
 }
 
+
+export interface TMDBSeries {
+  id: number;
+  name: string;
+  original_name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  overview: string;
+  first_air_date: string;
+  vote_average: number;
+  vote_count: number;
+  genre_ids?: number[];
+  popularity: number;
+}
 export interface TMDBMovieDetails extends TMDBMovie {
   tagline: string;
   runtime: number;
@@ -116,6 +130,7 @@ export interface TMDBPersonMovieCredit {
   character?: string;
   job?: string;
   department?: string;
+  genre_ids?: number[];
 }
 
 export interface TMDBPersonMovieCredits {
@@ -209,6 +224,15 @@ export const tmdb = {
   async getMovieImages(id: number): Promise<TMDBMovieImages> {
     return fetchFromTMDB<TMDBMovieImages>(`/movie/${id}/images`, {
       include_image_language: 'en,null',
+    });
+  },
+
+  async searchTV(query: string, page = 1): Promise<TMDBResponse<TMDBMovie>> {
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/search/tv', {
+      query,
+      page,
+      language: 'en-US',
+      include_adult: 'false',
     });
   },
 

@@ -14,6 +14,7 @@ import { FilmsHubPage } from './pages/FilmsHubPage';
 import { FilmsPage } from './pages/FilmsPage';
 import { SeriesHubPage } from './pages/SeriesHubPage';
 import { SeriesPage } from './pages/SeriesPage';
+import { SeriesDetailPage } from './pages/SeriesDetailPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { DiaryPage } from './pages/DiaryPage';
 import { WatchlistPage } from './pages/WatchlistPage';
@@ -44,7 +45,7 @@ export function App() {
               <Route path="/series/decade/:decade" element={<SeriesPage />} />
               <Route path="/series/year/:year" element={<SeriesPage />} />
               <Route path="/series/popular" element={<SeriesPage />} />
-              <Route path="/tv/:id" element={<FilmPage />} />
+              <Route path="/tv/:id" element={<SeriesDetailPage />} />
               <Route path="/films/decade/:decade" element={<FilmsPage />} />
               <Route path="/films/year/:year" element={<FilmsPage />} />
               <Route path="/profile" element={<ProfilePage />} />

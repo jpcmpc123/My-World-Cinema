@@ -1,8 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ChevronDown, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { tmdb, type TMDBPerson, type TMDBPersonMovieCredit } from '../services/tmdb';
 import { PosterCard } from '../components/PosterCard';
+
+type SortKey = 'popularity' | 'rating' | 'newest' | 'oldest';
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'popularity', label: 'Popularity' },
+  { value: 'rating', label: 'Highest rated' },
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+];
 
 export function ActorPage() {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +20,9 @@ export function ActorPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bioExpanded, setBioExpanded] = useState(false);
+  const [sortBy, setSortBy] = useState<SortKey>('popularity');
+  const [genreFilter, setGenreFilter] = useState<number | null>(null);
+  const [decadeFilter, setDecadeFilter] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -65,7 +77,37 @@ export function ActorPage() {
     );
   }
 
-  const filterButtons = ['Decade', 'Genre', 'Service'];
+  // Décadas disponíveis com base na filmografia carregada
+  const decades = useMemo(() => {
+    const set = new Set<string>();
+    films.forEach((f) => {
+      const y = f.release_date?.slice(0, 4);
+      if (y) set.add(`${y.slice(0, 3)}0s`);
+    });
+    return Array.from(set).sort().reverse();
+  }, [films]);
+
+  // Filtros + ordenação funcionais
+  const visibleFilms = useMemo(() => {
+    let list = films;
+    if (genreFilter) {
+      list = list.filter((f) => f.genre_ids?.includes(genreFilter));
+    }
+    if (decadeFilter) {
+      list = list.filter((f) => f.release_date?.startsWith(decadeFilter.slice(0, 3)));
+    }
+    const sorted = [...list];
+    sorted.sort((a, b) => {
+      if (sortBy === 'rating') return b.vote_average - a.vote_average;
+      if (sortBy === 'newest') return (b.release_date || '').localeCompare(a.release_date || '');
+      if (sortBy === 'oldest') return (a.release_date || '').localeCompare(b.release_date || '');
+      return b.popularity - a.popularity;
+    });
+    return sorted;
+  }, [films, genreFilter, decadeFilter, sortBy]);
+
+  const selectCls =
+    'bg-[#202830] border border-lb-elevated text-white text-[11px] uppercase font-bold tracking-wider px-3 py-1.5 rounded cursor-pointer focus:outline-none focus:border-lb-green';
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
@@ -77,29 +119,61 @@ export function ActorPage() {
         <h1 className="text-3xl md:text-4xl font-bold text-white">{person.name}</h1>
       </div>
 
-      {/* Filter Bar (visual only) */}
+      {/* Filter Bar (funcional) */}
       <div className="flex flex-wrap items-center justify-between gap-2 py-3 mb-6 border-t border-b border-lb-elevated">
         <div className="flex flex-wrap items-center gap-2">
-          {filterButtons.map((label) => (
+          <select
+            value={decadeFilter ?? ''}
+            onChange={(e) => setDecadeFilter(e.target.value || null)}
+            className={selectCls}
+            aria-label="Filter by decade"
+          >
+            <option value="">All decades</option>
+            {decades.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+          <select
+            value={genreFilter ?? ''}
+            onChange={(e) => setGenreFilter(e.target.value ? Number(e.target.value) : null)}
+            className={selectCls}
+            aria-label="Filter by genre"
+          >
+            <option value="">All genres</option>
+            {tmdb.genres.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+          {(decadeFilter || genreFilter) && (
             <button
-              key={label}
-              disabled
-              className="flex items-center gap-1.5 bg-[#202830] border border-lb-elevated text-lb-muted text-[11px] uppercase font-bold tracking-wider px-3 py-1.5 rounded cursor-default"
+              onClick={() => {
+                setDecadeFilter(null);
+                setGenreFilter(null);
+              }}
+              className="text-lb-muted hover:text-white text-[11px] uppercase font-bold tracking-wider px-2 transition-colors cursor-pointer"
             >
-              {label}
-              <ChevronDown className="w-3 h-3" />
+              ✕ Clear
             </button>
-          ))}
+          )}
         </div>
         <div className="flex items-center gap-2 text-[11px] uppercase font-bold tracking-wider">
           <span className="text-lb-muted">Sort by</span>
-          <button
-            disabled
-            className="flex items-center gap-1.5 text-white cursor-default"
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortKey)}
+            className={selectCls}
+            aria-label="Sort by"
           >
-            Popularity
-            <ChevronDown className="w-3 h-3 text-lb-muted" />
-          </button>
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -107,9 +181,9 @@ export function ActorPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left: Poster Grid */}
         <div className="flex-1 min-w-0">
-          {films.length > 0 ? (
-            <div className="grid grid-cols-5 gap-2">
-              {films.map((film) => (
+          {visibleFilms.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
+              {visibleFilms.map((film) => (
                 <PosterCard
                   key={film.id}
                   movie={{
