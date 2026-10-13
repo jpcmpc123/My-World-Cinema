@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { UserProfile, LogEntry, MovieList, Review } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
@@ -49,7 +49,7 @@ interface AppContextType {
 
 import jpcmpc23Logs from '../data/jpcmpc23_logs.json';
 
-// Perfil neutro para visitante DESLOGADO Ã¢â‚¬â€ nunca exibimos dados de outra
+// Perfil neutro para visitante DESLOGADO â€” nunca exibimos dados de outra
 // conta (era o bug: guestUser hardcoded "jpcmpc23" aparecia no F5 sem login).
 const guestUser: UserProfile = {
   id: 'guest',
@@ -158,9 +158,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
-  // AuthProvider jÃ¡ garante que a sessÃ£o foi resolvida antes deste mount,
-  // entÃ£o isAuthenticated Ã© confiÃ¡vel aqui. DESLOGADO â†’ estado visitante vazio
-  // (nunca reidrata lb_* do localStorage â€” seriam dados de outra conta).
+  // AuthProvider já garante que a sessão foi resolvida antes deste mount,
+  // então isAuthenticated é confiável aqui. DESLOGADO → estado visitante vazio
+  // (nunca reidrata lb_* do localStorage — seriam dados de outra conta).
   const [user, setUser] = useState<UserProfile>(() => {
     if (!isAuthenticated) return guestUser;
     const saved = localStorage.getItem('lb_user');
@@ -268,7 +268,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { ...prev, [movieId]: merged };
     });
 
-    // Persiste no Supabase (tabela film_overrides Ã¢â‚¬â€ migration_film_overrides.sql)
+    // Persiste no Supabase (tabela film_overrides â€” migration_film_overrides.sql)
     if (supabase && isAuthenticated && authUser) {
       void (async () => {
         if (!next.poster && !next.backdrop) {
@@ -314,21 +314,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { localStorage.setItem('lb_lists', JSON.stringify(lists)); }, [lists]);
   useEffect(() => { localStorage.setItem('lb_reviews', JSON.stringify(reviews)); }, [reviews]);
   useEffect(() => {
-    // Enquanto logado, overrides vivem no Supabase (nÃƒÂ£o no localStorage!)
+    // Enquanto logado, overrides vivem no Supabase (nÃ£o no localStorage!)
     if (isAuthenticated) return;
     localStorage.setItem('lb_movie_overrides', JSON.stringify(movieOverrides));
   }, [movieOverrides, isAuthenticated]);
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-  // Supabase integration Ã¢â‚¬â€ ativa apenas quando hÃƒÂ¡ usuÃƒÂ¡rio autenticado
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Supabase integration â€” ativa apenas quando hÃ¡ usuÃ¡rio autenticado
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const syncedUserIdRef = useRef<string | null>(null);
-  // Estado (nÃƒÂ£o ref) para gatear o primeiro render: enquanto autenticado e
-  // ainda nÃƒÂ£o sincronizado, nenhum filho renderiza (evita flash dos dados de
-  // demo/localStorage, pois o clear acontece em useEffect, apÃƒÂ³s o 1Ã‚Âº paint).
+  // Estado (nÃ£o ref) para gatear o primeiro render: enquanto autenticado e
+  // ainda nÃ£o sincronizado, nenhum filho renderiza (evita flash dos dados de
+  // demo/localStorage, pois o clear acontece em useEffect, apÃ³s o 1Âº paint).
   const [syncedUserId, setSyncedUserId] = useState<string | null>(null);
 
-  // Quando autenticado, sobrepÃƒÂµe o usuÃƒÂ¡rio local com o perfil real do Supabase
+  // Quando autenticado, sobrepÃµe o usuÃ¡rio local com o perfil real do Supabase
   useEffect(() => {
     if (!isAuthenticated || !authUser || !profile) return;
     setUser((prev) => ({
@@ -348,7 +348,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       syncedUserIdRef.current = null;
       setSyncedUserId(null);
       // Ao deslogar, volta TUDO para o estado de visitante: dados da conta
-      // anterior nÃ£o podem "vazar" (nem aparecer depois de F5) para visitantes.
+      // anterior não podem "vazar" (nem aparecer depois de F5) para visitantes.
       setUser(guestUser);
       setLogs([]);
       setWatchedMovieIds([]);
@@ -374,8 +374,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (syncedUserIdRef.current === authUser.id) return;
     syncedUserIdRef.current = authUser.id;
 
-    // Zera o estado local imediatamente para nÃƒÂ£o vazar dados de demo/localStorage
-    // em "flash" enquanto o Supabase responde (ex.: refresh na pÃƒÂ¡gina de perfil).
+    // Zera o estado local imediatamente para nÃ£o vazar dados de demo/localStorage
+    // em "flash" enquanto o Supabase responde (ex.: refresh na pÃ¡gina de perfil).
     setLogs([]);
     setWatchedMovieIds([]);
     setLikedMovieIds([]);
@@ -396,7 +396,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ]);
 
       if (overridesRes.error) {
-        console.warn('film_overrides indisponÃƒÂ­vel (rode supabase/migration_film_overrides.sql):', overridesRes.error.message);
+        console.warn('film_overrides indisponÃ­vel (rode supabase/migration_film_overrides.sql):', overridesRes.error.message);
       } else if (overridesRes.data) {
         const map: Record<number, { poster?: string; backdrop?: string }> = {};
         for (const row of overridesRes.data as { film_id: number; poster_url: string | null; backdrop_url: string | null }[]) {
@@ -408,15 +408,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setMovieOverrides(map);
       }
 
-      // Top 4 vindo do Supabase sobrepÃƒÂµe o local (quando a coluna existir e tiver dados)
+      // Top 4 vindo do Supabase sobrepÃµe o local (quando a coluna existir e tiver dados)
       if (favRes.error) {
-        console.warn('favorite_films indisponÃƒÂ­vel (rode supabase/migration_settings.sql):', favRes.error.message);
+        console.warn('favorite_films indisponÃ­vel (rode supabase/migration_settings.sql):', favRes.error.message);
       } else if (Array.isArray(favRes.data?.favorite_films)) {
-        // Conta nova tem favorite_films = {} Ã¢â‚¬â€ nesse caso os 4 slots ficam vazios
+        // Conta nova tem favorite_films = {} â€” nesse caso os 4 slots ficam vazios
         const ids = (favRes.data.favorite_films as unknown[])
           .filter((n): n is number => typeof n === 'number' && Number.isFinite(n))
           .slice(0, 4);
-        // Garante 4 slots; slots vazios sÃƒÂ£o representados como 0
+        // Garante 4 slots; slots vazios sÃ£o representados como 0
         while (ids.length < 4) ids.push(0);
         setTop4MovieIds(ids);
       }
@@ -478,7 +478,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authUser?.id]);
 
-  // Upsert de um "quick log" (sem data) em film_logs Ã¢â‚¬â€ usado por toggles/rating
+  // Upsert de um "quick log" (sem data) em film_logs â€” usado por toggles/rating
   const persistQuickLog = async (filmId: number, patch: { watched?: boolean; liked?: boolean; rating?: number }) => {
     if (!supabase || !isAuthenticated || !authUser) return;
     const meta = movieMetaRef.current[filmId] ?? { title: '', poster: null, year: null };
@@ -680,7 +680,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Persiste o Top 4 no Supabase (profiles.favorite_films, int[]).
-  // Slots vazios sÃƒÂ£o persistidos como 0 Ã¢â‚¬â€ int[] nÃƒÂ£o aceita null.
+  // Slots vazios sÃ£o persistidos como 0 â€” int[] nÃ£o aceita null.
   const persistTop4 = async (ids: number[]) => {
     if (!supabase || !isAuthenticated || !authUser) return;
     const { error } = await supabase
@@ -689,7 +689,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .eq('id', authUser.id);
     if (error) {
       console.warn(
-        'NÃƒÂ£o foi possÃƒÂ­vel salvar favorite_films Ã¢â‚¬â€ rode supabase/migration_settings.sql no Supabase SQL Editor.',
+        'NÃ£o foi possÃ­vel salvar favorite_films â€” rode supabase/migration_settings.sql no Supabase SQL Editor.',
         error.message
       );
     }
@@ -761,9 +761,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveTop4Slot(null);
   };
 
-  // Gate: autenticado mas dados remotos ainda nÃƒÂ£o sincronizados Ã¢â€ â€™ spinner.
+  // Gate: autenticado mas dados remotos ainda nÃ£o sincronizados â†’ spinner.
   // Sem isso, o primeiro render pintaria logs/watchlist/top4 do localStorage
-  // (o clear sÃƒÂ³ roda em useEffect, depois do paint).
+  // (o clear sÃ³ roda em useEffect, depois do paint).
   if (isAuthenticated && authUser && syncedUserId !== authUser.id) {
     return (
       <div className="min-h-screen bg-[#14181c] flex items-center justify-center">

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Eye,
@@ -200,7 +200,7 @@ export const FilmPage: React.FC = () => {
                   'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 40%, rgba(0,0,0,0) 92%), radial-gradient(ellipse 120% 90% at 50% 35%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%)',
               }}
             />
-            {/* Soft edge blends â€” fade to page bg, no rectangular edges */}
+            {/* Soft edge blends — fade to page bg, no rectangular edges */}
             <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-lb-bg/90 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-lb-bg from-15% via-lb-bg/60 to-transparent" />
             <div className="absolute inset-y-0 left-0 w-24 md:w-56 bg-gradient-to-r from-lb-bg via-lb-bg/40 to-transparent" />
@@ -533,7 +533,7 @@ export const FilmPage: React.FC = () => {
                             className="w-6 h-6 rounded-full object-cover border border-lb-elevated"
                           />
                           <span className="font-bold text-white">{rev.author.displayName}</span>
-                          <span className="text-lb-green">â˜… {rev.rating}</span>
+                          <span className="text-lb-green">? {rev.rating}</span>
                         </div>
                         <span className="text-lb-muted">
                           {new Date(rev.createdAt).toLocaleDateString()}
@@ -544,21 +544,9 @@ export const FilmPage: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div className="bg-lb-surface border border-lb-elevated rounded p-4 text-xs space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-lb-green/20 border border-lb-green flex items-center justify-center text-[10px] font-bold text-lb-green">
-                        LB
-                      </div>
-                      <span className="font-bold text-white">myworld_curator</span>
-                      <span className="text-lb-green">â˜…â˜…â˜…â˜…â˜…</span>
-                    </div>
-                    <span className="text-lb-muted">Community highlight</span>
-                  </div>
-                  <p className="text-lb-white leading-relaxed">
-                    "You have bewitched me body and soul, and I love, I love, I love you." One of the most beautifully composed period romances in modern cinema history. The soundtrack and cinematography are unmatched.
-                  </p>
-                </div>
+                <p className="text-lb-muted text-xs text-center py-6">
+                  No reviews yet. Be the first to write about this film!
+                </p>
               )}
             </div>
           </div>
@@ -819,7 +807,7 @@ export const FilmPage: React.FC = () => {
           <div className="relative w-full max-w-3xl bg-lb-bg border border-lb-elevated rounded-lg shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-lb-elevated bg-lb-surface">
               <h3 className="text-sm font-semibold text-white">
-                {movie.title} â€” Official Trailer
+                {movie.title} — Official Trailer
               </h3>
               <button
                 onClick={() => setShowTrailerModal(false)}

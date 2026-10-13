@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, AlertTriangle, Film, Upload, Download, ImageIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -59,7 +59,7 @@ export const SettingsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-16 text-center text-lb-muted text-sm">Loading settingsâ€¦</div>
+      <div className="max-w-5xl mx-auto px-4 py-16 text-center text-lb-muted text-sm">Loading settings…</div>
     );
   }
 
@@ -94,7 +94,7 @@ export const SettingsPage: React.FC = () => {
   );
 };
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─────────────────────────────── Profile ─────────────────────────────── */
 
 interface ProfileForm {
   username: string;
@@ -118,7 +118,7 @@ const ProfileTab: React.FC = () => {
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [top4Meta, setTop4Meta] = useState<Record<number, { title: string; poster: string | null }>>({});
 
-  // Load extended fields (location/website) â€” tolerant if migration not applied yet
+  // Load extended fields (location/website) — tolerant if migration not applied yet
   useEffect(() => {
     const loadExtended = async () => {
       if (!supabase || !authUser) return;
@@ -175,7 +175,7 @@ const ProfileTab: React.FC = () => {
     if (!USERNAME_RE.test(form.username)) {
       setNotice({
         kind: 'error',
-        message: 'Username must be 3â€“20 characters using only lowercase letters, numbers and underscores (a-z, 0-9, _).',
+        message: 'Username must be 3–20 characters using only lowercase letters, numbers and underscores (a-z, 0-9, _).',
       });
       return;
     }
@@ -236,7 +236,7 @@ const ProfileTab: React.FC = () => {
         {notice && <Notice kind={notice.kind} message={notice.message} />}
 
         <div>
-          <FieldLabel hint="3â€“20 chars, lowercase, numbers and _ only">Username</FieldLabel>
+          <FieldLabel hint="3–20 chars, lowercase, numbers and _ only">Username</FieldLabel>
           <input type="text" value={form.username} onChange={set('username')} className={inputClass} />
         </div>
 
@@ -257,7 +257,7 @@ const ProfileTab: React.FC = () => {
             type="text"
             value={form.location}
             onChange={set('location')}
-            placeholder="e.g. SÃ£o Paulo, Brazil"
+            placeholder="e.g. São Paulo, Brazil"
             className={inputClass}
             disabled={!extraFieldsAvailable}
           />
@@ -281,7 +281,7 @@ const ProfileTab: React.FC = () => {
             value={form.bio}
             onChange={set('bio')}
             rows={5}
-            placeholder="Tell the world about your taste in filmâ€¦"
+            placeholder="Tell the world about your taste in film…"
             className={`${inputClass} resize-y`}
           />
         </div>
@@ -291,7 +291,7 @@ const ProfileTab: React.FC = () => {
           disabled={saving}
           className="btn-log-green text-lb-bg font-black text-sm px-8 py-3 rounded uppercase tracking-widest cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Savingâ€¦' : 'Save changes'}
+          {saving ? 'Saving…' : 'Save changes'}
         </button>
       </div>
 
@@ -309,7 +309,7 @@ const ProfileTab: React.FC = () => {
                 key={slot}
                 type="button"
                 onClick={() => openTop4Picker(slot)}
-                title={movie ? `${movie.title} â€” click to change` : 'Pick a film'}
+                title={movie ? `${movie.title} — click to change` : 'Pick a film'}
                 className="aspect-[2/3] rounded overflow-hidden bg-lb-bg border border-lb-elevated hover:border-lb-green transition-colors cursor-pointer relative group"
               >
                 {id && movie?.poster ? (
@@ -333,7 +333,7 @@ const ProfileTab: React.FC = () => {
   );
 };
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Avatar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─────────────────────────────── Avatar ─────────────────────────────── */
 
 const AvatarTab: React.FC = () => {
   const { user: authUser, profile } = useAuth();
@@ -367,7 +367,7 @@ const AvatarTab: React.FC = () => {
   const handleUploadFile = async (file: File) => {
     setNotice(null);
     if (!file.type.startsWith('image/')) {
-      setNotice({ kind: 'error', message: 'Please choose an image file (PNG, JPG, WebPâ€¦).' });
+      setNotice({ kind: 'error', message: 'Please choose an image file (PNG, JPG, WebP…).' });
       return;
     }
     if (!supabase || !authUser) {
@@ -387,7 +387,7 @@ const AvatarTab: React.FC = () => {
       setUploading(false);
       setNotice({
         kind: 'error',
-        message: `Upload failed: ${uploadError.message}. Configure o bucket 'avatars' pÃºblico no Supabase Storage, ou cole a URL de uma imagem abaixo.`,
+        message: `Upload failed: ${uploadError.message}. Configure o bucket 'avatars' público no Supabase Storage, ou cole a URL de uma imagem abaixo.`,
       });
       return;
     }
@@ -450,7 +450,7 @@ const AvatarTab: React.FC = () => {
             className="btn-log-green text-lb-bg font-black text-xs px-5 py-2.5 rounded uppercase tracking-widest cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <Upload className="w-3.5 h-3.5 stroke-[2.5]" />
-            {uploading ? 'Uploadingâ€¦' : 'Choose image'}
+            {uploading ? 'Uploading…' : 'Choose image'}
           </button>
           <p className="text-[11px] text-lb-muted mt-3">
             JPG, PNG or WebP. Uploads to the public <code className="text-lb-blue">avatars</code> bucket in Supabase
@@ -468,7 +468,7 @@ const AvatarTab: React.FC = () => {
               type="url"
               value={avatarUrlInput}
               onChange={(e) => setAvatarUrlInput(e.target.value)}
-              placeholder="https://â€¦"
+              placeholder="https://…"
               className={inputClass}
             />
             <button
@@ -477,7 +477,7 @@ const AvatarTab: React.FC = () => {
               className="shrink-0 btn-log-green text-lb-bg font-black text-xs px-5 py-2 rounded uppercase tracking-widest cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <ImageIcon className="w-3.5 h-3.5" />
-              {savingUrl ? 'Savingâ€¦' : 'Save'}
+              {savingUrl ? 'Saving…' : 'Save'}
             </button>
           </form>
         </section>
@@ -486,7 +486,7 @@ const AvatarTab: React.FC = () => {
   );
 };
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─────────────────────────────── Data ─────────────────────────────── */
 
 function csvEscape(value: unknown): string {
   const s = value === null || value === undefined ? '' : String(value);
@@ -595,7 +595,7 @@ const DataTab: React.FC = () => {
           });
           count++;
         } else {
-          // CSV in Name/Year format (no film ids): we can't resolve TMDB ids simply â€” stash pending
+          // CSV in Name/Year format (no film ids): we can't resolve TMDB ids simply — stash pending
           const name = cols[idx('name')];
           const year = idx('year') !== -1 ? cols[idx('year')] : '';
           if (name) newPending.push({ name, year });
@@ -610,7 +610,7 @@ const DataTab: React.FC = () => {
         localStorage.setItem('lb_pending_imports', JSON.stringify(merged));
         setNotice({
           kind: 'info',
-          message: `${newPending.length} imported (saved locally as pending â€” names/years only, no film IDs).`,
+          message: `${newPending.length} imported (saved locally as pending — names/years only, no film IDs).`,
         });
       } else {
         setNotice({ kind: 'error', message: 'No valid rows found in the CSV.' });
@@ -685,7 +685,7 @@ const DataTab: React.FC = () => {
         <section className="bg-lb-surface border border-lb-elevated rounded p-5 flex flex-col">
           <h2 className="text-xs font-bold uppercase tracking-widest text-white mb-2">Import your data</h2>
           <p className="text-xs text-lb-muted mb-4 flex-1">
-            Upload a CSV with columns <code className="text-lb-blue">film_id,rating,liked,watched_on</code> â€” or a
+            Upload a CSV with columns <code className="text-lb-blue">film_id,rating,liked,watched_on</code> — or a
             simple CSV with <code className="text-lb-blue">Name,Year</code> columns.
           </p>
           <input
@@ -706,7 +706,7 @@ const DataTab: React.FC = () => {
             className="btn-log-green text-lb-bg font-black text-xs px-4 py-2.5 rounded uppercase tracking-widest cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Upload className="w-3.5 h-3.5 stroke-[2.5]" />
-            {importing ? 'Importingâ€¦' : 'Import your data'}
+            {importing ? 'Importing…' : 'Import your data'}
           </button>
         </section>
 
@@ -715,7 +715,7 @@ const DataTab: React.FC = () => {
           <h2 className="text-xs font-bold uppercase tracking-widest text-white mb-2">Export your data</h2>
           <p className="text-xs text-lb-muted mb-4 flex-1">
             Download a CSV with your diary entries and watchlist
-            {isAuthenticated ? ' (from Supabase)' : ' (local data â€” sign in to export from the cloud)'}.
+            {isAuthenticated ? ' (from Supabase)' : ' (local data — sign in to export from the cloud)'}.
           </p>
           <button
             type="button"
@@ -724,7 +724,7 @@ const DataTab: React.FC = () => {
             className="btn-log-green text-lb-bg font-black text-xs px-4 py-2.5 rounded uppercase tracking-widest cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-            {exporting ? 'Exportingâ€¦' : 'Export your data'}
+            {exporting ? 'Exporting…' : 'Export your data'}
           </button>
         </section>
       </div>
@@ -757,7 +757,7 @@ const DataTab: React.FC = () => {
               </li>
             ))}
             {pendingImports.length > 50 && (
-              <li className="py-1.5 text-lb-muted">â€¦and {pendingImports.length - 50} more</li>
+              <li className="py-1.5 text-lb-muted">…and {pendingImports.length - 50} more</li>
             )}
           </ul>
         </section>

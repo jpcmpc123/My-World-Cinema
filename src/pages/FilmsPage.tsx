@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useParams, Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, LayoutGrid, List as ListIcon, Star, Eye, ChevronDown } from 'lucide-react';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
@@ -473,7 +473,7 @@ export const FilmsPage: React.FC = () => {
                     ) : null}
                   </div>
                   <p className="text-xs text-lb-text line-clamp-2 leading-relaxed">
-                    {movie.overview || 'Sinopse nÃ£o disponÃ­vel.'}
+                    {movie.overview || 'Sinopse não disponível.'}
                   </p>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Star } from 'lucide-react';
 
 interface RatingHistogramProps {
@@ -63,7 +63,7 @@ export const RatingHistogram: React.FC<RatingHistogramProps> = ({
             >
               {/* Tooltip on hover */}
               <div className="absolute -top-7 hidden group-hover:flex flex-col items-center bg-lb-bg border border-lb-elevated text-white text-[10px] py-0.5 px-1.5 rounded pointer-events-none z-20 shadow-lg whitespace-nowrap">
-                <span>{ratingLabel.toFixed(1)} â˜…</span>
+                <span>{ratingLabel.toFixed(1)} ★</span>
               </div>
 
               {/* Green Bar */}
@@ -80,8 +80,8 @@ export const RatingHistogram: React.FC<RatingHistogramProps> = ({
 
       {/* Star scale footer */}
       <div className="flex justify-between items-center text-[10px] text-lb-muted mt-1.5 px-0.5 font-medium">
-        <span>â˜…</span>
-        <span>â˜…â˜…â˜…â˜…â˜…</span>
+        <span>★</span>
+        <span>★★★★★</span>
       </div>
     </div>
   );
