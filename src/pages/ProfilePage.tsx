@@ -20,7 +20,6 @@ export const ProfilePage: React.FC = () => {
     watchedMovieIds,
     likedMovieIds,
     top4MovieIds,
-    openTop4Picker,
     lists,
   } = useApp();
 
@@ -263,34 +262,24 @@ export const ProfilePage: React.FC = () => {
               ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 {top4Movies.map((movie, idx) => (
-                  <button
-                    type="button"
+                  <div
                     key={idx}
-                    onClick={() => openTop4Picker(idx)}
-                    aria-label={movie ? `Swap favorite film #${idx + 1}` : `Choose favorite film #${idx + 1}`}
-                    className="group relative aspect-[2/3] bg-lb-surface rounded-xs overflow-hidden border border-white/12 hover:border-white transition-all cursor-pointer shadow-md w-full h-full"
-                    title={movie ? `${movie.title} - Click to swap` : 'Pick favorite'}
+                    className="relative aspect-[2/3] bg-lb-surface rounded-xs overflow-hidden border border-white/12 shadow-md w-full h-full"
                   >
                     {movie ? (
-                      <>
+                      <Link to={`/film/${movie.id}`} title={movie.title}>
                         <img
                           src={tmdb.getImageUrl(movie.poster_path, 'w500')}
                           alt={movie.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover hover:opacity-90 transition-opacity"
                         />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center">
-                          <span className="text-[11px] font-bold text-white mb-1 line-clamp-2">{movie.title}</span>
-                          <span className="text-[9px] bg-lb-green text-lb-bg font-black px-1.5 py-0.5 rounded uppercase">
-                            Swap
-                          </span>
-                        </div>
-                      </>
+                      </Link>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-lb-muted text-xs">
                         Slot #{idx + 1}
                       </div>
                     )}
-                  </button>
+                  </div>
                 ))}
               </div>
               )}
