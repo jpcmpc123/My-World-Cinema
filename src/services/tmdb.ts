@@ -153,7 +153,16 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string 
   if (!res.ok) {
     throw new Error(`TMDB error ${res.status}: ${res.statusText}`);
   }
-  return res.json();
+  const data = await res.json();
+  // Esconde itens sem pôster (no site todo): em listas de filmes, descarta
+  // resultados com poster_path nulo. Itens sem a chave (ex.: pessoas em
+  // buscas multi) ou com pôster preenchido passam normalmente.
+  if (data && Array.isArray(data.results)) {
+    data.results = data.results.filter(
+      (r: { poster_path?: string | null }) => !('poster_path' in r) || Boolean(r.poster_path),
+    );
+  }
+  return data as T;
 }
 
 export const tmdb = {
