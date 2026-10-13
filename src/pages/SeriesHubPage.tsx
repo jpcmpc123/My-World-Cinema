@@ -1,124 +1,446 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Flame, Trophy, Tv, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, Star, Heart, ChevronDown } from 'lucide-react';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
 import { PosterCard } from '../components/PosterCard';
 
-interface Section {
-  title: string;
-  icon: React.ReactNode;
-  movies: TMDBMovie[];
-}
-
 export const SeriesHubPage: React.FC = () => {
-  const [popular, setPopular] = useState<TMDBMovie[]>([]);
-  const [topRated, setTopRated] = useState<TMDBMovie[]>([]);
-  const [trending, setTrending] = useState<TMDBMovie[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [popularSeries, setPopularSeries] = useState<TMDBMovie[]>([]);
+  const [justReviewedSeries, setJustReviewedSeries] = useState<TMDBMovie[]>([]);
+  const [, setLoading] = useState(true);
+
+  // Search input in "FIND A SERIES"
+  const [findQuery, setFindQuery] = useState('');
+  const [findResults, setFindResults] = useState<TMDBMovie[]>([]);
+  const [, setIsSearching] = useState(false);
+  const findRef = useRef<HTMLDivElement>(null);
+
+  // Dropdown states
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const browseBarRef = useRef<HTMLDivElement>(null);
+
+  // Carousel index (showing 4 at a time)
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (browseBarRef.current && !browseBarRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+      if (findRef.current && !findRef.current.contains(e.target as Node)) {
+        setFindResults([]);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  // Search debounce
+  useEffect(() => {
+    if (!findQuery.trim() || findQuery.length < 2) {
+      setFindResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await tmdb.searchTV(findQuery.trim(), 1);
+        setFindResults(res.results.slice(0, 5));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [findQuery]);
 
   useEffect(() => {
-    (async () => {
+    async function loadData() {
       setLoading(true);
+      window.scrollTo(0, 0);
       try {
-        const [p, t, tr] = await Promise.all([
-          tmdb.getPopularTV(),
-          tmdb.getTopRatedTV(),
+        const [popRes, trendRes] = await Promise.all([
+          tmdb.discoverTVBatch({ sortBy: 'popularity.desc', pagesToFetch: 2 }),
           tmdb.getTrendingTV('week'),
         ]);
-        setPopular(p.results.slice(0, 12));
-        setTopRated(t.results.slice(0, 12));
-        setTrending(tr.results.slice(0, 12));
-      } catch (e) {
-        console.error('Failed to load series hub:', e);
+        setPopularSeries(popRes.results.slice(0, 16));
+        setJustReviewedSeries(trendRes.results.slice(0, 12));
+      } catch (err) {
+        console.error('Failed to load series hub:', err);
       } finally {
         setLoading(false);
       }
-    })();
+    }
+    loadData();
   }, []);
 
-  const sections: Section[] = [
-    { title: 'Trending this week', icon: <Flame className="w-4 h-4 text-lb-orange" />, movies: trending },
-    { title: 'Popular series', icon: <Tv className="w-4 h-4 text-lb-green" />, movies: popular },
-    { title: 'All-time top rated', icon: <Trophy className="w-4 h-4 text-lb-blue" />, movies: topRated },
+  const decades = [
+    '2020s', '2010s', '2000s', '1990s', '1980s', '1970s',
+    '1960s', '1950s', '1940s', '1930s',
   ];
 
-  const decades = [2020, 2010, 2000, 1990, 1980, 1970, 1960];
+  const handleDropdownToggle = (e: React.MouseEvent, name: string) => {
+    e.stopPropagation();
+    setOpenDropdown(openDropdown === name ? null : name);
+  };
+
+  const handlePrevCarousel = () => {
+    setCarouselIndex((prev) => Math.max(0, prev - 4));
+  };
+
+  const handleNextCarousel = () => {
+    setCarouselIndex((prev) => (prev + 4 < popularSeries.length ? prev + 4 : 0));
+  };
+
+  const currentPopularBatch = popularSeries.slice(carouselIndex, carouselIndex + 4);
 
   return (
-    <div className="max-w-[960px] mx-auto px-4 py-8 space-y-10">
-      <div>
-        <h1 className="font-serif text-2xl md:text-3xl font-bold text-white tracking-tight">
-          Series
-        </h1>
-        <p className="text-sm text-lb-muted mt-1">
-          Browse and track every series on MyWorld.
-        </p>
+    <div className="max-w-5xl mx-auto px-4 py-6 space-y-8 select-none pb-20">
+      {/* 1. TOP BROWSE BAR (BROWSE BY, YEAR v, RATING v, POPULAR v, GENRE v, SERVICE v, FIND A SERIES) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-lb-elevated pb-2.5 text-xs">
+        {/* Left: BROWSE BY + Dropdowns */}
+        <div ref={browseBarRef} className="flex flex-wrap items-center gap-2.5 sm:gap-4 font-semibold uppercase tracking-wider text-[11px] text-lb-muted">
+          <span className="text-lb-muted font-bold shrink-0">BROWSE BY</span>
+
+          {/* YEAR Dropdown */}
+          <div className="relative">
+            <button
+              onClick={(e) => handleDropdownToggle(e, 'year')}
+              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+                openDropdown === 'year'
+                  ? 'bg-lb-elevated text-white font-bold'
+                  : 'text-lb-muted hover:text-white'
+              }`}
+            >
+              <span>YEAR</span>
+              <ChevronDown className="w-3 h-3 text-lb-muted" />
+            </button>
+
+            {openDropdown === 'year' && (
+              <div className="absolute left-0 top-7 w-36 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 max-h-80 overflow-y-auto normal-case font-normal text-xs divide-y divide-lb-elevated/40">
+                <Link
+                  to="/series"
+                  onClick={() => setOpenDropdown(null)}
+                  className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
+                >
+                  All
+                </Link>
+                {decades.map((dec) => (
+                  <Link
+                    key={dec}
+                    to={`/series/decade/${dec}`}
+                    onClick={() => setOpenDropdown(null)}
+                    className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated font-mono"
+                  >
+                    {dec}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* RATING Dropdown */}
+          <div className="relative">
+            <button
+              onClick={(e) => handleDropdownToggle(e, 'rating')}
+              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+                openDropdown === 'rating'
+                  ? 'bg-lb-elevated text-white font-bold'
+                  : 'text-lb-muted hover:text-white'
+              }`}
+            >
+              <span>RATING</span>
+              <ChevronDown className="w-3 h-3 text-lb-muted" />
+            </button>
+
+            {openDropdown === 'rating' && (
+              <div className="absolute left-0 top-7 w-44 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs">
+                <Link
+                  to="/series/decade/2020s?sort=vote_average.desc"
+                  onClick={() => setOpenDropdown(null)}
+                  className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
+                >
+                  Highest First
+                </Link>
+                <Link
+                  to="/series/decade/2020s?sort=vote_average.asc"
+                  onClick={() => setOpenDropdown(null)}
+                  className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
+                >
+                  Lowest First
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* POPULAR Dropdown */}
+          <div className="relative">
+            <button
+              onClick={(e) => handleDropdownToggle(e, 'popular')}
+              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+                openDropdown === 'popular'
+                  ? 'bg-lb-elevated text-white font-bold'
+                  : 'text-lb-muted hover:text-white'
+              }`}
+            >
+              <span>POPULAR</span>
+              <ChevronDown className="w-3 h-3 text-lb-muted" />
+            </button>
+
+            {openDropdown === 'popular' && (
+              <div className="absolute left-0 top-7 w-36 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs">
+                <Link
+                  to="/series/decade/2020s?sort=vote_count.desc"
+                  onClick={() => setOpenDropdown(null)}
+                  className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
+                >
+                  All-Time
+                </Link>
+                <Link
+                  to={`/series/year/${new Date().getFullYear()}`}
+                  onClick={() => setOpenDropdown(null)}
+                  className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
+                >
+                  This Year
+                </Link>
+                <Link
+                  to="/series/decade/2020s?sort=popularity.desc"
+                  onClick={() => setOpenDropdown(null)}
+                  className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
+                >
+                  This Week
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* GENRE Dropdown (TV genres) */}
+          <div className="relative">
+            <button
+              onClick={(e) => handleDropdownToggle(e, 'genre')}
+              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+                openDropdown === 'genre'
+                  ? 'bg-lb-elevated text-white font-bold'
+                  : 'text-lb-muted hover:text-white'
+              }`}
+            >
+              <span>GENRE</span>
+              <ChevronDown className="w-3 h-3 text-lb-muted" />
+            </button>
+
+            {openDropdown === 'genre' && (
+              <div className="absolute left-0 top-7 w-40 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 max-h-80 overflow-y-auto normal-case font-normal text-xs">
+                {tmdb.tvGenres.map((g) => (
+                  <Link
+                    key={g.id}
+                    to={`/series/decade/2020s?genre=${g.id}`}
+                    onClick={() => setOpenDropdown(null)}
+                    className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
+                  >
+                    {g.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* SERVICE Dropdown */}
+          <div className="relative">
+            <button
+              onClick={(e) => handleDropdownToggle(e, 'service')}
+              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+                openDropdown === 'service'
+                  ? 'bg-lb-elevated text-white font-bold'
+                  : 'text-lb-muted hover:text-white'
+              }`}
+            >
+              <span>SERVICE</span>
+              <ChevronDown className="w-3 h-3 text-lb-muted" />
+            </button>
+
+            {openDropdown === 'service' && (
+              <div className="absolute left-0 top-7 w-44 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs">
+                {tmdb.streamingServices.map((s) => (
+                  <Link
+                    key={s.id}
+                    to={`/series/decade/2020s?service=${s.id}`}
+                    onClick={() => setOpenDropdown(null)}
+                    className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
+                  >
+                    {s.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* OTHER Dropdown */}
+          <div className="relative">
+            <button
+              onClick={(e) => handleDropdownToggle(e, 'other')}
+              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+                openDropdown === 'other'
+                  ? 'bg-lb-elevated text-white font-bold'
+                  : 'text-lb-muted hover:text-white'
+              }`}
+            >
+              <span>OTHER</span>
+              <ChevronDown className="w-3 h-3 text-lb-muted" />
+            </button>
+
+            {openDropdown === 'other' && (
+              <div className="absolute left-0 top-7 w-36 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs">
+                <Link
+                  to="/series/decade/2020s?genre=99"
+                  onClick={() => setOpenDropdown(null)}
+                  className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
+                >
+                  Documentary
+                </Link>
+                <Link
+                  to="/series/decade/2020s?genre=16"
+                  onClick={() => setOpenDropdown(null)}
+                  className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
+                >
+                  Animation
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: FIND A SERIES search box */}
+        <div ref={findRef} className="relative flex items-center gap-2">
+          <span className="text-[11px] font-bold text-lb-muted uppercase tracking-wider shrink-0">
+            FIND A SERIES
+          </span>
+          <div className="relative">
+            <input
+              type="text"
+              value={findQuery}
+              onChange={(e) => setFindQuery(e.target.value)}
+              placeholder=""
+              className="bg-[#202830] border border-lb-elevated focus:border-lb-green text-xs text-white rounded px-2.5 py-1 w-44 sm:w-56 focus:outline-none transition-colors"
+            />
+
+            {findResults.length > 0 && (
+              <div className="absolute right-0 top-8 w-64 bg-lb-surface border border-lb-elevated rounded shadow-2xl overflow-hidden z-50">
+                {findResults.map((m) => (
+                  <Link
+                    key={m.id}
+                    to={`/tv/${m.id}`}
+                    className="p-2 flex items-center gap-2.5 hover:bg-lb-elevated block"
+                  >
+                    <img loading="lazy" decoding="async"
+                      src={tmdb.getImageUrl(m.poster_path, 'w92')}
+                      alt={m.title}
+                      className="w-7 h-10 object-cover rounded bg-lb-bg shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{m.title}</p>
+                      <p className="text-[10px] text-lb-muted">{m.release_date?.slice(0, 4)}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Genres */}
+      {/* 2. POPULAR SERIES THIS WEEK (4 large posters with stats and navigation arrows) */}
       <section className="space-y-3">
-        <h2 className="text-[11px] uppercase tracking-wider font-bold text-lb-text border-b border-lb-elevated pb-1.5">
-          Browse by genre
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {tmdb.tvGenres.map((g) => (
-            <Link
-              key={g.id}
-              to={`/series/genre/${g.id}`}
-              className="bg-[#202830] hover:bg-lb-elevated border border-lb-elevated hover:border-lb-green text-lb-white hover:text-white px-3 py-1.5 rounded text-xs transition-colors"
+        <div className="flex items-center justify-between border-b border-lb-elevated pb-1.5">
+          <h2 className="text-[11px] uppercase tracking-widest font-bold text-lb-muted">
+            Popular Series This Week
+          </h2>
+          <Link
+            to="/series/decade/2020s?sort=popularity.desc"
+            className="text-[10px] uppercase font-bold tracking-wider text-lb-muted hover:text-white"
+          >
+            More
+          </Link>
+        </div>
+
+        <div className="relative group/carousel">
+          {/* Left Arrow Button */}
+          {carouselIndex > 0 && (
+            <button
+              onClick={handlePrevCarousel}
+              className="absolute left-0 sm:-left-5 top-1/2 -translate-y-1/2 z-20 text-lb-muted hover:text-white transition-colors cursor-pointer p-1"
+              title="Previous"
+              aria-label="Previous"
             >
-              {g.name}
-            </Link>
-          ))}
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
+
+          {/* 4 Large Featured Series Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+            {currentPopularBatch.map((show, idx) => {
+              const basePop = show.popularity || 100;
+              const watchedCount = Math.round(basePop * 2.2 + (idx + 1) * 60).toLocaleString() + 'K';
+              const ratingCount = Math.round(basePop * 0.4 + (idx + 1) * 20).toLocaleString() + 'K';
+              const likedCount = Math.round(basePop * 0.75 + (idx + 1) * 35).toLocaleString() + 'K';
+
+              return (
+                <div key={show.id} className="flex flex-col space-y-2">
+                  {/* Poster */}
+                  <PosterCard movie={show} size="fluid" tv />
+
+                  {/* Triple Stats (Watched, Rating, Liked) */}
+                  <div className="flex items-center justify-between text-[11px] font-semibold pt-1 px-1">
+                    <span className="flex items-center gap-1 text-lb-green" title="Watched">
+                      <Eye className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>{watchedCount}</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-lb-blue" title="Rated">
+                      <Star className="w-3 h-3 fill-lb-blue" />
+                      <span>{ratingCount}</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-lb-orange" title="Liked">
+                      <Heart className="w-3 h-3 fill-lb-orange" />
+                      <span>{likedCount}</span>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Right Arrow Button */}
+          {carouselIndex + 4 < popularSeries.length && (
+            <button
+              onClick={handleNextCarousel}
+              className="absolute right-0 sm:-right-5 top-1/2 -translate-y-1/2 z-20 text-lb-muted hover:text-white transition-colors cursor-pointer p-1"
+              title="Next"
+              aria-label="Next"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          )}
         </div>
       </section>
 
-      {/* Decades */}
+      {/* 3. JUST REVIEWED... Section */}
       <section className="space-y-3">
-        <h2 className="text-[11px] uppercase tracking-wider font-bold text-lb-text border-b border-lb-elevated pb-1.5">
-          Browse by decade
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {decades.map((d) => (
-            <Link
-              key={d}
-              to={`/series/decade/${d}`}
-              className="bg-[#202830] hover:bg-lb-elevated border border-lb-elevated hover:border-lb-green text-lb-white hover:text-white px-3 py-1.5 rounded text-xs transition-colors"
-            >
-              {d}s
-            </Link>
+        <div className="flex items-center justify-between border-b border-lb-elevated pb-1.5">
+          <h2 className="text-[11px] uppercase tracking-widest font-bold text-lb-muted">
+            Just Reviewed...
+          </h2>
+          <span className="text-[10px] text-lb-muted font-mono">
+            1.204.375.912 series watched
+          </span>
+        </div>
+
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+          {justReviewedSeries.map((m) => (
+            <PosterCard key={m.id} movie={m} size="fluid" tv />
           ))}
         </div>
       </section>
-
-      {loading ? (
-        <div className="py-20 flex flex-col items-center space-y-3">
-          <div className="w-10 h-10 border-3 border-lb-green border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs text-lb-muted">Loading series...</p>
-        </div>
-      ) : (
-        sections.map((sec) => (
-          <section key={sec.title} className="space-y-3">
-            <div className="flex items-center justify-between border-b border-lb-elevated pb-1.5">
-              <h2 className="text-[11px] uppercase tracking-wider font-bold text-lb-text flex items-center gap-2">
-                {sec.icon}
-                {sec.title}
-              </h2>
-              <Link
-                to="/series/popular"
-                className="text-[11px] text-lb-muted hover:text-white flex items-center gap-1 transition-colors"
-              >
-                See all <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-              {sec.movies.map((m) => (
-                <PosterCard key={m.id} movie={m} size="fluid" tv />
-              ))}
-            </div>
-          </section>
-        ))
-      )}
     </div>
   );
 };

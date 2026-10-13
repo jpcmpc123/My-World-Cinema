@@ -97,7 +97,7 @@ export const FilmPage: React.FC = () => {
     return (
       <div className="max-w-[960px] mx-auto px-4 py-32 flex flex-col items-center justify-center space-y-4">
         <div className="w-10 h-10 border-3 border-lb-green border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-lb-text tracking-wide">Loading film...</p>
+        <p className="text-xs text-lb-text tracking-wide">{isTv ? 'Loading series...' : 'Loading film...'}</p>
       </div>
     );
   }
@@ -105,9 +105,9 @@ export const FilmPage: React.FC = () => {
   if (!movie) {
     return (
       <div className="max-w-[960px] mx-auto px-4 py-32 text-center">
-        <h2 className="text-xl font-bold text-white mb-2 font-serif">Film not found</h2>
-        <Link to="/films" className="text-sm text-lb-green hover:underline">
-          Return to films catalog
+        <h2 className="text-xl font-bold text-white mb-2 font-serif">{isTv ? 'Series not found' : 'Film not found'}</h2>
+        <Link to={isTv ? '/series' : '/films'} className="text-sm text-lb-green hover:underline">
+          {isTv ? 'Return to series catalog' : 'Return to films catalog'}
         </Link>
       </div>
     );
@@ -286,7 +286,7 @@ export const FilmPage: React.FC = () => {
                 </h1>
                 {releaseYear && (
                   <Link
-                    to={`/films/year/${releaseYear}`}
+                    to={isTv ? `/series/year/${releaseYear}` : `/films/year/${releaseYear}`}
                     className="text-lb-muted hover:text-white text-base sm:text-lg font-normal transition-colors"
                   >
                     {releaseYear}
@@ -294,7 +294,7 @@ export const FilmPage: React.FC = () => {
                 )}
                 {director && (
                   <div className="text-xs text-lb-muted whitespace-nowrap ml-1">
-                    Directed by{' '}
+                    {isTv ? 'Created by' : 'Directed by'}{' '}
                     <Link
                       to={`/actor/${director.id}`}
                       className="font-semibold text-lb-muted hover:text-white underline underline-offset-2 decoration-lb-muted/40 hover:decoration-white transition-colors"
@@ -526,7 +526,7 @@ export const FilmPage: React.FC = () => {
                     {movie.genres?.map((g) => (
                       <Link
                         key={g.id}
-                        to={`/films/decade/2020s?genre=${g.id}`}
+                        to={isTv ? `/series/decade/2020s?genre=${g.id}` : `/films/decade/2020s?genre=${g.id}`}
                         className="bg-[#202830] border border-lb-elevated hover:border-lb-green text-lb-white hover:text-lb-green px-3 py-1 rounded text-xs transition-colors"
                       >
                         {g.name}
@@ -814,11 +814,11 @@ export const FilmPage: React.FC = () => {
         {movie.similar?.results && movie.similar.results.length > 0 && (
           <section className="mt-16 pt-8 border-t border-lb-elevated space-y-4">
             <h2 className="text-xs uppercase tracking-widest font-bold text-lb-muted">
-              Similar Films
+              {isTv ? 'Similar Series' : 'Similar Films'}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
               {movie.similar.results.slice(0, 6).map((m) => (
-                <PosterCard key={m.id} movie={m} size="fluid" showDetails />
+                <PosterCard key={m.id} movie={m} size="fluid" showDetails tv={isTv} />
               ))}
             </div>
           </section>

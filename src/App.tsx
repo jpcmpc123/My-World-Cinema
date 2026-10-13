@@ -17,7 +17,6 @@ const FilmsHubPage = lazy(() => import('./pages/FilmsHubPage').then((m) => ({ de
 const FilmsPage = lazy(() => import('./pages/FilmsPage').then((m) => ({ default: m.FilmsPage })));
 const SeriesHubPage = lazy(() => import('./pages/SeriesHubPage').then((m) => ({ default: m.SeriesHubPage })));
 const SeriesPage = lazy(() => import('./pages/SeriesPage').then((m) => ({ default: m.SeriesPage })));
-const SeriesDetailPage = lazy(() => import('./pages/SeriesDetailPage').then((m) => ({ default: m.SeriesDetailPage })));
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 const DiaryPage = lazy(() => import('./pages/DiaryPage').then((m) => ({ default: m.DiaryPage })));
 const WatchlistPage = lazy(() => import('./pages/WatchlistPage').then((m) => ({ default: m.WatchlistPage })));
@@ -57,7 +56,7 @@ export function App() {
                 <Route path="/series/decade/:decade" element={<SeriesPage />} />
                 <Route path="/series/year/:year" element={<SeriesPage />} />
                 <Route path="/series/popular" element={<SeriesPage />} />
-                <Route path="/tv/:id" element={<SeriesDetailPage />} />
+                <Route path="/tv/:id" element={<FilmPage />} />
                 <Route path="/films/decade/:decade" element={<FilmsPage />} />
                 <Route path="/films/year/:year" element={<FilmsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
