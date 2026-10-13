@@ -49,7 +49,7 @@ interface AppContextType {
 
 import jpcmpc23Logs from '../data/jpcmpc23_logs.json';
 
-// Perfil neutro para visitante DESLOGADO â€” nunca exibimos dados de outra
+// Perfil neutro para visitante DESLOGADO - nunca exibimos dados de outra
 // conta (era o bug: guestUser hardcoded "jpcmpc23" aparecia no F5 sem login).
 const guestUser: UserProfile = {
   id: 'guest',
