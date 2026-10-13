@@ -324,6 +324,138 @@ export const tmdb = {
     };
   },
 
+  // ===================== TV / SERIES =====================
+
+  async getPopularTV(page = 1): Promise<TMDBResponse<TMDBMovie>> {
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/tv/popular', { page, language: 'en-US' });
+  },
+
+  async getTopRatedTV(page = 1): Promise<TMDBResponse<TMDBMovie>> {
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/tv/top_rated', { page, language: 'en-US' });
+  },
+
+  async getTrendingTV(timeWindow: 'day' | 'week' = 'week'): Promise<TMDBResponse<TMDBMovie>> {
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>(`/trending/tv/${timeWindow}`, { language: 'en-US' });
+  },
+
+  async discoverTV(params: {
+    genreId?: number;
+    year?: number;
+    decade?: number;
+    providerId?: number;
+    language?: string;
+    sortBy?: string;
+    page?: number;
+  }): Promise<TMDBResponse<TMDBMovie>> {
+    const apiParams: Record<string, string | number | undefined> = {
+      page: params.page || 1,
+      sort_by: params.sortBy || 'popularity.desc',
+      'vote_count.gte': params.sortBy?.includes('vote_average') ? 100 : 20,
+      include_adult: 'false',
+      language: 'en-US',
+    };
+
+    if (params.genreId) apiParams.with_genres = params.genreId;
+    if (params.providerId) {
+      apiParams.with_watch_providers = params.providerId;
+      apiParams.watch_region = 'US';
+    }
+    if (params.language) apiParams.with_original_language = params.language;
+
+    if (params.year) {
+      apiParams.first_air_date_year = params.year;
+    } else if (params.decade) {
+      apiParams['first_air_date.gte'] = `${params.decade}-01-01`;
+      apiParams['first_air_date.lte'] = `${params.decade + 9}-12-31`;
+    }
+
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/discover/tv', apiParams);
+  },
+
+  async discoverTVBatch(params: {
+    genreId?: number;
+    year?: number;
+    decade?: number;
+    providerId?: number;
+    language?: string;
+    sortBy?: string;
+    page?: number;
+    pagesToFetch?: number;
+  }): Promise<{ results: TMDBMovie[]; total_results: number; total_pages: number }> {
+    const startPage = ((params.page || 1) - 1) * (params.pagesToFetch || 3) + 1;
+    const count = params.pagesToFetch || 3;
+    const pageNumbers = Array.from({ length: count }, (_, i) => startPage + i);
+    const responses = await Promise.all(
+      pageNumbers.map((p) => this.discoverTV({ ...params, page: p }).catch(() => ({ results: [], total_results: 0, total_pages: 0, page: p })))
+    );
+    const allResults = responses.flatMap((r) => r.results);
+    const seen = new Set<number>();
+    const unique = allResults.filter((m) => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+    const firstRes = responses[0] || { total_results: 0, total_pages: 1 };
+    return {
+      results: unique,
+      total_results: firstRes.total_results,
+      total_pages: Math.ceil(firstRes.total_pages / count),
+    };
+  },
+
+  // Detalhes de serie normalizados para o formato de filme (title/name etc.)
+  async getTVDetails(id: number): Promise<TMDBMovieDetails> {
+    const show = await fetchFromTMDB<TMDBMovieDetails>(`/tv/${id}`, {
+      append_to_response: 'credits,similar,recommendations,watch/providers,videos',
+      language: 'en-US',
+    });
+    const showAny = show as unknown as Record<string, unknown>;
+    show.title = (showAny.name as string) || '';
+    show.original_title = (showAny.original_name as string) || show.title;
+    show.release_date = (showAny.first_air_date as string) || '';
+    const ert = showAny.episode_run_time as number[] | undefined;
+    show.runtime = Array.isArray(ert) && ert.length ? ert[0] : 0;
+    const createdBy = (showAny.created_by as { id: number; name: string }[] | undefined) || [];
+    if (show.credits && createdBy.length > 0) {
+      const existing = new Set(show.credits.crew.map((c) => c.id));
+      for (const c of createdBy) {
+        if (!existing.has(c.id)) {
+          show.credits.crew.unshift({ id: c.id, name: c.name, job: 'Creator', department: 'Production', profile_path: null });
+        }
+      }
+    }
+    const normList = (r: TMDBMovie[]) =>
+      r?.map((m) => {
+        const a = m as unknown as Record<string, unknown>;
+        return {
+          ...m,
+          title: (m.title || (a.name as string) || '') as string,
+          release_date: (m.release_date || (a.first_air_date as string) || '') as string,
+        };
+      });
+    if (show.similar) show.similar.results = normList(show.similar.results);
+    if (show.recommendations) show.recommendations.results = normList(show.recommendations.results);
+    return show;
+  },
+
+  tvGenres: [
+    { id: 10759, name: 'Action & Adventure' },
+    { id: 16, name: 'Animation' },
+    { id: 35, name: 'Comedy' },
+    { id: 80, name: 'Crime' },
+    { id: 99, name: 'Documentary' },
+    { id: 18, name: 'Drama' },
+    { id: 10751, name: 'Family' },
+    { id: 10762, name: 'Kids' },
+    { id: 9648, name: 'Mystery' },
+    { id: 10763, name: 'News' },
+    { id: 10764, name: 'Reality' },
+    { id: 10765, name: 'Sci-Fi & Fantasy' },
+    { id: 10766, name: 'Soap' },
+    { id: 10767, name: 'Talk' },
+    { id: 10768, name: 'War & Politics' },
+    { id: 37, name: 'Western' },
+  ],
   genres: [
     { id: 28, name: 'Action' },
     { id: 12, name: 'Adventure' },

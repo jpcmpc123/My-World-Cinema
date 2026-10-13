@@ -15,6 +15,7 @@ interface PosterCardProps {
   size?: 'fluid' | 'sm' | 'md' | 'lg';
   showDetails?: boolean;
   rank?: number;
+  tv?: boolean;
 }
 
 export const PosterCard: React.FC<PosterCardProps> = ({
@@ -22,6 +23,7 @@ export const PosterCard: React.FC<PosterCardProps> = ({
   size = 'md',
   showDetails = false,
   rank,
+  tv = false,
 }) => {
   const {
     isMovieWatched,
@@ -66,7 +68,7 @@ export const PosterCard: React.FC<PosterCardProps> = ({
           </div>
         )}
 
-        <Link to={`/film/${movie.id}`} className="block w-full h-full">
+        <Link to={`${tv ? "/tv" : "/film"}/${movie.id}`} className="block w-full h-full">
           {displayPosterPath ? (
             <img
               src={tmdb.getImageUrl(displayPosterPath, 'w500')}
@@ -154,7 +156,7 @@ export const PosterCard: React.FC<PosterCardProps> = ({
       {showDetails && (
         <div className="mt-2 flex flex-col">
           <Link
-            to={`/film/${movie.id}`}
+            to={`${tv ? "/tv" : "/film"}/${movie.id}`}
             className="text-xs font-semibold text-white hover:text-lb-green truncate transition-colors"
             title={movie.title}
           >

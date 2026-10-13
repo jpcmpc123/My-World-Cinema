@@ -28,9 +28,11 @@ export function ActorPage() {
         ]);
         setPerson(personData);
 
-        // Deduplicate by movie id, sort by popularity desc
+        // Combina atuações (cast) e trabalhos técnicos (crew: direção,
+        // roteiro, produção...) — diretores como Destin Daniel Cretton têm
+        // a filmografia em crew, não em cast. Dedup por id de filme.
         const seen = new Set<number>();
-        const unique = credits.cast
+        const unique = [...credits.cast, ...credits.crew]
           .filter((m) => {
             if (seen.has(m.id)) return false;
             seen.add(m.id);

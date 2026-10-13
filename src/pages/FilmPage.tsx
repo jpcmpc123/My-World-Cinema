@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import {
   Eye,
   Heart,
@@ -32,6 +32,8 @@ function formatNumber(num: number): string {
 
 export const FilmPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const isTv = location.pathname.startsWith('/tv/');
   const movieId = Number(id);
 
   const {
@@ -80,7 +82,7 @@ export const FilmPage: React.FC = () => {
       setLoading(true);
       window.scrollTo(0, 0);
       try {
-        const details = await tmdb.getMovieDetails(movieId);
+        const details = isTv ? await tmdb.getTVDetails(movieId) : await tmdb.getMovieDetails(movieId);
         setMovie(details);
       } catch (err) {
         console.error('Failed to load movie details:', err);
@@ -122,7 +124,7 @@ export const FilmPage: React.FC = () => {
   const userRating = ratingsMap[movie.id] || (userLogsForMovie[0]?.rating ? userLogsForMovie[0].rating : 0);
 
   // Key Crew Members
-  const director = movie.credits?.crew.find((c) => c.job === 'Director');
+  const director = movie.credits?.crew.find((c) => c.job === 'Director' || c.job === 'Creator');
   const writers = movie.credits?.crew.filter((c) =>
     ['Screenplay', 'Writer', 'Author', 'Novel'].includes(c.job)
   ).slice(0, 3);
