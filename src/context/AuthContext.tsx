@@ -1,0 +1,155 @@
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
+
+export interface Profile {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+  bio: string;
+}
+
+interface AuthContextType {
+  session: Session | null;
+  user: User | null;
+  profile: Profile | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  signUp: (email: string, password: string, username: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadProfile = useCallback(async (userId: string, fallbackEmail?: string) => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url, bio')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!error && data) {
+      setProfile(data as Profile);
+      return;
+    }
+
+    // Perfil ainda não existe (trigger pode ter falhado): cria via upsert mínimo
+    const baseUsername = (fallbackEmail ? fallbackEmail.split('@')[0] : 'user')
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 20) || 'user';
+    const { data: created } = await supabase
+      .from('profiles')
+      .upsert({ id: userId, username: baseUsername, display_name: baseUsername }, { onConflict: 'id' })
+      .select('id, username, display_name, avatar_url, bio')
+      .maybeSingle();
+    if (created) setProfile(created as Profile);
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      setSession(data.session);
+      if (data.session?.user) {
+        // Aguarda o PERFIL (não só a sessão) antes de liberar o primeiro render,
+        // senão páginas como /:username renderizam 1 frame com o fallback local
+        // (username de demo) antes do perfil chegar.
+        await loadProfile(data.session.user.id, data.session.user.email);
+      }
+      setLoading(false);
+    });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (newSession?.user) {
+        void loadProfile(newSession.user.id, newSession.user.email);
+      } else {
+        setProfile(null);
+      }
+    });
+
+    return () => {
+      subscription.subscription.unsubscribe();
+    };
+  }, [loadProfile]);
+
+  const signUp = async (email: string, password: string, username: string) => {
+    if (!supabase) return { error: 'Supabase is not configured.' };
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { username, display_name: username } },
+    });
+    return { error: error ? error.message : null };
+  };
+
+  const signIn = async (email: string, password: string) => {
+    if (!supabase) return { error: 'Supabase is not configured.' };
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error ? error.message : null };
+  };
+
+  const signInWithGoogle = async () => {
+    if (!supabase) return { error: 'Supabase is not configured.' };
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    return { error: error ? error.message : null };
+  };
+
+  const signOut = async () => {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    setProfile(null);
+  };
+
+  // Bloqueia o primeiro render até a sessão do Supabase ser resolvida:
+  // evita "flash" dos dados locais/demonstração em páginas que dependem da conta.
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#14181c] flex items-center justify-center">
+        <div className="w-10 h-10 border-3 border-[#00e054] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        session,
+        user: session?.user ?? null,
+        profile,
+        loading,
+        isAuthenticated: !!session?.user,
+        signUp,
+        signIn,
+        signInWithGoogle,
+        signOut,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
