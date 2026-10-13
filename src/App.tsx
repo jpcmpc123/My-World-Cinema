@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
 import { Header } from './components/Header';
@@ -12,6 +12,8 @@ import { FilmPage } from './pages/FilmPage';
 import { ActorPage } from './pages/ActorPage';
 import { FilmsHubPage } from './pages/FilmsHubPage';
 import { FilmsPage } from './pages/FilmsPage';
+import { SeriesHubPage } from './pages/SeriesHubPage';
+import { SeriesPage } from './pages/SeriesPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { DiaryPage } from './pages/DiaryPage';
 import { WatchlistPage } from './pages/WatchlistPage';
@@ -37,6 +39,12 @@ export function App() {
               <Route path="/film/:id" element={<FilmPage />} />
               <Route path="/actor/:id" element={<ActorPage />} />
               <Route path="/films" element={<FilmsHubPage />} />
+              <Route path="/series" element={<SeriesHubPage />} />
+              <Route path="/series/genre/:genre" element={<SeriesPage />} />
+              <Route path="/series/decade/:decade" element={<SeriesPage />} />
+              <Route path="/series/year/:year" element={<SeriesPage />} />
+              <Route path="/series/popular" element={<SeriesPage />} />
+              <Route path="/tv/:id" element={<FilmPage />} />
               <Route path="/films/decade/:decade" element={<FilmsPage />} />
               <Route path="/films/year/:year" element={<FilmsPage />} />
               <Route path="/profile" element={<ProfilePage />} />

@@ -216,6 +216,13 @@ export const Header: React.FC = () => {
             }`}
           >
             Films
+          </Link>          <Link
+            to="/series"
+            className={`hidden sm:block transition-colors ${
+              location.pathname.startsWith('/series') || location.pathname.startsWith('/tv') ? 'text-white font-bold' : 'text-lb-text hover:text-white'
+            }`}
+          >
+            Series
           </Link>
 
           <Link
