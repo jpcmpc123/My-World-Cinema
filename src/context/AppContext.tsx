@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { UserProfile, LogEntry, MovieList, Review } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
@@ -49,31 +49,33 @@ interface AppContextType {
 
 import jpcmpc23Logs from '../data/jpcmpc23_logs.json';
 
-const defaultUser: UserProfile = {
-  id: 'user-jpcmpc23',
-  username: 'jpcmpc23',
-  displayName: 'jpcmpc23',
-  bio: 'Filmes, resenhas e diário de cinema de jpcmpc23.',
-  avatarUrl: 'https://a.ltrbxd.com/resized/sm/upload/0x/l0/mg/7p/mza_2663893873526822947-0-600-0-900-crop.jpg?v=4ddab15f93',
-  backdropUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&auto=format&fit=crop&q=80',
-  location: 'Brasil',
-  website: 'letterboxd.com/jpcmpc23',
+// Perfil neutro para visitante DESLOGADO Ã¢â‚¬â€ nunca exibimos dados de outra
+// conta (era o bug: guestUser hardcoded "jpcmpc23" aparecia no F5 sem login).
+const guestUser: UserProfile = {
+  id: 'guest',
+  username: 'visitante',
+  displayName: 'Visitante',
+  bio: '',
+  avatarUrl: '',
+  backdropUrl: '',
+  location: '',
+  website: '',
   isPro: false,
   isPatron: false,
-  top4MovieIds: [275, 391713, 186, 11324], // Barton Fink, Lady Bird, The 400 Blows, Pixote
-  followingCount: 10,
-  followersCount: 12,
+  top4MovieIds: [0, 0, 0, 0],
+  followingCount: 0,
+  followersCount: 0,
 };
 
-const initialLogs: LogEntry[] = jpcmpc23Logs as LogEntry[];
+const initialLogs: LogEntry[] = [];
 
-const initialWatchedIds = Array.from(new Set(initialLogs.map((l) => l.movieId).filter(Boolean)));
-const initialLikedIds = initialLogs.filter((l) => l.liked).map((l) => l.movieId);
+const initialWatchedIds: number[] = [];
+const initialLikedIds: number[] = initialLogs.filter((l) => l.liked).map((l) => l.movieId);
 const initialRatings: Record<number, number> = Object.fromEntries(
   initialLogs.filter((l) => l.rating > 0).map((l) => [l.movieId, l.rating])
 );
 
-const initialReviewsList: Review[] = initialLogs
+const initialReviewsList: Review[] = (jpcmpc23Logs as LogEntry[])
   .filter((l) => Boolean(l.reviewText))
   .map((l, idx) => ({
     id: `rev-jpcmpc23-${idx + 1}`,
@@ -84,7 +86,7 @@ const initialReviewsList: Review[] = initialLogs
     author: {
       username: 'jpcmpc23',
       displayName: 'jpcmpc23',
-      avatarUrl: defaultUser.avatarUrl,
+      avatarUrl: '',
       isPro: true,
     },
     rating: l.rating,
@@ -97,50 +99,7 @@ const initialReviewsList: Review[] = initialLogs
     createdAt: l.createdAt,
   }));
 
-const initialLists: MovieList[] = [
-  {
-    id: 'list-1',
-    title: 'Filmes Inesquecíveis e Favoritos',
-    description: 'Filmes com 5 estrelas e obras marcantes assistidas ao longo dos anos.',
-    isRanked: true,
-    isPrivate: false,
-    movies: [
-      { id: 950028, title: 'The Invite', poster_path: 'https://a.ltrbxd.com/resized/film-poster/8/5/4/8/3/1/854831-the-invite-2026-0-600-0-900-crop.jpg?v=ee72905e48', release_date: '2026-09-29', notes: 'Nanny McPhee para casais' },
-      { id: 1541, title: 'Thelma & Louise', poster_path: 'https://a.ltrbxd.com/resized/sm/upload/wt/r4/hc/iz/pnzuLoE52EiTfjfqRex2uTkH7LB-0-600-0-900-crop.jpg?v=5c24b21874', release_date: '1991-05-24' },
-      { id: 5967, title: 'The Umbrellas of Cherbourg', poster_path: 'https://a.ltrbxd.com/resized/sm/upload/kj/2i/dj/q6/jQuRu615tCfZKJzGCKzGbuIsfmP-0-600-0-900-crop.jpg?v=89036aefa7', release_date: '1964-02-19', notes: 'Isso que é comprometimento em ser um músical' },
-      { id: 160859, title: 'Elena', poster_path: 'https://a.ltrbxd.com/resized/sm/upload/0x/l0/mg/7p/mza_2663893873526822947-0-600-0-900-crop.jpg?v=4ddab15f93', release_date: '2012-05-10', notes: 'Porque o silêncio pesa tanto......' },
-    ],
-    author: {
-      username: 'jpcmpc23',
-      displayName: 'jpcmpc23',
-      avatarUrl: defaultUser.avatarUrl,
-    },
-    likesCount: 148,
-    commentsCount: 23,
-    createdAt: '2026-08-15T12:00:00Z',
-  },
-  {
-    id: 'list-2',
-    title: 'Essenciais do Cinema & Ficção Científica',
-    description: 'Filmes conceituais e visualmente impressionantes.',
-    isRanked: false,
-    isPrivate: false,
-    movies: [
-      { id: 793, title: 'Blue Velvet', poster_path: 'https://a.ltrbxd.com/resized/film-poster/5/1/3/5/9/51359-blue-velvet-0-600-0-900-crop.jpg?v=b0ee3c20f6', release_date: '1986-09-19' },
-      { id: 400617, title: 'Phantom Thread', poster_path: 'https://a.ltrbxd.com/resized/film-poster/3/3/5/3/8/4/335384-phantom-thread-0-600-0-900-crop.jpg?v=6b47f80ec7', release_date: '2017-12-25' },
-      { id: 345, title: 'Eyes Wide Shut', poster_path: '/knE8295t56e1871e8471191.jpg', release_date: '1999-07-16' },
-      { id: 775, title: 'A Trip to the Moon', poster_path: 'https://a.ltrbxd.com/resized/film-poster/5/1/3/7/7/51377-a-trip-to-the-moon-0-600-0-900-crop.jpg?v=e82c2a36f3', release_date: '1902-09-01' },
-    ],
-    author: {
-      username: 'jpcmpc23',
-      displayName: 'jpcmpc23',
-      avatarUrl: defaultUser.avatarUrl,
-    },
-    likesCount: 92,
-    commentsCount: 11,
-    createdAt: '2026-09-02T16:00:00Z',
-  },
-];
+
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -199,17 +158,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  // AuthProvider jÃ¡ garante que a sessÃ£o foi resolvida antes deste mount,
+  // entÃ£o isAuthenticated Ã© confiÃ¡vel aqui. DESLOGADO â†’ estado visitante vazio
+  // (nunca reidrata lb_* do localStorage â€” seriam dados de outra conta).
   const [user, setUser] = useState<UserProfile>(() => {
+    if (!isAuthenticated) return guestUser;
     const saved = localStorage.getItem('lb_user');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.username === 'cinephile') return defaultUser;
+      if (parsed.username === 'cinephile' || parsed.username === 'jpcmpc23') return guestUser;
       return parsed;
     }
-    return defaultUser;
+    return guestUser;
   });
 
   const [logs, setLogs] = useState<LogEntry[]>(() => {
+    if (!isAuthenticated) return initialLogs;
     const saved = localStorage.getItem('lb_logs');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -220,16 +184,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [watchlist, setWatchlist] = useState<MovieShort[]>(() => {
+    if (!isAuthenticated) return [];
     const saved = localStorage.getItem('lb_watchlist');
-    return saved ? JSON.parse(saved) : [
-      { id: 438631, title: 'Dune', poster_path: '/d5NXSklXo0qyIYkgV94XAgMIckC.jpg', release_date: '2021-09-15' },
-      { id: 329865, title: 'Arrival', poster_path: '/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg', release_date: '2016-11-10' },
-      { id: 335984, title: 'Blade Runner 2049', poster_path: '/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg', release_date: '2017-10-04' },
-      { id: 872585, title: 'Oppenheimer', poster_path: '/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', release_date: '2023-07-19' },
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [watchedMovieIds, setWatchedMovieIds] = useState<number[]>(() => {
+    if (!isAuthenticated) return initialWatchedIds;
     const saved = localStorage.getItem('lb_watched');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -240,6 +201,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [likedMovieIds, setLikedMovieIds] = useState<number[]>(() => {
+    if (!isAuthenticated) return initialLikedIds;
     const saved = localStorage.getItem('lb_likes');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -250,6 +212,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [ratingsMap, setRatingsMap] = useState<Record<number, number>>(() => {
+    if (!isAuthenticated) return initialRatings;
     const saved = localStorage.getItem('lb_ratings');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -260,21 +223,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [top4MovieIds, setTop4MovieIds] = useState<number[]>(() => {
+    if (!isAuthenticated) return guestUser.top4MovieIds;
     const saved = localStorage.getItem('lb_top4');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.includes(157336)) return defaultUser.top4MovieIds;
+      if (parsed.includes(157336)) return guestUser.top4MovieIds;
       return parsed;
     }
-    return defaultUser.top4MovieIds;
+    return guestUser.top4MovieIds;
   });
 
   const [lists, setLists] = useState<MovieList[]>(() => {
+    if (!isAuthenticated) return [];
     const saved = localStorage.getItem('lb_lists');
-    return saved ? JSON.parse(saved) : initialLists;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [reviews, setReviews] = useState<Review[]>(() => {
+    if (!isAuthenticated) return [];
     const saved = localStorage.getItem('lb_reviews');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -302,7 +268,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { ...prev, [movieId]: merged };
     });
 
-    // Persiste no Supabase (tabela film_overrides — migration_film_overrides.sql)
+    // Persiste no Supabase (tabela film_overrides Ã¢â‚¬â€ migration_film_overrides.sql)
     if (supabase && isAuthenticated && authUser) {
       void (async () => {
         if (!next.poster && !next.backdrop) {
@@ -348,21 +314,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { localStorage.setItem('lb_lists', JSON.stringify(lists)); }, [lists]);
   useEffect(() => { localStorage.setItem('lb_reviews', JSON.stringify(reviews)); }, [reviews]);
   useEffect(() => {
-    // Enquanto logado, overrides vivem no Supabase (não no localStorage!)
+    // Enquanto logado, overrides vivem no Supabase (nÃƒÂ£o no localStorage!)
     if (isAuthenticated) return;
     localStorage.setItem('lb_movie_overrides', JSON.stringify(movieOverrides));
   }, [movieOverrides, isAuthenticated]);
 
-  // ────────────────────────────────────────────────────────────────
-  // Supabase integration — ativa apenas quando há usuário autenticado
-  // ────────────────────────────────────────────────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // Supabase integration Ã¢â‚¬â€ ativa apenas quando hÃƒÂ¡ usuÃƒÂ¡rio autenticado
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   const syncedUserIdRef = useRef<string | null>(null);
-  // Estado (não ref) para gatear o primeiro render: enquanto autenticado e
-  // ainda não sincronizado, nenhum filho renderiza (evita flash dos dados de
-  // demo/localStorage, pois o clear acontece em useEffect, após o 1º paint).
+  // Estado (nÃƒÂ£o ref) para gatear o primeiro render: enquanto autenticado e
+  // ainda nÃƒÂ£o sincronizado, nenhum filho renderiza (evita flash dos dados de
+  // demo/localStorage, pois o clear acontece em useEffect, apÃƒÂ³s o 1Ã‚Âº paint).
   const [syncedUserId, setSyncedUserId] = useState<string | null>(null);
 
-  // Quando autenticado, sobrepõe o usuário local com o perfil real do Supabase
+  // Quando autenticado, sobrepÃƒÂµe o usuÃƒÂ¡rio local com o perfil real do Supabase
   useEffect(() => {
     if (!isAuthenticated || !authUser || !profile) return;
     setUser((prev) => ({
@@ -381,17 +347,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!client || !isAuthenticated || !authUser) {
       syncedUserIdRef.current = null;
       setSyncedUserId(null);
-      // Ao deslogar, zera os overrides (TMDB padrão): os overrides da conta
-      // no Supabase não podem "vazar" para a sessão deslogada
+      // Ao deslogar, volta TUDO para o estado de visitante: dados da conta
+      // anterior nÃ£o podem "vazar" (nem aparecer depois de F5) para visitantes.
+      setUser(guestUser);
+      setLogs([]);
+      setWatchedMovieIds([]);
+      setLikedMovieIds([]);
+      setRatingsMap({});
+      setReviews([]);
+      setWatchlist([]);
+      setLists([]);
+      setTop4MovieIds([0, 0, 0, 0]);
       setMovieOverrides({});
       localStorage.removeItem('lb_movie_overrides');
+      localStorage.removeItem('lb_user');
+      localStorage.removeItem('lb_logs');
+      localStorage.removeItem('lb_watched');
+      localStorage.removeItem('lb_likes');
+      localStorage.removeItem('lb_ratings');
+      localStorage.removeItem('lb_top4');
+      localStorage.removeItem('lb_lists');
+      localStorage.removeItem('lb_reviews');
+      localStorage.removeItem('lb_watchlist');
       return;
     }
     if (syncedUserIdRef.current === authUser.id) return;
     syncedUserIdRef.current = authUser.id;
 
-    // Zera o estado local imediatamente para não vazar dados de demo/localStorage
-    // em "flash" enquanto o Supabase responde (ex.: refresh na página de perfil).
+    // Zera o estado local imediatamente para nÃƒÂ£o vazar dados de demo/localStorage
+    // em "flash" enquanto o Supabase responde (ex.: refresh na pÃƒÂ¡gina de perfil).
     setLogs([]);
     setWatchedMovieIds([]);
     setLikedMovieIds([]);
@@ -412,7 +396,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ]);
 
       if (overridesRes.error) {
-        console.warn('film_overrides indisponível (rode supabase/migration_film_overrides.sql):', overridesRes.error.message);
+        console.warn('film_overrides indisponÃƒÂ­vel (rode supabase/migration_film_overrides.sql):', overridesRes.error.message);
       } else if (overridesRes.data) {
         const map: Record<number, { poster?: string; backdrop?: string }> = {};
         for (const row of overridesRes.data as { film_id: number; poster_url: string | null; backdrop_url: string | null }[]) {
@@ -424,15 +408,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setMovieOverrides(map);
       }
 
-      // Top 4 vindo do Supabase sobrepõe o local (quando a coluna existir e tiver dados)
+      // Top 4 vindo do Supabase sobrepÃƒÂµe o local (quando a coluna existir e tiver dados)
       if (favRes.error) {
-        console.warn('favorite_films indisponível (rode supabase/migration_settings.sql):', favRes.error.message);
+        console.warn('favorite_films indisponÃƒÂ­vel (rode supabase/migration_settings.sql):', favRes.error.message);
       } else if (Array.isArray(favRes.data?.favorite_films)) {
-        // Conta nova tem favorite_films = {} — nesse caso os 4 slots ficam vazios
+        // Conta nova tem favorite_films = {} Ã¢â‚¬â€ nesse caso os 4 slots ficam vazios
         const ids = (favRes.data.favorite_films as unknown[])
           .filter((n): n is number => typeof n === 'number' && Number.isFinite(n))
           .slice(0, 4);
-        // Garante 4 slots; slots vazios são representados como 0
+        // Garante 4 slots; slots vazios sÃƒÂ£o representados como 0
         while (ids.length < 4) ids.push(0);
         setTop4MovieIds(ids);
       }
@@ -494,7 +478,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authUser?.id]);
 
-  // Upsert de um "quick log" (sem data) em film_logs — usado por toggles/rating
+  // Upsert de um "quick log" (sem data) em film_logs Ã¢â‚¬â€ usado por toggles/rating
   const persistQuickLog = async (filmId: number, patch: { watched?: boolean; liked?: boolean; rating?: number }) => {
     if (!supabase || !isAuthenticated || !authUser) return;
     const meta = movieMetaRef.current[filmId] ?? { title: '', poster: null, year: null };
@@ -696,7 +680,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Persiste o Top 4 no Supabase (profiles.favorite_films, int[]).
-  // Slots vazios são persistidos como 0 — int[] não aceita null.
+  // Slots vazios sÃƒÂ£o persistidos como 0 Ã¢â‚¬â€ int[] nÃƒÂ£o aceita null.
   const persistTop4 = async (ids: number[]) => {
     if (!supabase || !isAuthenticated || !authUser) return;
     const { error } = await supabase
@@ -705,7 +689,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .eq('id', authUser.id);
     if (error) {
       console.warn(
-        'Não foi possível salvar favorite_films — rode supabase/migration_settings.sql no Supabase SQL Editor.',
+        'NÃƒÂ£o foi possÃƒÂ­vel salvar favorite_films Ã¢â‚¬â€ rode supabase/migration_settings.sql no Supabase SQL Editor.',
         error.message
       );
     }
@@ -777,9 +761,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveTop4Slot(null);
   };
 
-  // Gate: autenticado mas dados remotos ainda não sincronizados → spinner.
+  // Gate: autenticado mas dados remotos ainda nÃƒÂ£o sincronizados Ã¢â€ â€™ spinner.
   // Sem isso, o primeiro render pintaria logs/watchlist/top4 do localStorage
-  // (o clear só roda em useEffect, depois do paint).
+  // (o clear sÃƒÂ³ roda em useEffect, depois do paint).
   if (isAuthenticated && authUser && syncedUserId !== authUser.id) {
     return (
       <div className="min-h-screen bg-[#14181c] flex items-center justify-center">
