@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Eye, Star, Heart, ChevronDown } from 'lucide-react';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
@@ -381,7 +381,7 @@ export const FilmsHubPage: React.FC = () => {
           {/* 4 Large Featured Film Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
             {currentPopularBatch.map((movie, idx) => {
-              // Exact Letterboxd member counts format
+              // Exact MyWorld member counts format
               const basePop = movie.popularity || 100;
               const watchedCount = Math.round(basePop * 2.2 + (idx + 1) * 60).toLocaleString() + 'K';
               const ratingCount = Math.round(basePop * 0.4 + (idx + 1) * 20).toLocaleString() + 'K';
@@ -392,7 +392,7 @@ export const FilmsHubPage: React.FC = () => {
                   {/* Poster */}
                   <PosterCard movie={movie} size="fluid" />
 
-                  {/* Letterboxd Triple Stats (Watched, Rating, Liked) */}
+                  {/* MyWorld Triple Stats (Watched, Rating, Liked) */}
                   <div className="flex items-center justify-between text-[11px] font-semibold pt-1 px-1">
                     {/* Watched (Green Eye) */}
                     <span className="flex items-center gap-1 text-lb-green" title="Watched">

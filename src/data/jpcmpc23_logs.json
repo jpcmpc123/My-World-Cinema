@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "id": "jpcmpc23-log-1",
     "movieId": 950028,
@@ -39,7 +39,7 @@
     "rating": 0,
     "isRewatch": false,
     "liked": false,
-    "reviewText": "Maior prova de que a terra é plana",
+    "reviewText": "Maior prova de que a terra Ã© plana",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-21T00:00:00.000Z"
@@ -54,7 +54,7 @@
     "rating": 4.5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Eu sabia que você conseguia fazer uma história coesa",
+    "reviewText": "Eu sabia que vocÃª conseguia fazer uma histÃ³ria coesa",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-18T00:00:00.000Z"
@@ -84,7 +84,7 @@
     "rating": 3,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Se os filmes do tor não tivessem multiverso",
+    "reviewText": "Se os filmes do tor nÃ£o tivessem multiverso",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-14T00:00:00.000Z"
@@ -99,7 +99,7 @@
     "rating": 4.5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "A pressão que por meio da imagem e do grande contraste da iluminação, cria um clima muito onírico e pesado ao mesmo muito presente nas obrar do diretor, como se a todo momento o filme quisesse te puxar, fazendo o telespectador ficar exalto não em um mal sentido é claro.",
+    "reviewText": "A pressÃ£o que por meio da imagem e do grande contraste da iluminaÃ§Ã£o, cria um clima muito onÃ­rico e pesado ao mesmo muito presente nas obrar do diretor, como se a todo momento o filme quisesse te puxar, fazendo o telespectador ficar exalto nÃ£o em um mal sentido Ã© claro.",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-14T00:00:00.000Z"
@@ -114,7 +114,7 @@
     "rating": 3,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "A esperança que o óbvio não aconteça é o que me manteve firme nesse filme",
+    "reviewText": "A esperanÃ§a que o Ã³bvio nÃ£o aconteÃ§a Ã© o que me manteve firme nesse filme",
     "containsSpoilers": true,
     "tags": [],
     "createdAt": "2026-07-11T00:00:00.000Z"
@@ -129,7 +129,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Isso que é comprometimento em ser um músical",
+    "reviewText": "Isso que Ã© comprometimento em ser um mÃºsical",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-10T00:00:00.000Z"
@@ -159,7 +159,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Porque o silêncio pesa tanto......",
+    "reviewText": "Porque o silÃªncio pesa tanto......",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-09T00:00:00.000Z"
@@ -219,7 +219,7 @@
     "rating": 4,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Um baralho é o que melhor define essa obraO design desse filme é espetacular e a cereja do bolo: movimentos performáticos que relembram filmes de época",
+    "reviewText": "Um baralho Ã© o que melhor define essa obraO design desse filme Ã© espetacular e a cereja do bolo: movimentos performÃ¡ticos que relembram filmes de Ã©poca",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-04T00:00:00.000Z"
@@ -234,7 +234,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "A iluminação e o design de som disso é absurda de medonha",
+    "reviewText": "A iluminaÃ§Ã£o e o design de som disso Ã© absurda de medonha",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-02T00:00:00.000Z"
@@ -249,7 +249,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Como pessoas tão indiferentes podem ser tão instigantes",
+    "reviewText": "Como pessoas tÃ£o indiferentes podem ser tÃ£o instigantes",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-06-30T00:00:00.000Z"
@@ -264,7 +264,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "O significado de não confiar em ninguém",
+    "reviewText": "O significado de nÃ£o confiar em ninguÃ©m",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-06-28T00:00:00.000Z"
@@ -279,7 +279,7 @@
     "rating": 3.5,
     "isRewatch": false,
     "liked": false,
-    "reviewText": "O grande erro desse filme é repetir o mesmo erro de tomorrowland mostrar e descrever brevemente um novo mundo para o telespectador e querer que tiremos uma coisa &quot;profunda&quot; disso",
+    "reviewText": "O grande erro desse filme Ã© repetir o mesmo erro de tomorrowland mostrar e descrever brevemente um novo mundo para o telespectador e querer que tiremos uma coisa &quot;profunda&quot; disso",
     "containsSpoilers": true,
     "tags": [],
     "createdAt": "2026-06-21T00:00:00.000Z"
@@ -294,7 +294,7 @@
     "rating": 2,
     "isRewatch": false,
     "liked": false,
-    "reviewText": "Pode começar bem mas o plot twist estraga tudo",
+    "reviewText": "Pode comeÃ§ar bem mas o plot twist estraga tudo",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-06-20T00:00:00.000Z"
@@ -309,7 +309,7 @@
     "rating": 4,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Como um filme consegue ser bobo e sério ao mesmo tempo",
+    "reviewText": "Como um filme consegue ser bobo e sÃ©rio ao mesmo tempo",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-06-17T00:00:00.000Z"
@@ -324,7 +324,7 @@
     "rating": 0,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Nem no campo o pessoal tem paz 😔",
+    "reviewText": "Nem no campo o pessoal tem paz ðŸ˜”",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-06-14T00:00:00.000Z"
@@ -339,7 +339,7 @@
     "rating": 3,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Bom para passar o tempo, tem uma fotografia impecávelAté os figurante foram mais importantes que os irmãos o Michael",
+    "reviewText": "Bom para passar o tempo, tem uma fotografia impecÃ¡velAtÃ© os figurante foram mais importantes que os irmÃ£os o Michael",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-06-14T00:00:00.000Z"
@@ -384,7 +384,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Dirk was the greatest actor I everworked with. Not the greatest person!But by far the greatest performer.É incrível como esse curta consegue elevar o personagem a um estado de superioridade mesmo mostrando suas falhas e como elas o levaram a perdição",
+    "reviewText": "Dirk was the greatest actor I everworked with. Not the greatest person!But by far the greatest performer.Ã‰ incrÃ­vel como esse curta consegue elevar o personagem a um estado de superioridade mesmo mostrando suas falhas e como elas o levaram a perdiÃ§Ã£o",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-06-12T00:00:00.000Z"
@@ -399,7 +399,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Uma história perspicaz sobre viverNesse drama monocromático o enredo gira na vida de um senhor que tem um forte desejo de ir para nebrascka para resgatar os supostos 1 milhão de dólares que ele ganhou, mas esse desejo é o meio e não o fim, essa é uma história que busca por meio da busca incessante do idoso pelo dinheiro, refletirmos o fato de que as coisas que nos fazem felizes não necessariamente precisa ter um propósito claro ou lógico e por meio de sua fotografia em preto e branco nos tenta mover para o mundo daquele senhor",
+    "reviewText": "Uma histÃ³ria perspicaz sobre viverNesse drama monocromÃ¡tico o enredo gira na vida de um senhor que tem um forte desejo de ir para nebrascka para resgatar os supostos 1 milhÃ£o de dÃ³lares que ele ganhou, mas esse desejo Ã© o meio e nÃ£o o fim, essa Ã© uma histÃ³ria que busca por meio da busca incessante do idoso pelo dinheiro, refletirmos o fato de que as coisas que nos fazem felizes nÃ£o necessariamente precisa ter um propÃ³sito claro ou lÃ³gico e por meio de sua fotografia em preto e branco nos tenta mover para o mundo daquele senhor",
     "containsSpoilers": true,
     "tags": [],
     "createdAt": "2026-06-07T00:00:00.000Z"
@@ -414,7 +414,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "A verdadeira família é quem nos faz sentir bem.Esse filme consegue transpassar as emoções que ele quer para o público de uma forma muito leve e contínua sendo muito atual",
+    "reviewText": "A verdadeira famÃ­lia Ã© quem nos faz sentir bem.Esse filme consegue transpassar as emoÃ§Ãµes que ele quer para o pÃºblico de uma forma muito leve e contÃ­nua sendo muito atual",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-06-07T00:00:00.000Z"
@@ -444,7 +444,7 @@
     "rating": 4.5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Assim que as imagens IA eram feitas e como um telefone sem fio funcionaÉ muito gratificante ver um filme que tem tudo para ser feito apenas para ganhar dinheiro, tendo uma boa história ❤️‍🩹",
+    "reviewText": "Assim que as imagens IA eram feitas e como um telefone sem fio funcionaÃ‰ muito gratificante ver um filme que tem tudo para ser feito apenas para ganhar dinheiro, tendo uma boa histÃ³ria â¤ï¸â€ðŸ©¹",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-06-05T00:00:00.000Z"
@@ -459,7 +459,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "isso é absolutamente melhor que Jurassic Park",
+    "reviewText": "isso Ã© absolutamente melhor que Jurassic Park",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-06-05T00:00:00.000Z"
@@ -474,7 +474,7 @@
     "rating": 3,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Qualquer semelhança com Jogos Vorazes é mera conhecidência",
+    "reviewText": "Qualquer semelhanÃ§a com Jogos Vorazes Ã© mera conhecidÃªncia",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-05-30T00:00:00.000Z"
@@ -489,7 +489,7 @@
     "rating": 2,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Ignora 100% de desenvolvimento dos personagens mas continua sendo um ótimo filme para passar o tempo Se fnaf 2 tive a mesma receita desse filme ele ia ser um filme bom",
+    "reviewText": "Ignora 100% de desenvolvimento dos personagens mas continua sendo um Ã³timo filme para passar o tempo Se fnaf 2 tive a mesma receita desse filme ele ia ser um filme bom",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-05-31T00:00:00.000Z"
@@ -504,7 +504,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Nunca é tarde para recomeçar",
+    "reviewText": "Nunca Ã© tarde para recomeÃ§ar",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-05-31T00:00:00.000Z"
@@ -519,7 +519,7 @@
     "rating": 1,
     "isRewatch": false,
     "liked": false,
-    "reviewText": "Não sabia que figurante podia virar protagonista",
+    "reviewText": "NÃ£o sabia que figurante podia virar protagonista",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-05-29T00:00:00.000Z"
@@ -534,7 +534,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Filme muito triste, porém muito importante, ele consegue nos colocar naquela triste realidade de forma tão envolvente e poéticaSobre pessoas que precisam tornar o mal o seu novo bem",
+    "reviewText": "Filme muito triste, porÃ©m muito importante, ele consegue nos colocar naquela triste realidade de forma tÃ£o envolvente e poÃ©ticaSobre pessoas que precisam tornar o mal o seu novo bem",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-05-21T00:00:00.000Z"
@@ -579,7 +579,7 @@
     "rating": 3,
     "isRewatch": false,
     "liked": false,
-    "reviewText": "uma otima reflexão sobre inteligência, ciência e deixar ir, porém achei que o final se perde reduzindo todo o peso dramatico que construiu até aliR.I.P Senhor Whiskers 😭",
+    "reviewText": "uma otima reflexÃ£o sobre inteligÃªncia, ciÃªncia e deixar ir, porÃ©m achei que o final se perde reduzindo todo o peso dramatico que construiu atÃ© aliR.I.P Senhor Whiskers ðŸ˜­",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-05-16T00:00:00.000Z"
@@ -594,7 +594,7 @@
     "rating": 3,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Um filme conforto, com uma lição que devemos seguir em frente, que não precisamos nos desvincilhar de tudo pois a pessoas que podem nos dar a mão, mas é um pouco irritante o polvo falando todo tempo oque devemos sentir e pensar",
+    "reviewText": "Um filme conforto, com uma liÃ§Ã£o que devemos seguir em frente, que nÃ£o precisamos nos desvincilhar de tudo pois a pessoas que podem nos dar a mÃ£o, mas Ã© um pouco irritante o polvo falando todo tempo oque devemos sentir e pensar",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-05-15T00:00:00.000Z"
@@ -609,7 +609,7 @@
     "rating": 4.5,
     "isRewatch": true,
     "liked": true,
-    "reviewText": "Acho que o melhor que podemos tirar disso tudo é como as famílias estão sendo cada vez mais deixadas de lado com o passar dos anos",
+    "reviewText": "Acho que o melhor que podemos tirar disso tudo Ã© como as famÃ­lias estÃ£o sendo cada vez mais deixadas de lado com o passar dos anos",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-05-09T00:00:00.000Z"
@@ -624,7 +624,7 @@
     "rating": 3.5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Com uma nova proposta I am Mother subverter filmes do gênero onde vemos humanos sendo criados por robôs do mesmo modo que os humanos criam robôs, claro que com outras técnicas mas de maneira muito similar",
+    "reviewText": "Com uma nova proposta I am Mother subverter filmes do gÃªnero onde vemos humanos sendo criados por robÃ´s do mesmo modo que os humanos criam robÃ´s, claro que com outras tÃ©cnicas mas de maneira muito similar",
     "containsSpoilers": true,
     "tags": [],
     "createdAt": "2026-05-04T00:00:00.000Z"
@@ -639,7 +639,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "O sacrifício de não sacrificar ninguém",
+    "reviewText": "O sacrifÃ­cio de nÃ£o sacrificar ninguÃ©m",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-05-01T00:00:00.000Z"
@@ -669,7 +669,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Um bom filme para que vocêSiga em Frente",
+    "reviewText": "Um bom filme para que vocÃªSiga em Frente",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-01T00:00:00.000Z"
@@ -684,7 +684,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Você é boa, você é esperta, você é importante",
+    "reviewText": "VocÃª Ã© boa, vocÃª Ã© esperta, vocÃª Ã© importante",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-04-18T00:00:00.000Z"
@@ -699,7 +699,7 @@
     "rating": 5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Filme muito feliz no que se propõe a ser, nos levando a ver os personagens em uma sinuca de bico pois quase todos estão certo em serem como são, porém inevitávelmente sempre machucam os outros",
+    "reviewText": "Filme muito feliz no que se propÃµe a ser, nos levando a ver os personagens em uma sinuca de bico pois quase todos estÃ£o certo em serem como sÃ£o, porÃ©m inevitÃ¡velmente sempre machucam os outros",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-04-23T00:00:00.000Z"
@@ -714,7 +714,7 @@
     "rating": 4.5,
     "isRewatch": false,
     "liked": true,
-    "reviewText": "Medo de fantasmas: NãoMedo de pessoas: Sim",
+    "reviewText": "Medo de fantasmas: NÃ£oMedo de pessoas: Sim",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-04-22T00:00:00.000Z"
@@ -759,7 +759,7 @@
     "rating": 0,
     "isRewatch": false,
     "liked": false,
-    "reviewText": "Vivarium   Rudderless   The Menu   Split   Where the Crawdads Sing   Meet the Robinsons   Men in Black 3   Freeway   Zathura: A Space Adventure   Another Earth   ...plus 6 more. View the full list on Letterboxd.",
+    "reviewText": "Vivarium   Rudderless   The Menu   Split   Where the Crawdads Sing   Meet the Robinsons   Men in Black 3   Freeway   Zathura: A Space Adventure   Another Earth   ...plus 6 more. View the full list on MyWorld.",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-01T00:00:00.000Z"
@@ -804,7 +804,7 @@
     "rating": 0,
     "isRewatch": false,
     "liked": false,
-    "reviewText": "Meet the Robinsons   Whisper of the Heart   Fantastic Mr. Fox   Mr. Peabody &amp; Sherman   Spirited Away   Free Birds   Steven Universe: The Movie   Ponyo   Rango   Kiki&#039;s Delivery Service   ...plus 14 more. View the full list on Letterboxd.",
+    "reviewText": "Meet the Robinsons   Whisper of the Heart   Fantastic Mr. Fox   Mr. Peabody &amp; Sherman   Spirited Away   Free Birds   Steven Universe: The Movie   Ponyo   Rango   Kiki&#039;s Delivery Service   ...plus 14 more. View the full list on MyWorld.",
     "containsSpoilers": false,
     "tags": [],
     "createdAt": "2026-07-01T00:00:00.000Z"

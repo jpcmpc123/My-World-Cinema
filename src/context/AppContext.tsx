@@ -250,7 +250,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return initialReviewsList;
   });
 
-  // Custom poster/backdrop overrides per film (like Letterboxd's "Set film poster/backdrop")
+  // Custom poster/backdrop overrides per film (like MyWorld's "Set film poster/backdrop")
   const [movieOverrides, setMovieOverrides] = useState<Record<number, { poster?: string; backdrop?: string }>>(() => {
     const saved = localStorage.getItem('lb_movie_overrides');
     return saved ? JSON.parse(saved) : {};

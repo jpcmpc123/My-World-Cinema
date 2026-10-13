@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Plus, User, BookOpen, Clock, List, X, ChevronDown, Zap, Menu, LogOut, Settings } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -324,7 +324,7 @@ export const Header: React.FC = () => {
                   onClick={() => setIsMenuOpen(false)}
                   className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  Diário
+                  DiÃ¡rio
                 </Link>
                 <Link
                   to={`/${displayUsername}/watchlist`}
@@ -344,7 +344,7 @@ export const Header: React.FC = () => {
             )}
           </div>
 
-          {/* Letterboxd "+ LOG ▼" Button */}
+          {/* MyWorld "+ LOG â–¼" Button */}
           <div className="flex items-center">
             <button
               onClick={() => openLogModal()}

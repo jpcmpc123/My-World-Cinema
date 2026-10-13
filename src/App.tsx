@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+﻿import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
 import { Header } from './components/Header';
@@ -25,7 +25,7 @@ export function App() {
   return (
     <AuthProvider>
     <AppProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <div className="min-h-screen bg-lb-bg text-lb-text flex flex-col selection:bg-lb-green selection:text-lb-bg">
           {/* Main Top Header */}
           <Header />
@@ -48,7 +48,7 @@ export function App() {
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/signin" element={<AuthPage />} />
               <Route path="/signup" element={<AuthPage />} />
-              {/* Letterboxd profile sub-routes */}
+              {/* MyWorld profile sub-routes */}
               <Route path="/:username" element={<ProfilePage />} />
               <Route path="/:username/diary" element={<DiaryPage />} />
               <Route path="/:username/watchlist" element={<WatchlistPage />} />
@@ -56,7 +56,7 @@ export function App() {
             </Routes>
           </main>
 
-          {/* Letterboxd Global Modals */}
+          {/* MyWorld Global Modals */}
           <LogModal />
           <Top4PickerModal />
 

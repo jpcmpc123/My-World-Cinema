@@ -1,9 +1,9 @@
 -- ============================================================
--- Cloneletterboxd — schema inicial do Supabase
+-- MyWorld Cinema â€” schema inicial do Supabase
 -- Cole este arquivo inteiro no SQL Editor do Supabase e rode.
 -- ============================================================
 
--- 1. Perfis públicos (espelha auth.users)
+-- 1. Perfis pÃºblicos (espelha auth.users)
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   username text not null unique check (username ~ '^[a-z0-9_]{3,20}$'),
@@ -13,7 +13,7 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
--- Cria perfil automaticamente quando alguém se cadastra
+-- Cria perfil automaticamente quando alguÃ©m se cadastra
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -37,7 +37,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- 2. Logs / diário: watched, rating (0.5–5), liked, review
+-- 2. Logs / diÃ¡rio: watched, rating (0.5â€“5), liked, review
 create table if not exists public.film_logs (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
@@ -93,8 +93,11 @@ create table if not exists public.follows (
   primary key (follower_id, following_id)
 );
 
--- 6. View: média de rating por filme (alimenta o histograma / ★3.1)
-create or replace view public.film_ratings as
+-- 6. View: mÃ©dia de rating por filme (alimenta o histograma / â˜…3.1)
+-- security_invoker = on: a view passa a respeitar o RLS de quem consulta
+-- (por padrao views rodam com permissoes do DONO, ignorando o RLS do chamador).
+create or replace view public.film_ratings
+with (security_invoker = on) as
 select
   film_id,
   round(avg(rating), 1) as avg_rating,
@@ -114,29 +117,29 @@ alter table public.lists enable row level security;
 alter table public.list_items enable row level security;
 alter table public.follows enable row level security;
 
--- profiles: leitura pública; só o dono edita
+-- profiles: leitura pÃºblica; sÃ³ o dono edita
 create policy "profiles_select" on public.profiles for select using (true);
 create policy "profiles_update" on public.profiles for update using (auth.uid() = id);
 create policy "profiles_insert" on public.profiles for insert with check (auth.uid() = id);
 
--- film_logs: leitura pública; só o dono cria/edita/apaga
+-- film_logs: leitura pÃºblica; sÃ³ o dono cria/edita/apaga
 create policy "logs_select" on public.film_logs for select using (true);
 create policy "logs_insert" on public.film_logs for insert with check (auth.uid() = user_id);
 create policy "logs_update" on public.film_logs for update using (auth.uid() = user_id);
 create policy "logs_delete" on public.film_logs for delete using (auth.uid() = user_id);
 
--- watchlist: só o próprio usuário vê/edita (privado)
+-- watchlist: sÃ³ o prÃ³prio usuÃ¡rio vÃª/edita (privado)
 create policy "watchlist_select" on public.watchlist for select using (auth.uid() = user_id);
 create policy "watchlist_insert" on public.watchlist for insert with check (auth.uid() = user_id);
 create policy "watchlist_delete" on public.watchlist for delete using (auth.uid() = user_id);
 
--- lists: públicas são lidas por todos; dono controla tudo
+-- lists: pÃºblicas sÃ£o lidas por todos; dono controla tudo
 create policy "lists_select" on public.lists for select using (is_public or auth.uid() = user_id);
 create policy "lists_insert" on public.lists for insert with check (auth.uid() = user_id);
 create policy "lists_update" on public.lists for update using (auth.uid() = user_id);
 create policy "lists_delete" on public.lists for delete using (auth.uid() = user_id);
 
--- list_items: segue a lista-mãe
+-- list_items: segue a lista-mÃ£e
 create policy "items_select" on public.list_items for select
   using (exists (select 1 from public.lists l where l.id = list_id and (l.is_public or l.user_id = auth.uid())));
 create policy "items_insert" on public.list_items for insert
@@ -144,7 +147,7 @@ create policy "items_insert" on public.list_items for insert
 create policy "items_delete" on public.list_items for delete
   using (exists (select 1 from public.lists l where l.id = list_id and l.user_id = auth.uid()));
 
--- follows: leitura pública; só o seguidor cria/apaga
+-- follows: leitura pÃºblica; sÃ³ o seguidor cria/apaga
 create policy "follows_select" on public.follows for select using (true);
 create policy "follows_insert" on public.follows for insert with check (auth.uid() = follower_id);
 create policy "follows_delete" on public.follows for delete using (auth.uid() = follower_id);

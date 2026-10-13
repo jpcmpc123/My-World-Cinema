@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 @theme {
   --color-lb-bg: #14181c;
@@ -47,7 +47,7 @@ body::before {
   background-repeat: repeat;
 }
 
-/* Custom Letterboxd scrollbar */
+/* Custom MyWorld scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

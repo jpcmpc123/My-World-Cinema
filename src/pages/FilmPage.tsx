@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Eye,
@@ -148,40 +148,23 @@ export const FilmPage: React.FC = () => {
   const isOdyssey = movie.id === 1368337;
   const isPridePrejudice = movie.id === 4348;
 
-  // Proportional Letterboxd stats
+  // Proportional MyWorld stats
   const watchedStat = isPridePrejudice ? 3300000 : isOdyssey ? 4800000 : Math.max(35000, (movie.vote_count || 100) * 350);
   const ratingsStat = isPridePrejudice ? 468000 : isOdyssey ? 594000 : Math.max(8000, (movie.vote_count || 100) * 50);
   const likesStat = isPridePrejudice ? 1300000 : isOdyssey ? 2100000 : Math.max(12000, (movie.vote_count || 100) * 140);
   const listsStat = isPridePrejudice ? 470 : isOdyssey ? 113 : Math.max(120, Math.round((movie.vote_count || 100) * 0.05));
 
-  // Short URL identifier for Letterboxd share bar
-  const shortUrl =
-    isPridePrejudice
-      ? 'https://boxd.it/24u8'
-      : isOdyssey
-      ? 'https://boxd.it/QFQU'
-      : `https://boxd.it/${(movie.id % 10000).toString(36)}`;
-
-  // Curated Letterboxd high-res backdrops and posters for pixel-perfect match
-  const LETTERBOXD_BACKDROPS: Record<number, string> = {
-    4348: 'https://a.ltrbxd.com/resized/sm/upload/zk/e2/qu/vg/pride-and-prejudice-1200-1200-675-675-crop-000000.jpg?v=630ff9c95f',
-    1368337: 'https://a.ltrbxd.com/resized/sm/upload/vn/7k/d6/d7/odyssey-1200-1200-675-675-crop-000000.jpg?v=9f3eb79026',
-  };
-
-  const LETTERBOXD_POSTERS: Record<number, string> = {
-    1368337: 'https://a.ltrbxd.com/resized/film-poster/1/2/5/5/3/9/4/1255394-the-odyssey-2026-0-600-0-900-crop.jpg?v=1eed046d0c',
-  };
+  // Sharable film URL
+  const shortUrl = window.location.href;
 
   const override = movieOverrides[movie.id];
 
   const backdropUrl =
     override?.backdrop ||
-    LETTERBOXD_BACKDROPS[movie.id] ||
     (movie.backdrop_path ? tmdb.getBackdropUrl(movie.backdrop_path, 'original') : null);
 
   const posterUrl =
     override?.poster ||
-    LETTERBOXD_POSTERS[movie.id] ||
     (movie.poster_path ? tmdb.getImageUrl(movie.poster_path, 'w500') : '');
 
   const handleCopyLink = () => {
@@ -191,7 +174,7 @@ export const FilmPage: React.FC = () => {
   };
 
   const shareTwitter = () => {
-    const text = encodeURIComponent(`${movie.title} (${releaseYear}) on Letterboxd: ${window.location.href}`);
+    const text = encodeURIComponent(`${movie.title} (${releaseYear}) on MyWorld: ${window.location.href}`);
     window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
   };
 
@@ -217,7 +200,7 @@ export const FilmPage: React.FC = () => {
                   'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 40%, rgba(0,0,0,0) 92%), radial-gradient(ellipse 120% 90% at 50% 35%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%)',
               }}
             />
-            {/* Soft edge blends — fade to page bg, no rectangular edges */}
+            {/* Soft edge blends â€” fade to page bg, no rectangular edges */}
             <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-lb-bg/90 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-lb-bg from-15% via-lb-bg/60 to-transparent" />
             <div className="absolute inset-y-0 left-0 w-24 md:w-56 bg-gradient-to-r from-lb-bg via-lb-bg/40 to-transparent" />
@@ -226,7 +209,7 @@ export const FilmPage: React.FC = () => {
         </div>
       )}
 
-      {/* 2. Main Content Container: 3-column letterboxd layout */}
+      {/* 2. Main Content Container: 3-column myworld layout */}
       <div
         className={`relative z-10 max-w-[960px] mx-auto px-4 pb-16 ${
           backdropUrl ? 'pt-[400px] md:pt-[460px]' : 'pt-8'
@@ -247,7 +230,7 @@ export const FilmPage: React.FC = () => {
               />
             </div>
 
-            {/* Letterboxd 4-metric Badge Row directly under poster */}
+            {/* MyWorld 4-metric Badge Row directly under poster */}
             <div className="w-[230px] border-b border-lb-elevated py-2 px-1 flex items-center justify-between text-xs select-none">
               <div className="flex items-center gap-1.5" title={`${watchedStat.toLocaleString()} watched`}>
                 <Eye className="w-4 h-4 text-lb-green" />
@@ -317,7 +300,7 @@ export const FilmPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Tagline (Letterboxd uppercase tracking) */}
+              {/* Tagline (MyWorld uppercase tracking) */}
               {movie.tagline && (
                 <p className="uppercase tracking-[0.14em] font-semibold text-[10px] text-lb-muted mt-2 leading-snug">
                   {movie.tagline.replace(/^"|"$/g, '')}
@@ -330,7 +313,7 @@ export const FilmPage: React.FC = () => {
               <p>{movie.overview || 'Synopsis not available for this film.'}</p>
             </div>
 
-            {/* Letterboxd Tabs Bar: Cast, Crew, Details, Genres */}
+            {/* MyWorld Tabs Bar: Cast, Crew, Details, Genres */}
             <div className="pt-2">
               <div className="flex items-center gap-6 border-b border-lb-elevated text-[11px] uppercase font-bold tracking-wider pb-1">
                 <button
@@ -550,7 +533,7 @@ export const FilmPage: React.FC = () => {
                             className="w-6 h-6 rounded-full object-cover border border-lb-elevated"
                           />
                           <span className="font-bold text-white">{rev.author.displayName}</span>
-                          <span className="text-lb-green">★ {rev.rating}</span>
+                          <span className="text-lb-green">â˜… {rev.rating}</span>
                         </div>
                         <span className="text-lb-muted">
                           {new Date(rev.createdAt).toLocaleDateString()}
@@ -567,8 +550,8 @@ export const FilmPage: React.FC = () => {
                       <div className="w-6 h-6 rounded-full bg-lb-green/20 border border-lb-green flex items-center justify-center text-[10px] font-bold text-lb-green">
                         LB
                       </div>
-                      <span className="font-bold text-white">letterboxd_curator</span>
-                      <span className="text-lb-green">★★★★★</span>
+                      <span className="font-bold text-white">myworld_curator</span>
+                      <span className="text-lb-green">â˜…â˜…â˜…â˜…â˜…</span>
                     </div>
                     <span className="text-lb-muted">Community highlight</span>
                   </div>
@@ -585,7 +568,7 @@ export const FilmPage: React.FC = () => {
               (Strictly NO Pro / Patron ads)
               ======================================================== */}
           <div className="w-full md:w-[235px] flex-shrink-0 space-y-5">
-            {/* Letterboxd Action Card */}
+            {/* MyWorld Action Card */}
             <div className="bg-lb-border-light border border-[#556677] rounded-[4px] shadow-lg overflow-hidden text-xs text-lb-text">
               
               {/* Row 1: Watch, Like, Watchlist 3-column circular buttons */}
@@ -737,7 +720,7 @@ export const FilmPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* Row 4: Share Link (Collapsible - matches Letterboxd authentic look) */}
+              {/* Row 4: Share Link (Collapsible - matches MyWorld authentic look) */}
               <div className="border-t border-[#384654] bg-lb-border-light">
                 <button
                   onClick={() => setShowSharePanel(!showSharePanel)}
@@ -836,7 +819,7 @@ export const FilmPage: React.FC = () => {
           <div className="relative w-full max-w-3xl bg-lb-bg border border-lb-elevated rounded-lg shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-lb-elevated bg-lb-surface">
               <h3 className="text-sm font-semibold text-white">
-                {movie.title} — Official Trailer
+                {movie.title} â€” Official Trailer
               </h3>
               <button
                 onClick={() => setShowTrailerModal(false)}

@@ -1,7 +1,7 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 
 async function extract() {
-  console.log('Fetching Letterboxd RSS feed for user jpcmpc23...');
+  console.log('Fetching film RSS feed (external) for user jpcmpc23...');
   const res = await fetch('https://letterboxd.com/jpcmpc23/rss/', {
     headers: { 'User-Agent': 'Mozilla/5.0' },
   });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useParams, Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, LayoutGrid, List as ListIcon, Star, Eye, ChevronDown } from 'lucide-react';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
@@ -55,7 +55,7 @@ export const FilmsPage: React.FC = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // Decade list supported by Letterboxd
+  // Decade list supported by MyWorld
   const allDecades = [
     2020, 2010, 2000, 1990, 1980, 1970, 1960, 1950, 1940, 1930, 1920, 1910, 1900, 1890, 1880,
   ];
@@ -473,7 +473,7 @@ export const FilmsPage: React.FC = () => {
                     ) : null}
                   </div>
                   <p className="text-xs text-lb-text line-clamp-2 leading-relaxed">
-                    {movie.overview || 'Sinopse não disponível.'}
+                    {movie.overview || 'Sinopse nÃ£o disponÃ­vel.'}
                   </p>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Star } from 'lucide-react';
 
 interface RatingHistogramProps {
@@ -13,7 +13,7 @@ export const RatingHistogram: React.FC<RatingHistogramProps> = ({
   // Convert 0-10 scale to 0-5
   const ratingOutOf5 = averageRating > 5 ? averageRating / 2 : averageRating;
 
-  // Generate realistic Letterboxd bell-curve / skewed distribution centered around the rating
+  // Generate realistic MyWorld bell-curve / skewed distribution centered around the rating
   const ratings = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
   const peak = ratingOutOf5;
 
@@ -50,7 +50,7 @@ export const RatingHistogram: React.FC<RatingHistogramProps> = ({
         </div>
       </div>
 
-      {/* 10-bar Letterboxd Signature Green Histogram */}
+      {/* 10-bar MyWorld Signature Green Histogram */}
       <div className="flex items-end justify-between gap-1 h-14 pt-2 pb-1 border-b border-lb-elevated/60">
         {distribution.map((val, idx) => {
           const heightPercent = Math.max(8, Math.round((val / maxVal) * 100));
@@ -63,7 +63,7 @@ export const RatingHistogram: React.FC<RatingHistogramProps> = ({
             >
               {/* Tooltip on hover */}
               <div className="absolute -top-7 hidden group-hover:flex flex-col items-center bg-lb-bg border border-lb-elevated text-white text-[10px] py-0.5 px-1.5 rounded pointer-events-none z-20 shadow-lg whitespace-nowrap">
-                <span>{ratingLabel.toFixed(1)} ★</span>
+                <span>{ratingLabel.toFixed(1)} â˜…</span>
               </div>
 
               {/* Green Bar */}
@@ -80,8 +80,8 @@ export const RatingHistogram: React.FC<RatingHistogramProps> = ({
 
       {/* Star scale footer */}
       <div className="flex justify-between items-center text-[10px] text-lb-muted mt-1.5 px-0.5 font-medium">
-        <span>★</span>
-        <span>★★★★★</span>
+        <span>â˜…</span>
+        <span>â˜…â˜…â˜…â˜…â˜…</span>
       </div>
     </div>
   );

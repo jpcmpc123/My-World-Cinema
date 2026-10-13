@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useParams, Navigate } from 'react-router-dom';
 import { MoreHorizontal, Search, Rss, Heart } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -118,12 +118,12 @@ export const ProfilePage: React.FC = () => {
   // Perfil remoto (Supabase) quando a URL aponta para outro username
   const remote = useProfileByUsername(username, user.username);
 
-  // Dados efetivamente exibidos (remoto se houver, senão o estado local)
+  // Dados efetivamente exibidos (remoto se houver, senÃ£o o estado local)
   const viewUsername = remote.isRemote && remote.profile ? remote.profile.username : user.username;
   const viewAvatar = remote.isRemote && remote.profile?.avatar_url ? remote.profile.avatar_url : user.avatarUrl;
   const viewLogs = remote.isRemote ? remote.logs : logs;
 
-  // Estatísticas reais, derivadas dos dados exibidos (sem números de demo)
+  // EstatÃ­sticas reais, derivadas dos dados exibidos (sem nÃºmeros de demo)
   const currentYear = String(new Date().getFullYear());
   const viewFilmsCount = new Set(viewLogs.map((l) => l.movieId)).size;
   const viewThisYearCount = viewLogs.filter((l) =>
@@ -206,7 +206,7 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Subnav Tabs (Matching exact Letterboxd order) */}
+      {/* 2. Subnav Tabs (Matching exact MyWorld order) */}
       <div className="border-b border-lb-elevated flex items-center justify-between text-xs font-semibold overflow-x-auto pb-0.5">
         <div className="flex items-center gap-6">
           {[
@@ -246,7 +246,7 @@ export const ProfilePage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-2">
           {/* LEFT COLUMN (8 cols): Favorite Films + Recent Activity */}
           <div className="lg:col-span-8 space-y-10">
-            {/* FAVORITE FILMS (THE TOP 4) — local user only */}
+            {/* FAVORITE FILMS (THE TOP 4) â€” local user only */}
             {!remote.isRemote && (
             <section className="space-y-3">
               <div className="border-b border-lb-elevated pb-1.5 flex items-center justify-between">
@@ -462,10 +462,10 @@ export const ProfilePage: React.FC = () => {
                     </td>
                     <td className="py-2.5 px-4 text-lb-muted">{log.movieYear}</td>
                     <td className="py-2.5 px-4 text-lb-green font-bold">
-                      {log.rating > 0 ? `${log.rating} ★` : '—'}
+                      {log.rating > 0 ? `${log.rating} â˜…` : 'â€”'}
                     </td>
                     <td className="py-2.5 px-4 text-center">
-                      {log.liked ? <Heart className="w-3.5 h-3.5 fill-lb-orange text-lb-orange inline" /> : '—'}
+                      {log.liked ? <Heart className="w-3.5 h-3.5 fill-lb-orange text-lb-orange inline" /> : 'â€”'}
                     </td>
                   </tr>
                 ))}
@@ -492,7 +492,7 @@ export const ProfilePage: React.FC = () => {
                     <span className="text-lb-muted">{l.watchedDate}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-lb-green font-bold">★ {l.rating}</span>
+                    <span className="text-lb-green font-bold">â˜… {l.rating}</span>
                     {l.liked && <Heart className="w-3.5 h-3.5 fill-lb-orange text-lb-orange" />}
                   </div>
                   <p className="text-lb-white leading-relaxed">{l.reviewText}</p>

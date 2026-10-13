@@ -1,93 +1,43 @@
-# Letterboxd Clone (Frontend Completo)
+﻿# MyWorld — My World Cinema
 
-Um clone completo e de alta fidelidade do frontend do **Letterboxd**, construído com **React 19**, **Vite**, **TypeScript**, **Tailwind CSS v4** e integrado em tempo real com a **API do TMDb (The Movie Database)**.
+**MyWorld** é uma rede social original de descoberta de filmes: registre o que você assistiu, avalie com estrelas, escreva críticas, monte listas, organize seu diário de cinema e descubra o próximo filme da sua vida. Construído com **React 19**, **Vite**, **TypeScript**, **Tailwind CSS v4** e dados em tempo real da **API do TMDb**.
 
----
-
-## 🎨 Principais Recursos e Telas
-
-1. **Design System Oficial do Letterboxd**:
-   - Tema escuro cinematográfico (`#14181c`, `#1c2228`, `#2c3440`).
-   - Acentos oficiais: Verde (`#00e054`), Azul (`#40bcf4`), Laranja (`#ff8000`).
-   - Pôsteres com proporção estrita `2:3`, cantos arredondados e borda hover verde.
-   - Sistema de avaliação por **estrelas com precisão de meia-estrela** (de `0.5` a `5.0` estrelas).
-   - Histograma de distribuição de avaliações em **10 barras verdes**.
-
-2. **Navegação & Header**:
-   - Logotipo oficial de 3 círculos coloridos.
-   - **Busca Typeahead em tempo real**: busca filmes no TMDb conforme você digita, com pré-visualização de pôster, título e ano.
-   - Botão rápido de ação primária **`+ LOG`**.
-   - Menu suspenso de perfil.
-
-3. **Modal Global de Log Rápido (`+ LOG`)**:
-   - Busca/seleção de filme.
-   - Registro de data da sessão (com atalho para a data atual).
-   - Indicador de "Rewatch" (já assistido antes).
-   - Seletor interativo de estrelas e botão de curtir (coração).
-   - Campo para resenha/crítica e marcador de spoilers (*"Contains spoilers"*).
-   - Tags personalizadas.
-   - Celebração com confetes e sincronização com o Diário.
-
-4. **Página de Detalhes do Filme (`/film/:id`)**:
-   - Backdrop panorâmico de alta resolução com máscara de gradiente suave.
-   - Painel lateral de ações (Assistido, Curtido, Watchlist, Avaliar, Logar, Compartilhar).
-   - Gráfico de histograma de avaliações da comunidade com média aritmética.
-   - Onde assistir (Streaming providers via JustWatch/TMDb).
-   - Abas com Elenco (fotos e personagens), Equipe técnica (Diretor, Roteirista, Diretor de Fotografia), Detalhes e Gêneros.
-   - Críticas da comunidade e carrossel de filmes recomendados/similares.
-
-5. **Catálogo de Filmes (`/films`)**:
-   - Filtros dinâmicos por Gênero (Ação, Ficção Científica, Drama, Terror, etc.) e Década (2020s, 2010s, 2000s, 90s, 80s, etc.).
-   - Ordenação por Popularidade, Mais Bem Avaliados ou Data de Lançamento.
-   - Paginação completa.
-
-6. **Perfil do Usuário (`/profile` ou `/:username`)**:
-   - Os icônicos **"4 Filmes Favoritos"** (*The Top 4*) com modal para trocar qualquer um dos 4 pôsteres.
-   - Estatísticas: total de filmes assistidos, filmes vistos no ano e total de listas.
-   - Abas dedicadas: *Overview*, *Films*, *Diary*, *Reviews*, *Watchlist*, *Lists* e *Likes*.
-   - Edição de perfil (nome, biografia, localização e website).
-
-7. **Diário de Cinema (`/diary`)**:
-   - Tabela cronológica completa estilo calendário com dia, miniatura, título, ano, estrelas, coração, ícone de rewatch e link de resenha.
-   - Filtro por ano.
-
-8. **Watchlist com Roleta de Sorteio (`/watchlist`)**:
-   - Grade de filmes salvos para assistir.
-   - Botão **Shuffle ("Pick For Me")**: roleta animada que sorteia aleatoriamente um filme da sua watchlist para você assistir esta noite.
-
-9. **Listas e Criador de Listas (`/lists`, `/list/:id`, `/list/new`)**:
-   - Visualização de listas da comunidade com leque de pôsteres sobrepostos.
-   - Criação de listas personalizadas com modo Ranqueado (1..N) ou Não-ranqueado, busca de filmes, reordenação (subir/descer) e notas individuais por filme.
-
-10. **Comunidade & Journal (`/members`, `/journal`)**:
-    - Diretório de membros e críticos com opção de seguir/deixar de seguir.
-    - Seção editorial com matérias sobre festivais, ensaios e cinema autoral.
+> MyWorld é um projeto independente, sem afiliação a nenhuma outra plataforma de cinema.
 
 ---
 
-## 🚀 Como Rodar o Projeto
+## Principais Recursos
 
-No terminal do projeto (`Cloneleterboxd`), execute:
+1. **Design cinematográfico**: tema escuro imersivo, acentos verde/azul/laranja, pôsteres 2:3, avaliação por meia-estrela (0.5 a 5.0) e histograma em 10 barras.
+2. **Busca typeahead em tempo real** com prévia de pôster, título e ano; botão rápido **+ LOG**.
+3. **Log rápido**: data, rewatch, estrelas, curtir, resenha com spoiler tag, tags e confetes.
+4. **Página do filme**: backdrop panorâmico, ações, histograma da comunidade, onde assistir (TMDb), elenco, equipe, críticas e recomendações.
+5. **Catálogo**: filtros por gênero e década, ordenação e paginação.
+6. **Perfil**: Top 4 filmes favoritos editáveis, estatísticas reais e abas (Films, Diary, Reviews, Watchlist, Lists, Likes).
+7. **Diário**: tabela cronológica com filtro por ano.
+8. **Watchlist com roleta**: o botão **Pick For Me** sorteia o filme da noite.
+9. **Listas ranqueadas** com notas por filme.
+10. **Comunidade & Journal**.
+
+## Rodar local
 
 ```bash
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-Acesse no seu navegador: `http://localhost:5173`.
+Acesse `http://localhost:5173`.
 
----
+## Site no ar
 
-## 🌐 Site no ar
+**https://jpcmpc123.github.io/My-World-Cinema/** — hospedado 100% grátis e permanente no GitHub Pages.
 
-**[https://jpcmpc123.github.io/My-World-Cinema/](https://jpcmpc123.github.io/My-World-Cinema/)** — hospedado 100% grátis e permanente no GitHub Pages.
+## Editar online
 
-## ✏️ Editar online (sem instalar nada)
-
-1. Acesse [github.com/jpcmpc123/My-World-Cinema](https://github.com/jpcmpc123/My-World-Cinema) e pressione **`.`** (ponto) — abre o VS Code no navegador (github.dev).
-2. Edite os arquivos, dê **commit** direto pela web (Ctrl+Shift+G → commit na branch `main`),
+1. Acesse https://github.com/jpcmpc123/My-World-Cinema e pressione `.` (VS Code no navegador).
+2. Edite e faça commit na `main`.
 3. O GitHub Actions builda e publica automaticamente.
 
-## 🚀 Deploy automático
+## Backend
 
-Cada push na `main` dispara o workflow [.github/workflows/deploy.yml](.github/workflows/deploy.yml) que builda e publica no GitHub Pages.
-
+Autenticação e banco via **Supabase** (migrations em `supabase/`).

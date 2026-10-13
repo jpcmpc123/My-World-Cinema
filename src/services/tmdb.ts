@@ -1,5 +1,13 @@
-const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || 'a1feb41f9ec121a701904c5de2e4238d';
-const TMDB_ACCESS_TOKEN = import.meta.env.VITE_TMDB_ACCESS_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMWZlYjQxZjllYzEyMWE3MDE5MDRjNWRlMmU0MjM4ZCIsIm5iZiI6MTc2MzE2NjEwMi44NTc5OTk4LCJzdWIiOiI2OTE3Yzc5NjM1MmIyNDY3ZTdhYzJjODQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.bGREu2pRTZIe2R2zzobKnXADa4XIKrxfELSIkvQLBhM';
+// ATENÇÃO: nunca recoloque chaves reais como fallback aqui — use apenas
+// variáveis de ambiente (.env local ou secrets de CI). Chaves hardcoded
+// vazam no repositório público mesmo se as envs estiverem corretas.
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY as string | undefined;
+const TMDB_ACCESS_TOKEN = import.meta.env.VITE_TMDB_ACCESS_TOKEN as string | undefined;
+
+if (!TMDB_API_KEY || !TMDB_ACCESS_TOKEN) {
+  // Falha rápida e visível em dev; em produção o .env commitado fornece os valores.
+  console.error('[tmdb] VITE_TMDB_API_KEY / VITE_TMDB_ACCESS_TOKEN não definidas. Crie um .env local.');
+}
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
@@ -123,12 +131,14 @@ export interface TMDBResponse<T> {
   total_results: number;
 }
 
-const headers = {
-  Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`,
-  'Content-Type': 'application/json',
-};
-
 async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
+  if (!TMDB_API_KEY || !TMDB_ACCESS_TOKEN) {
+    throw new Error('TMDB não configurado: defina VITE_TMDB_API_KEY e VITE_TMDB_ACCESS_TOKEN no .env');
+  }
+  const headers = {
+    Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`,
+    'Content-Type': 'application/json',
+  };
   const url = new URL(`${BASE_URL}${endpoint}`);
   // Add API Key as fallback alongside Bearer token
   url.searchParams.append('api_key', TMDB_API_KEY);

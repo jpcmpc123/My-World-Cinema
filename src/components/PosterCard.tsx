@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Heart, Star, MoreHorizontal } from 'lucide-react';
 import { tmdb } from '../services/tmdb';
@@ -81,12 +81,12 @@ export const PosterCard: React.FC<PosterCardProps> = ({
           )}
         </Link>
 
-        {/* Hover Overlay estilo Letterboxd — wrapper sem eventos; apenas a pill do rodapé é clicável */}
+        {/* Hover Overlay estilo MyWorld â€” wrapper sem eventos; apenas a pill do rodapÃ© Ã© clicÃ¡vel */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-end justify-center">
-          {/* Fundo escurecido (puro pointer-events-none, o link do pôster continua clicável) */}
+          {/* Fundo escurecido (puro pointer-events-none, o link do pÃ´ster continua clicÃ¡vel) */}
           <div className="absolute inset-0 bg-black/50" />
 
-          {/* Pill do rodapé com 3 ações — compacta por padrão, maior quando o pôster é grande */}
+          {/* Pill do rodapÃ© com 3 aÃ§Ãµes â€” compacta por padrÃ£o, maior quando o pÃ´ster Ã© grande */}
           <div className="relative z-10 mb-1.5 lg:mb-2 flex items-center gap-0.5 lg:gap-1 bg-black/70 backdrop-blur-xs rounded-full px-1 py-0.5 lg:px-1.5 lg:py-1 pointer-events-auto">
             <button
               onClick={(e) => handleActionClick(e, () => toggleWatched(movie.id))}
@@ -144,7 +144,7 @@ export const PosterCard: React.FC<PosterCardProps> = ({
           )}
           {userRating && (
             <div className="bg-lb-bg/90 text-lb-green font-semibold text-[10px] px-1 py-0.2 rounded border border-lb-green/30">
-              {userRating}★
+              {userRating}â˜…
             </div>
           )}
         </div>
