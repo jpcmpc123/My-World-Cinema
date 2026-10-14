@@ -197,16 +197,30 @@ export const FilmPage: React.FC = () => {
               className="w-full h-full object-cover object-[center_25%]"
               style={{
                 maskImage:
-                  'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 40%, rgba(0,0,0,0) 92%), radial-gradient(ellipse 120% 90% at 50% 35%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%)',
+                  'radial-gradient(ellipse 105% 85% at 50% 32%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)',
                 WebkitMaskImage:
-                  'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 40%, rgba(0,0,0,0) 92%), radial-gradient(ellipse 120% 90% at 50% 35%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%)',
+                  'radial-gradient(ellipse 105% 85% at 50% 32%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)',
+              }}
+            />
+            {/* Névoa foscas nas bordas: cópia borrada do backdrop visível só nas bordas */}
+            <img loading="lazy" decoding="async"
+              src={backdropUrl}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover object-[center_25%] scale-110"
+              style={{
+                filter: 'blur(26px) brightness(0.75) saturate(0.8)',
+                maskImage:
+                  'radial-gradient(ellipse 90% 75% at 50% 32%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.9) 100%)',
+                WebkitMaskImage:
+                  'radial-gradient(ellipse 90% 75% at 50% 32%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.9) 100%)',
               }}
             />
             {/* Soft edge blends — fade to page bg, no rectangular edges */}
             <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-lb-bg/90 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-lb-bg from-15% via-lb-bg/60 to-transparent" />
-            <div className="absolute inset-y-0 left-0 w-24 md:w-56 bg-gradient-to-r from-lb-bg via-lb-bg/40 to-transparent" />
-            <div className="absolute inset-y-0 right-0 w-24 md:w-56 bg-gradient-to-l from-lb-bg via-lb-bg/40 to-transparent" />
+            <div className="absolute inset-y-0 left-0 w-24 md:w-72 bg-gradient-to-r from-lb-bg via-lb-bg/40 to-transparent" />
+            <div className="absolute inset-y-0 right-0 w-24 md:w-72 bg-gradient-to-l from-lb-bg via-lb-bg/40 to-transparent" />
           </div>
         </div>
       )}
