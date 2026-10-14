@@ -146,6 +146,13 @@ export interface TMDBResponse<T> {
   total_results: number;
 }
 
+// Cache em memória com TTL: evita refazer chamadas idênticas do TMDb ao
+// navegar entre páginas (ex.: Home → Filme → voltar). Também deduplica
+// chamadas simultâneas da mesma URL (React StrictMode / mounts paralelos).
+const TMDB_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
+const tmdbCache = new Map<string, { data: unknown; expires: number }>();
+const tmdbInflight = new Map<string, Promise<unknown>>();
+
 async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
   if (!TMDB_API_KEY || !TMDB_ACCESS_TOKEN) {
     throw new Error('TMDB não configurado: defina VITE_TMDB_API_KEY e VITE_TMDB_ACCESS_TOKEN no .env');
@@ -157,27 +164,58 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string 
   const url = new URL(`${BASE_URL}${endpoint}`);
   // Add API Key as fallback alongside Bearer token
   url.searchParams.append('api_key', TMDB_API_KEY);
-  
+
   Object.entries(params).forEach(([key, val]) => {
     if (val !== undefined && val !== null && val !== '') {
       url.searchParams.append(key, String(val));
     }
   });
 
-  const res = await fetch(url.toString(), { headers });
-  if (!res.ok) {
-    throw new Error(`TMDB error ${res.status}: ${res.statusText}`);
+  const urlString = url.toString();
+
+  // Cache hit?
+  const cached = tmdbCache.get(urlString);
+  if (cached && cached.expires > Date.now()) {
+    return cached.data as T;
   }
-  const data = await res.json();
-  // Esconde itens sem pôster (no site todo): em listas de filmes, descarta
-  // resultados com poster_path nulo. Itens sem a chave (ex.: pessoas em
-  // buscas multi) ou com pôster preenchido passam normalmente.
-  if (data && Array.isArray(data.results)) {
-    data.results = data.results.filter(
-      (r: { poster_path?: string | null }) => !('poster_path' in r) || Boolean(r.poster_path),
-    );
+
+  // Requisição idêntica já em andamento? Reutiliza a mesma Promise.
+  const inflight = tmdbInflight.get(urlString);
+  if (inflight) {
+    return inflight as Promise<T>;
   }
-  return data as T;
+
+  const promise = (async () => {
+    const res = await fetch(urlString, { headers });
+    if (!res.ok) {
+      throw new Error(`TMDB error ${res.status}: ${res.statusText}`);
+    }
+    const data = await res.json();
+    // Esconde itens sem pôster (no site todo): em listas de filmes, descarta
+    // resultados com poster_path nulo. Itens sem a chave (ex.: pessoas em
+    // buscas multi) ou com pôster preenchido passam normalmente.
+    if (data && Array.isArray(data.results)) {
+      data.results = data.results.filter(
+        (r: { poster_path?: string | null }) => !('poster_path' in r) || Boolean(r.poster_path),
+      );
+    }
+    tmdbCache.set(urlString, { data, expires: Date.now() + TMDB_CACHE_TTL_MS });
+    // Limpeza simples: evita crescimento ilimitado do cache em sessões longas.
+    if (tmdbCache.size > 300) {
+      const now = Date.now();
+      for (const [key, entry] of tmdbCache) {
+        if (entry.expires <= now) tmdbCache.delete(key);
+      }
+    }
+    return data as T;
+  })();
+
+  tmdbInflight.set(urlString, promise);
+  try {
+    return await promise;
+  } finally {
+    tmdbInflight.delete(urlString);
+  }
 }
 
 export const tmdb = {

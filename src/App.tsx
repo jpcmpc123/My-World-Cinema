@@ -5,8 +5,22 @@ import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
-import { LogModal } from './components/LogModal';
-import { Top4PickerModal } from './components/Top4PickerModal';
+import { useApp } from './context/AppContext';
+
+// Modais globais carregados sob demanda: fora do bundle inicial.
+const LogModal = lazy(() => import('./components/LogModal').then((m) => ({ default: m.LogModal })));
+const Top4PickerModal = lazy(() => import('./components/Top4PickerModal').then((m) => ({ default: m.Top4PickerModal })));
+
+// Só monta (e baixa o chunk de) cada modal quando ele está aberto.
+function GlobalModals() {
+  const { isLogModalOpen, isTop4PickerOpen } = useApp();
+  return (
+    <Suspense fallback={null}>
+      {isLogModalOpen && <LogModal />}
+      {isTop4PickerOpen && <Top4PickerModal />}
+    </Suspense>
+  );
+}
 
 // Code splitting: cada página vira um chunk carregado sob demanda,
 // reduzindo o bundle inicial (antes um único chunk > 500 KB).
@@ -39,7 +53,7 @@ export function App() {
     <AuthProvider>
     <AppProvider>
       <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <div className="min-h-screen bg-lb-bg text-lb-text flex flex-col selection:bg-lb-green selection:text-lb-bg">
+        <div className="min-h-screen text-lb-text flex flex-col selection:bg-lb-green selection:text-lb-bg">
           {/* Main Top Header */}
           <Header />
 
@@ -77,9 +91,8 @@ export function App() {
             </Suspense>
           </main>
 
-          {/* MyWorld Global Modals */}
-          <LogModal />
-          <Top4PickerModal />
+          {/* MyWorld Global Modals (lazy) */}
+          <GlobalModals />
 
           {/* Main Footer */}
           <Footer />

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -86,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [loadProfile]);
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = useCallback(async (email: string, password: string, username: string) => {
     if (!supabase) return { error: 'Supabase is not configured.' };
     const { error } = await supabase.auth.signUp({
       email,
@@ -94,15 +94,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       options: { data: { username, display_name: username } },
     });
     return { error: error ? error.message : null };
-  };
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     if (!supabase) return { error: 'Supabase is not configured.' };
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error ? error.message : null };
-  };
+  }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     if (!supabase) return { error: 'Supabase is not configured.' };
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -113,13 +113,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
     });
     return { error: error ? error.message : null };
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
     setProfile(null);
-  };
+  }, []);
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      session,
+      user: session?.user ?? null,
+      profile,
+      loading,
+      isAuthenticated: !!session?.user,
+      signUp,
+      signIn,
+      signInWithGoogle,
+      signOut,
+    }),
+    [session, profile, loading, signUp, signIn, signInWithGoogle, signOut]
+  );
 
   // Bloqueia o primeiro render até a sessão do Supabase ser resolvida:
   // evita "flash" dos dados locais/demonstração em páginas que dependem da conta.
@@ -132,19 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return (
-    <AuthContext.Provider
-      value={{
-        session,
-        user: session?.user ?? null,
-        profile,
-        loading,
-        isAuthenticated: !!session?.user,
-        signUp,
-        signIn,
-        signInWithGoogle,
-        signOut,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

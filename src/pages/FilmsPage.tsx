@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useSearchParams, useParams, Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, LayoutGrid, List as ListIcon, Star, Eye, ChevronDown } from 'lucide-react';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
@@ -97,14 +97,7 @@ export const FilmsPage: React.FC = () => {
           pagesToFetch: 6,
         });
 
-        let results = res.results;
-        if (watchedFilter === 'watched') {
-          results = results.filter((m) => isMovieWatched(m.id));
-        } else if (watchedFilter === 'unwatched') {
-          results = results.filter((m) => !isMovieWatched(m.id));
-        }
-
-        setMovies(results);
+        setMovies(res.results);
         setTotalResults(res.total_results > 0 ? res.total_results : 138599);
         setTotalPages(Math.max(1, Math.min(res.total_pages, 500)));
       } catch (err) {
@@ -114,7 +107,15 @@ export const FilmsPage: React.FC = () => {
       }
     }
     loadCatalog();
-  }, [parsedDecade, parsedYear, currentGenre, currentProvider, currentSort, currentPage, watchedFilter]);
+  }, [parsedDecade, parsedYear, currentGenre, currentProvider, currentSort, currentPage]);
+
+  // Filtro watched/unwatched é client-side: sem refetch ao alternar
+  // (antes disparava 6 requisições TMDb a cada toggle do filtro).
+  const filteredMovies = useMemo(() => {
+    if (watchedFilter === 'watched') return movies.filter((m) => isMovieWatched(m.id));
+    if (watchedFilter === 'unwatched') return movies.filter((m) => !isMovieWatched(m.id));
+    return movies;
+  }, [movies, watchedFilter, isMovieWatched]);
 
   const updateParam = (key: string, value: string | undefined) => {
     const next = new URLSearchParams(searchParams);
@@ -433,17 +434,17 @@ export const FilmsPage: React.FC = () => {
             <div key={i} className="aspect-[2/3] bg-lb-surface rounded-xs border border-lb-elevated animate-pulse" />
           ))}
         </div>
-      ) : movies.length > 0 ? (
+      ) : filteredMovies.length > 0 ? (
         viewMode === 'grid' ? (
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
-            {movies.map((movie) => (
+            {filteredMovies.map((movie) => (
               <PosterCard key={movie.id} movie={movie} size="fluid" />
             ))}
           </div>
         ) : (
           /* Detailed List View */
           <div className="space-y-3 max-w-4xl mx-auto">
-            {movies.map((movie) => (
+            {filteredMovies.map((movie) => (
               <div
                 key={movie.id}
                 className="bg-lb-surface border border-lb-elevated hover:border-lb-border-light rounded p-3 flex gap-4 transition-colors group"

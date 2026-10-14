@@ -186,7 +186,7 @@ export const FilmPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-lb-bg text-lb-text">
+    <div className="relative min-h-screen text-lb-text">
       {/* 1. Cinematic Hero Vignette Backdrop */}
       {backdropUrl && (
         <div className="absolute top-0 left-0 right-0 h-[480px] md:h-[540px] overflow-hidden -z-0 pointer-events-none flex justify-center">

@@ -1,4 +1,4 @@
-﻿import { defineConfig } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -11,4 +11,14 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Supabase (pesado) fica em chunk próprio → cache separado
+        manualChunks(id) {
+          if (id.includes('@supabase')) return 'supabase';
+        },
+      },
+    },
+  },
 })

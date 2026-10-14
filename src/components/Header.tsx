@@ -287,6 +287,8 @@ export const Header: React.FC = () => {
                         src={tmdb.getImageUrl(m.poster_path, 'w92')}
                         alt={m.title}
                         className="w-8 h-12 object-cover rounded bg-lb-bg shrink-0"
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-white truncate">{m.title}</p>

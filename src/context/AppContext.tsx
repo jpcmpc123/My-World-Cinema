@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { UserProfile, LogEntry, MovieList, Review } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
@@ -256,8 +256,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : {};
   });
 
-  const setMovieOverride = (movieId: number, override: { poster?: string; backdrop?: string }) => {
-    const next = { ...(movieOverrides[movieId] || {}), ...override };
+  // Refs-espelho do estado: permitem useCallback com deps mínimas (identidade
+  // estável) sem capturar closures stale. refs apenas de LEITURA nos callbacks.
+  const userRef = useRef(user); userRef.current = user;
+  const watchlistRef = useRef(watchlist); watchlistRef.current = watchlist;
+  const watchedIdsRef = useRef(watchedMovieIds); watchedIdsRef.current = watchedMovieIds;
+  const likedIdsRef = useRef(likedMovieIds); likedIdsRef.current = likedMovieIds;
+  const overridesRef = useRef(movieOverrides); overridesRef.current = movieOverrides;
+
+  const setMovieOverride = useCallback((movieId: number, override: { poster?: string; backdrop?: string }) => {
+    const next = { ...(overridesRef.current[movieId] || {}), ...override };
 
     setMovieOverrides((prev) => {
       const merged = { ...prev[movieId], ...override };
@@ -295,7 +303,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       })();
     }
-  };
+  }, [isAuthenticated, authUser]);
 
   // Modal controls
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -560,11 +568,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (error) console.error('Supabase film_logs insert error:', error);
   };
 
-  const updateUser = (updates: Partial<UserProfile>) => {
+  const updateUser = useCallback((updates: Partial<UserProfile>) => {
     setUser((prev) => ({ ...prev, ...updates }));
-  };
+  }, []);
 
-  const saveLog = (entry: Omit<LogEntry, 'id' | 'createdAt'>) => {
+  const saveLog = useCallback((entry: Omit<LogEntry, 'id' | 'createdAt'>) => {
     const newId = `log-${Date.now()}`;
     const newEntry: LogEntry = {
       ...entry,
@@ -575,14 +583,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLogs((prev) => [newEntry, ...prev]);
 
     // Update watched
-    if (!watchedMovieIds.includes(entry.movieId)) {
+    if (!watchedIdsRef.current.includes(entry.movieId)) {
       setWatchedMovieIds((prev) => [entry.movieId, ...prev]);
     }
 
     // Update liked
-    if (entry.liked && !likedMovieIds.includes(entry.movieId)) {
+    if (entry.liked && !likedIdsRef.current.includes(entry.movieId)) {
       setLikedMovieIds((prev) => [entry.movieId, ...prev]);
-    } else if (!entry.liked && likedMovieIds.includes(entry.movieId)) {
+    } else if (!entry.liked && likedIdsRef.current.includes(entry.movieId)) {
       setLikedMovieIds((prev) => prev.filter((id) => id !== entry.movieId));
     }
 
@@ -593,6 +601,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // If review exists, add to reviews list
     if (entry.reviewText.trim()) {
+      const u = userRef.current;
       const review: Review = {
         id: `rev-${Date.now()}`,
         movieId: entry.movieId,
@@ -600,10 +609,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         moviePoster: entry.moviePoster,
         movieYear: entry.movieYear,
         author: {
-          username: user.username,
-          displayName: user.displayName,
-          avatarUrl: user.avatarUrl,
-          isPro: user.isPro,
+          username: u.username,
+          displayName: u.displayName,
+          avatarUrl: u.avatarUrl,
+          isPro: u.isPro,
         },
         rating: entry.rating,
         liked: entry.liked,
@@ -618,14 +627,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     void persistFullLog(entry);
-  };
+  }, [isAuthenticated, authUser]);
 
-  const deleteLog = (id: string) => {
+  const deleteLog = useCallback((id: string) => {
     setLogs((prev) => prev.filter((item) => item.id !== id));
-  };
+  }, []);
 
-  const toggleWatchlist = (movie: MovieShort) => {
-    const exists = watchlist.some((m) => m.id === movie.id);
+  const toggleWatchlist = useCallback((movie: MovieShort) => {
+    const exists = watchlistRef.current.some((m) => m.id === movie.id);
     rememberMovie(movie);
     setWatchlist((prev) => {
       const wasInList = prev.some((m) => m.id === movie.id);
@@ -639,45 +648,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } else {
       void persistWatchlistAdd(movie);
     }
-  };
+  }, [isAuthenticated, authUser]);
 
-  const isMovieInWatchlist = (movieId: number) => {
-    return watchlist.some((m) => m.id === movieId);
-  };
+  const isMovieInWatchlist = useCallback((movieId: number) => {
+    return watchlistRef.current.some((m) => m.id === movieId);
+  }, []);
 
-  const toggleWatched = (movieId: number) => {
-    const wasWatched = watchedMovieIds.includes(movieId);
+  const toggleWatched = useCallback((movieId: number) => {
+    const wasWatched = watchedIdsRef.current.includes(movieId);
     setWatchedMovieIds((prev) =>
       prev.includes(movieId) ? prev.filter((id) => id !== movieId) : [movieId, ...prev]
     );
     void persistQuickLog(movieId, { watched: !wasWatched });
-  };
+  }, [isAuthenticated, authUser]);
 
-  const isMovieWatched = (movieId: number) => {
-    return watchedMovieIds.includes(movieId);
-  };
+  const isMovieWatched = useCallback((movieId: number) => {
+    return watchedIdsRef.current.includes(movieId);
+  }, []);
 
-  const toggleLikeMovie = (movieId: number) => {
-    const wasLiked = likedMovieIds.includes(movieId);
+  const toggleLikeMovie = useCallback((movieId: number) => {
+    const wasLiked = likedIdsRef.current.includes(movieId);
     setLikedMovieIds((prev) =>
       prev.includes(movieId) ? prev.filter((id) => id !== movieId) : [movieId, ...prev]
     );
-    if (watchedMovieIds.includes(movieId)) {
+    if (watchedIdsRef.current.includes(movieId)) {
       void persistQuickLog(movieId, { liked: !wasLiked });
     }
-  };
+  }, [isAuthenticated, authUser]);
 
-  const isMovieLiked = (movieId: number) => {
-    return likedMovieIds.includes(movieId);
-  };
+  const isMovieLiked = useCallback((movieId: number) => {
+    return likedIdsRef.current.includes(movieId);
+  }, []);
 
-  const setMovieRating = (movieId: number, rating: number) => {
+  const setMovieRating = useCallback((movieId: number, rating: number) => {
     setRatingsMap((prev) => ({ ...prev, [movieId]: rating }));
-    if (!watchedMovieIds.includes(movieId)) {
+    if (!watchedIdsRef.current.includes(movieId)) {
       setWatchedMovieIds((prev) => [movieId, ...prev]);
     }
     void persistQuickLog(movieId, { rating });
-  };
+  }, [isAuthenticated, authUser]);
 
   // Persiste o Top 4 no Supabase (profiles.favorite_films, int[]).
   // Slots vazios sÃ£o persistidos como 0 â€” int[] nÃ£o aceita null.
@@ -695,71 +704,120 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const setTop4Movie = (slotIndex: number, movieId: number) => {
+  const setTop4Movie = useCallback((slotIndex: number, movieId: number) => {
     setTop4MovieIds((prev) => {
       const updated = [...prev];
       updated[slotIndex] = movieId;
       void persistTop4(updated);
       return updated;
     });
-  };
+  }, [isAuthenticated, authUser]);
 
-  const createList = (newList: Omit<MovieList, 'id' | 'createdAt' | 'author' | 'likesCount' | 'commentsCount'>) => {
+  const createList = useCallback((newList: Omit<MovieList, 'id' | 'createdAt' | 'author' | 'likesCount' | 'commentsCount'>) => {
+    const u = userRef.current;
     const list: MovieList = {
       ...newList,
       id: `list-${Date.now()}`,
       author: {
-        username: user.username,
-        displayName: user.displayName,
-        avatarUrl: user.avatarUrl,
+        username: u.username,
+        displayName: u.displayName,
+        avatarUrl: u.avatarUrl,
       },
       likesCount: 0,
       commentsCount: 0,
       createdAt: new Date().toISOString(),
     };
     setLists((prev) => [list, ...prev]);
-  };
+  }, []);
 
-  const deleteList = (listId: string) => {
+  const deleteList = useCallback((listId: string) => {
     setLists((prev) => prev.filter((l) => l.id !== listId));
-  };
+  }, []);
 
-  const addReview = (newReview: Omit<Review, 'id' | 'createdAt' | 'author' | 'likesCount' | 'commentsCount'>) => {
+  const addReview = useCallback((newReview: Omit<Review, 'id' | 'createdAt' | 'author' | 'likesCount' | 'commentsCount'>) => {
+    const u = userRef.current;
     const rev: Review = {
       ...newReview,
       id: `rev-${Date.now()}`,
       author: {
-        username: user.username,
-        displayName: user.displayName,
-        avatarUrl: user.avatarUrl,
-        isPro: user.isPro,
+        username: u.username,
+        displayName: u.displayName,
+        avatarUrl: u.avatarUrl,
+        isPro: u.isPro,
       },
       likesCount: 0,
       commentsCount: 0,
       createdAt: new Date().toISOString(),
     };
     setReviews((prev) => [rev, ...prev]);
-  };
+  }, []);
 
-  const openLogModal = (movie?: MovieShort) => {
+  const openLogModal = useCallback((movie?: MovieShort) => {
     setSelectedMovieForLog(movie || null);
     setIsLogModalOpen(true);
-  };
+  }, []);
 
-  const closeLogModal = () => {
+  const closeLogModal = useCallback(() => {
     setIsLogModalOpen(false);
     setSelectedMovieForLog(null);
-  };
+  }, []);
 
-  const openTop4Picker = (slotIndex: number) => {
+  const openTop4Picker = useCallback((slotIndex: number) => {
     setActiveTop4Slot(slotIndex);
     setIsTop4PickerOpen(true);
-  };
+  }, []);
 
-  const closeTop4Picker = () => {
+  const closeTop4Picker = useCallback(() => {
     setIsTop4PickerOpen(false);
     setActiveTop4Slot(null);
-  };
+  }, []);
+
+  const value = useMemo<AppContextType>(
+    () => ({
+      user,
+      updateUser,
+      logs,
+      saveLog,
+      deleteLog,
+      watchlist,
+      toggleWatchlist,
+      isMovieInWatchlist,
+      watchedMovieIds,
+      toggleWatched,
+      isMovieWatched,
+      likedMovieIds,
+      toggleLikeMovie,
+      isMovieLiked,
+      ratingsMap,
+      setMovieRating,
+      top4MovieIds,
+      setTop4Movie,
+      lists,
+      createList,
+      deleteList,
+      reviews,
+      addReview,
+      movieOverrides,
+      setMovieOverride,
+      isLogModalOpen,
+      selectedMovieForLog,
+      openLogModal,
+      closeLogModal,
+      isTop4PickerOpen,
+      activeTop4Slot,
+      openTop4Picker,
+      closeTop4Picker,
+    }),
+    [
+      user, updateUser, logs, saveLog, deleteLog, watchlist, toggleWatchlist,
+      isMovieInWatchlist, watchedMovieIds, toggleWatched, isMovieWatched,
+      likedMovieIds, toggleLikeMovie, isMovieLiked, ratingsMap, setMovieRating,
+      top4MovieIds, setTop4Movie, lists, createList, deleteList, reviews,
+      addReview, movieOverrides, setMovieOverride, isLogModalOpen,
+      selectedMovieForLog, openLogModal, closeLogModal, isTop4PickerOpen,
+      activeTop4Slot, openTop4Picker, closeTop4Picker,
+    ]
+  );
 
   // Gate: autenticado mas dados remotos ainda nÃ£o sincronizados â†’ spinner.
   // Sem isso, o primeiro render pintaria logs/watchlist/top4 do localStorage
@@ -773,43 +831,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   return (
-    <AppContext.Provider
-      value={{
-        user,
-        updateUser,
-        logs,
-        saveLog,
-        deleteLog,
-        watchlist,
-        toggleWatchlist,
-        isMovieInWatchlist,
-        watchedMovieIds,
-        toggleWatched,
-        isMovieWatched,
-        likedMovieIds,
-        toggleLikeMovie,
-        isMovieLiked,
-        ratingsMap,
-        setMovieRating,
-        top4MovieIds,
-        setTop4Movie,
-        lists,
-        createList,
-        deleteList,
-        reviews,
-        addReview,
-        movieOverrides,
-        setMovieOverride,
-        isLogModalOpen,
-        selectedMovieForLog,
-        openLogModal,
-        closeLogModal,
-        isTop4PickerOpen,
-        activeTop4Slot,
-        openTop4Picker,
-        closeTop4Picker,
-      }}
-    >
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );

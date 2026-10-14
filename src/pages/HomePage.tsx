@@ -41,6 +41,8 @@ export const HomePage: React.FC = () => {
             src={tmdb.getBackdropUrl(featuredFilm.backdrop_path, 'w1280')}
             alt={featuredFilm.title}
             className="absolute inset-0 w-full h-full object-cover object-top opacity-35 filter brightness-75 backdrop-mask"
+            fetchPriority="high"
+            decoding="async"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-lb-bg via-lb-bg/70 to-transparent" />

@@ -18,7 +18,7 @@ interface PosterCardProps {
   tv?: boolean;
 }
 
-export const PosterCard: React.FC<PosterCardProps> = ({
+const PosterCardBase: React.FC<PosterCardProps> = ({
   movie,
   size = 'md',
   showDetails = false,
@@ -71,10 +71,13 @@ export const PosterCard: React.FC<PosterCardProps> = ({
         <Link to={`${tv ? "/tv" : "/film"}/${movie.id}`} className="block w-full h-full">
           {displayPosterPath ? (
             <img
-              src={tmdb.getImageUrl(displayPosterPath, 'w500')}
+              src={tmdb.getImageUrl(displayPosterPath, 'w342')}
+              srcSet={`${tmdb.getImageUrl(displayPosterPath, 'w185')} 185w, ${tmdb.getImageUrl(displayPosterPath, 'w342')} 342w, ${tmdb.getImageUrl(displayPosterPath, 'w500')} 500w`}
+              sizes="(max-width: 640px) 25vw, (max-width: 1024px) 16vw, 160px"
               alt={movie.title}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center p-2 text-center text-[11px] text-lb-muted bg-lb-surface">
@@ -176,3 +179,7 @@ export const PosterCard: React.FC<PosterCardProps> = ({
     </div>
   );
 };
+
+// Memoizado: só re-renderiza se as props mudarem (pôster por pôster),
+// em vez do grid inteiro a cada mudança de estado global.
+export const PosterCard = React.memo(PosterCardBase);

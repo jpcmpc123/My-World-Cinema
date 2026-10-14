@@ -24,7 +24,7 @@ body {
   margin: 0;
   background-color: #14181C;
   /* Gradiente do topo (#202830 -> #1C2228) suavizando para o fundo principal (#14181C) */
-  background-image: linear-gradient(to bottom, #202830 0%, #1C2228 220px, #14181C 700px);
+  background-image: linear-gradient(to bottom, #1C2228 0%, #161c22 160px, #14181C 380px);
   background-attachment: fixed;
   color: var(--color-lb-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
