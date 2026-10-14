@@ -193,19 +193,39 @@ export const FilmPage: React.FC = () => {
           {/* Imagem única, nítida, com máscara composta (radial elíptica ampla INTERSECT linear vertical)
               — dissolve suavemente em todas as direções, sem arestas */}
           <div className="absolute inset-0 flex justify-center">
-            <img loading="lazy" decoding="async"
-              src={backdropUrl}
-              alt={movie.title}
-              className="w-full max-w-[1150px] h-full object-cover object-[center_25%] scale-105"
-              style={{
-                maskImage:
-                  'radial-gradient(ellipse 130% 100% at 50% 25%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 72%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 88%)',
-                WebkitMaskImage:
-                  'radial-gradient(ellipse 130% 100% at 50% 25%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 72%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 88%)',
-                maskComposite: 'intersect',
-                WebkitMaskComposite: 'source-in',
-              }}
-            />
+            <div className="relative w-full max-w-[1150px] h-full">
+              {/* Camada BORRADA (fundo): visível nas laterais e extremidades,
+                  criando a transição nítido → desfoque → fundo */}
+              <img loading="lazy" decoding="async"
+                src={backdropUrl}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover object-[center_25%] scale-110"
+                style={{
+                  filter: 'blur(18px) brightness(0.95)',
+                  maskImage:
+                    'radial-gradient(ellipse 125% 95% at 50% 25%, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 68%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 88%)',
+                  WebkitMaskImage:
+                    'radial-gradient(ellipse 125% 95% at 50% 25%, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 68%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 88%)',
+                  maskComposite: 'intersect',
+                  WebkitMaskComposite: 'source-in',
+                }}
+              />
+              {/* Imagem NÍTIDA (topo): zona central menor — revela o blur nas laterais */}
+              <img loading="lazy" decoding="async"
+                src={backdropUrl}
+                alt={movie.title}
+                className="absolute inset-0 w-full h-full object-cover object-[center_25%] scale-105"
+                style={{
+                  maskImage:
+                    'radial-gradient(ellipse 75% 70% at 50% 25%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 98%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 72%)',
+                  WebkitMaskImage:
+                    'radial-gradient(ellipse 75% 70% at 50% 25%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 98%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 72%)',
+                  maskComposite: 'intersect',
+                  WebkitMaskComposite: 'source-in',
+                }}
+              />
+            </div>
           </div>
           {/* Overlays sólidos na cor do fundo reforçando a dissolução em todas as direções */}
           <div className="absolute inset-y-0 left-0 w-[25vw] bg-gradient-to-r from-lb-bg via-lb-bg/60 to-transparent" />
