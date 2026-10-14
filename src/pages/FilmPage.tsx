@@ -189,38 +189,29 @@ export const FilmPage: React.FC = () => {
     <div className="relative min-h-screen text-lb-text">
       {/* 1. Cinematic Hero Vignette Backdrop */}
       {backdropUrl && (
-        <div className="absolute top-0 left-0 right-0 h-[480px] md:h-[540px] overflow-hidden -z-0 pointer-events-none flex justify-center">
-          <div className="relative w-full max-w-[1150px] h-full">
-            {/* Camada de névoa suave (borrada) cobrindo toda a área — mistura as bordas com o fundo */}
-            <img loading="lazy" decoding="async"
-              src={backdropUrl}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover object-[center_25%] scale-[1.02]"
-              style={{
-                filter: 'blur(14px) brightness(0.92) saturate(0.9)',
-                maskImage:
-                  'linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 55%), radial-gradient(ellipse 130% 100% at 50% 30%, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%)',
-                WebkitMaskImage:
-                  'linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 55%), radial-gradient(ellipse 130% 100% at 50% 30%, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%)',
-              }}
-            />
-            {/* Imagem principal nítida com fade radial suave e contínuo */}
+        <div className="absolute top-0 left-0 right-0 h-[480px] md:h-[540px] overflow-hidden -z-0 pointer-events-none">
+          {/* Imagem única, nítida, com máscara composta (radial elíptica ampla INTERSECT linear vertical)
+              — dissolve suavemente em todas as direções, sem arestas */}
+          <div className="absolute inset-0 flex justify-center">
             <img loading="lazy" decoding="async"
               src={backdropUrl}
               alt={movie.title}
-              className="relative w-full h-full object-cover object-[center_25%]"
+              className="w-full max-w-[1150px] h-full object-cover object-[center_25%] scale-105"
               style={{
                 maskImage:
-                  'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0) 85%), radial-gradient(ellipse 115% 95% at 50% 30%, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 90%)',
+                  'radial-gradient(ellipse 130% 100% at 50% 25%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 72%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 88%)',
                 WebkitMaskImage:
-                  'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0) 85%), radial-gradient(ellipse 115% 95% at 50% 30%, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 90%)',
+                  'radial-gradient(ellipse 130% 100% at 50% 25%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 72%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 88%)',
+                maskComposite: 'intersect',
+                WebkitMaskComposite: 'source-in',
               }}
             />
-            {/* Soft edge blends — fade to page bg, no rectangular edges */}
-            <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-lb-bg from-20% via-lb-bg/50 to-transparent" />
-            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-lb-bg/80 to-transparent" />
           </div>
+          {/* Overlays sólidos na cor do fundo reforçando a dissolução em todas as direções */}
+          <div className="absolute inset-y-0 left-0 w-[25vw] bg-gradient-to-r from-lb-bg via-lb-bg/60 to-transparent" />
+          <div className="absolute inset-y-0 right-0 w-[25vw] bg-gradient-to-l from-lb-bg via-lb-bg/60 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-[240px] bg-gradient-to-t from-lb-bg via-lb-bg/60 to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-lb-bg/70 to-transparent" />
         </div>
       )}
 
