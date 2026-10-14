@@ -429,16 +429,16 @@ export const FilmsPage: React.FC = () => {
 
       {/* 4. THE 12-COLUMN POSTER GRID (Matching exact screenshot 12 posters per row) */}
       {loading ? (
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 justify-items-center">
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5 md:gap-2.5 justify-items-center">
           {[...Array(48)].map((_, i) => (
             <div key={i} className="aspect-[2/3] bg-lb-surface rounded-xs border border-lb-elevated animate-pulse" />
           ))}
         </div>
       ) : filteredMovies.length > 0 ? (
         viewMode === 'grid' ? (
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5 md:gap-2.5">
             {filteredMovies.map((movie) => (
-              <PosterCard key={movie.id} movie={movie} size="fluid" />
+              <PosterCard key={movie.id} movie={movie} size="fluid" enableLongPressActions />
             ))}
           </div>
         ) : (

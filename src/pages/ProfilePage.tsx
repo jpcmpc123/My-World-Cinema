@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useParams, Navigate } from 'react-router-dom';
-import { MoreHorizontal, Search, Rss, Heart } from 'lucide-react';
+import { MoreHorizontal, Search, Rss, Heart, Settings, ChevronRight } from 'lucide-react';
+import { RatingHistogram } from '../components/RatingHistogram';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useProfileByUsername } from '../lib/useProfileByUsername';
@@ -21,6 +22,7 @@ export const ProfilePage: React.FC = () => {
     likedMovieIds,
     top4MovieIds,
     lists,
+    ratingsMap,
   } = useApp();
 
   const { isAuthenticated } = useAuth();
@@ -137,6 +139,28 @@ export const ProfilePage: React.FC = () => {
   // Recent 4 activity movies
   const recentLogs = viewLogs.slice(0, 4);
 
+  // Mobile-only derived stats
+  const viewReviewsCount = viewLogs.filter((l) => l.reviewText).length;
+  const viewLikesCount = remote.isRemote ? 0 : likedMovieIds.length;
+  const ratedLogs = viewLogs.filter((l) => l.rating > 0);
+  const avgRating =
+    ratedLogs.length > 0
+      ? ratedLogs.reduce((sum, l) => sum + l.rating, 0) / ratedLogs.length
+      : 0;
+
+  const mobileCounters: { label: string; count: number; to: string }[] = [
+    { label: 'Films', count: viewFilmsCount, to: `/${viewUsername}?tab=films` },
+    { label: 'Series', count: 0, to: '/series' },
+    { label: 'Diary', count: viewDiaryCount, to: `/${viewUsername}/diary` },
+    { label: 'Reviews', count: viewReviewsCount, to: `/${viewUsername}?tab=reviews` },
+    { label: 'Watchlist', count: viewWatchlistCount, to: `/${viewUsername}/watchlist` },
+    { label: 'Lists', count: viewListsCount, to: `/${viewUsername}/lists` },
+    { label: 'Likes', count: viewLikesCount, to: `/${viewUsername}?tab=likes` },
+    { label: 'Tags', count: 0, to: `/${viewUsername}?tab=tags` },
+    { label: 'Following', count: viewFollowingCount, to: `/${viewUsername}?tab=network` },
+    { label: 'Followers', count: viewFollowersCount, to: `/${viewUsername}?tab=network` },
+  ];
+
   // Guard: username desconhecido (sem perfil local nem no Supabase) vai para home
   if (username && username.toLowerCase() !== user.username.toLowerCase() && remote.status === 'not-found') {
     return <Navigate to="/" replace />;
@@ -144,8 +168,11 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="max-w-[950px] mx-auto px-4 py-8 space-y-6">
+      {/* 0/1. Header + abas do perfil no mobile: renderizados pelo Header global
+          (barra preta com ⚙ + usuário + Profile/Diary/Lists/Watchlist) */}
+
       {/* 1. Profile Header */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 pt-2 pb-4">
+      <div className="max-md:hidden flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 pt-2 pb-4">
         {/* Avatar & User Details */}
         <div className="flex items-center gap-5">
           <img loading="lazy" decoding="async"
@@ -206,7 +233,7 @@ export const ProfilePage: React.FC = () => {
       </div>
 
       {/* 2. Subnav Tabs (Matching exact MyWorld order) */}
-      <div className="border-b border-lb-elevated flex items-center justify-between text-xs font-semibold overflow-x-auto pb-0.5">
+      <div className="max-md:hidden border-b border-lb-elevated flex items-center justify-between text-xs font-semibold overflow-x-auto pb-0.5">
         <div className="flex items-center gap-6">
           {[
             { id: 'profile', label: 'Profile' },
@@ -240,9 +267,115 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
+      {/* 3. Mobile Profile layout (avatar, favorites, recent activity, ratings, counters) */}
+      {currentTab === 'profile' && (
+        <div className="md:hidden space-y-8 pt-2">
+          {/* Big centered avatar */}
+          <div className="flex flex-col items-center gap-2 pt-2">
+            <img loading="lazy" decoding="async"
+              src={viewAvatar}
+              alt={viewUsername}
+              className="w-28 h-28 rounded-full object-cover border border-lb-border-light shadow-xl"
+            />
+            {user.displayName && remote.isRemote === false && (
+              <span className="text-xs text-lb-muted">{user.displayName}</span>
+            )}
+          </div>
+
+          {/* FAVORITES (Top 4) */}
+          {!remote.isRemote && (
+            <section className="space-y-2">
+              <h2 className="text-xs uppercase tracking-widest text-lb-muted font-bold">
+                Favorites
+              </h2>
+              <div className="grid grid-cols-4 gap-1.5">
+                {top4Movies.map((movie, idx) => (
+                  <div
+                    key={`mob-fav-${idx}`}
+                    className="relative aspect-[2/3] bg-lb-surface rounded-xs overflow-hidden border border-white/12 shadow-md"
+                  >
+                    {movie ? (
+                      <Link to={`/film/${movie.id}`} title={movie.title}>
+                        <img loading="lazy" decoding="async"
+                          src={tmdb.getImageUrl(movie.poster_path, 'w342')}
+                          alt={movie.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </Link>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-lb-muted text-[10px]">
+                        #{idx + 1}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* RECENT ACTIVITY (4 posters withstars beneath) */}
+          <section className="space-y-2">
+            <h2 className="text-xs uppercase tracking-widest text-lb-muted font-bold">
+              Recent Activity
+            </h2>
+            {recentLogs.length === 0 ? (
+              <p className="text-xs text-lb-muted py-2">
+                Recent activity will appear when you log films.
+              </p>
+            ) : (
+              <div className="grid grid-cols-4 gap-1.5">
+                {recentLogs.map((log, idx) => (
+                  <div key={`mob-recent-${log.id}-${idx}`}>
+                    <div className="aspect-[2/3] bg-lb-surface rounded-xs overflow-hidden border border-white/12 shadow-md">
+                      <Link to={`/film/${log.movieId}`}>
+                        <img loading="lazy" decoding="async"
+                          src={tmdb.getImageUrl(log.moviePoster, 'w342')}
+                          alt={log.movieTitle}
+                          className="w-full h-full object-cover"
+                        />
+                      </Link>
+                    </div>
+                    {log.rating > 0 && (
+                      <p className="mt-1 text-center text-[10px] text-lb-green font-semibold">
+                        {'★'.repeat(Math.round(log.rating))}
+                        {log.rating % 1 !== 0 ? '½' : ''}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* RATINGS histogram */}
+          {ratedLogs.length > 0 && (
+            <section className="space-y-2">
+              <RatingHistogram averageRating={avgRating} voteCount={ratedLogs.length} />
+            </section>
+          )}
+
+          {/* Counters list */}
+          <nav className="flex flex-col">
+            {mobileCounters.map((c) => (
+              <Link
+                key={c.label}
+                to={c.to}
+                className="flex items-center justify-between py-3 border-b border-white/5 text-sm text-white"
+              >
+                <span>{c.label}</span>
+                <span className="flex items-center gap-2 text-lb-muted">
+                  <span className="text-xs font-semibold">{c.count}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
+
       {/* 3. Main 2-Column Content */}
       {currentTab === 'profile' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-2">
+        <div className="max-md:hidden grid grid-cols-1 lg:grid-cols-12 gap-8 pt-2">
           {/* LEFT COLUMN (8 cols): Favorite Films + Recent Activity */}
           <div className="lg:col-span-8 space-y-10">
             {/* FAVORITE FILMS (THE TOP 4) — local user only */}
@@ -404,7 +537,31 @@ export const ProfilePage: React.FC = () => {
           <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text border-b border-lb-elevated pb-2">
             All Watched Films ({logs.length})
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+          {/* Mobile: strict 4-col grid with rating stars under each poster */}
+          <div className="md:hidden grid grid-cols-4 gap-1.5 px-2">
+            {logs.map((log, idx) => {
+              const r = ratingsMap[log.movieId] ?? log.rating;
+              return (
+                <div key={`all-mob-${log.id}-${idx}`}>
+                  <PosterCard
+                    movie={{
+                      id: log.movieId,
+                      title: log.movieTitle,
+                      poster_path: log.moviePoster,
+                      release_date: log.movieYear,
+                    }}
+                    size="fluid"
+                  />
+                  {r > 0 && (
+                    <p className="mt-1 text-center text-[10px] text-lb-green font-semibold">
+                      {'★'.repeat(Math.round(r))}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="max-md:hidden grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
             {logs.map((log, idx) => (
               <PosterCard
                 key={`all-${log.id}-${idx}`}

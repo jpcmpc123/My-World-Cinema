@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
 import { Header } from './components/Header';
+import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { useApp } from './context/AppContext';
 
@@ -39,6 +40,9 @@ const ListDetailPage = lazy(() => import('./pages/ListDetailPage').then((m) => (
 const CreateListPage = lazy(() => import('./pages/CreateListPage').then((m) => ({ default: m.CreateListPage })));
 const AuthPage = lazy(() => import('./pages/AuthPage').then((m) => ({ default: m.AuthPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const SearchPage = lazy(() => import('./pages/SearchPage').then((m) => ({ default: m.SearchPage })));
+const BrowseDrilldownPage = lazy(() => import('./pages/BrowseDrilldownPage').then((m) => ({ default: m.BrowseDrilldownPage })));
+const BrowseResultsPage = lazy(() => import('./pages/BrowseResultsPage').then((m) => ({ default: m.BrowseResultsPage })));
 
 function PageLoader() {
   return (
@@ -52,13 +56,14 @@ export function App() {
   return (
     <AuthProvider>
     <AppProvider>
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
+      {/* No build do APK (base './') o basename relativo quebraria o router */}
+      <BrowserRouter basename={import.meta.env.BASE_URL === './' ? '/' : import.meta.env.BASE_URL}>
         <div className="min-h-screen text-lb-text flex flex-col selection:bg-lb-green selection:text-lb-bg">
           {/* Main Top Header */}
           <Header />
 
-          {/* Main Content Viewport */}
-          <main className="flex-1">
+          {/* Main Content Viewport (pb-20: espaço para a BottomNav no mobile) */}
+          <main className="flex-1 pb-20 md:pb-0">
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<HomePage />} />
@@ -82,6 +87,18 @@ export function App() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/signin" element={<AuthPage />} />
                 <Route path="/signup" element={<AuthPage />} />
+                <Route path="/search" element={<SearchPage />} />
+                {/* BROWSE BY em cascata (drill-down) + grade de resultados filtrada */}
+                <Route path="/browse/release-date" element={<BrowseDrilldownPage kind="decades" />} />
+                <Route path="/browse/release-date/:decade" element={<BrowseDrilldownPage kind="years" />} />
+                <Route path="/browse/genre" element={<BrowseDrilldownPage kind="genre" />} />
+                <Route path="/browse/country" element={<BrowseDrilldownPage kind="country" />} />
+                <Route path="/browse/language" element={<BrowseDrilldownPage kind="language" />} />
+                <Route path="/browse/service" element={<BrowseDrilldownPage kind="service" />} />
+                <Route path="/browse/results" element={<BrowseResultsPage />} />
+                {/* Stand-ins usados pela BottomNav/abas mobile do app */}
+                <Route path="/reviews" element={<DiaryPage />} />
+                <Route path="/activity" element={<DiaryPage />} />
                 {/* MyWorld profile sub-routes */}
                 <Route path="/:username" element={<ProfilePage />} />
                 <Route path="/:username/diary" element={<DiaryPage />} />
@@ -93,6 +110,9 @@ export function App() {
 
           {/* MyWorld Global Modals (lazy) */}
           <GlobalModals />
+
+          {/* Bottom Navigation (somente mobile) */}
+          <BottomNav />
 
           {/* Main Footer */}
           <Footer />

@@ -318,11 +318,20 @@ export const tmdb = {
     language?: string;
     sortBy?: string;
     page?: number;
+    /** Limites de data de lançamento (YYYY-MM-DD) — usado pelo filtro Released */
+    releaseDateGte?: string;
+    releaseDateLte?: string;
   }): Promise<TMDBResponse<TMDBMovie>> {
     const apiParams: Record<string, string | number | undefined> = {
       page: params.page || 1,
       sort_by: params.sortBy || 'popularity.desc',
-      'vote_count.gte': params.sortBy?.includes('vote_average') ? 200 : 30,
+      // TMDB bug: vote_count.gte + lançamentos futuros (upcoming) = 0 resultados.
+      // Quando há limite de data futura, omitimos o piso de votos.
+      'vote_count.gte': params.releaseDateGte
+        ? undefined
+        : params.sortBy?.includes('vote_average')
+          ? 200
+          : 30,
       include_adult: 'false',
       language: 'en-US',
     };
@@ -346,6 +355,10 @@ export const tmdb = {
       apiParams['primary_release_date.gte'] = `${params.decade}-01-01`;
       apiParams['primary_release_date.lte'] = `${params.decade + 9}-12-31`;
     }
+
+    // Filtro Released (upcoming/released) — aplicado no servidor
+    if (params.releaseDateGte) apiParams['primary_release_date.gte'] = params.releaseDateGte;
+    if (params.releaseDateLte) apiParams['primary_release_date.lte'] = params.releaseDateLte;
 
     return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/discover/movie', apiParams);
   },
@@ -408,11 +421,19 @@ export const tmdb = {
     language?: string;
     sortBy?: string;
     page?: number;
+    /** Limites da primeira exibição (YYYY-MM-DD) — usado pelo filtro Released */
+    releaseDateGte?: string;
+    releaseDateLte?: string;
   }): Promise<TMDBResponse<TMDBMovie>> {
     const apiParams: Record<string, string | number | undefined> = {
       page: params.page || 1,
       sort_by: params.sortBy || 'popularity.desc',
-      'vote_count.gte': params.sortBy?.includes('vote_average') ? 100 : 20,
+      // TMDB bug: vote_count.gte + estreias futuras (upcoming) = 0 resultados.
+      'vote_count.gte': params.releaseDateGte
+        ? undefined
+        : params.sortBy?.includes('vote_average')
+          ? 100
+          : 20,
       include_adult: 'false',
       language: 'en-US',
     };
@@ -430,6 +451,10 @@ export const tmdb = {
       apiParams['first_air_date.gte'] = `${params.decade}-01-01`;
       apiParams['first_air_date.lte'] = `${params.decade + 9}-12-31`;
     }
+
+    // Filtro Released (upcoming/released) — aplicado no servidor
+    if (params.releaseDateGte) apiParams['first_air_date.gte'] = params.releaseDateGte;
+    if (params.releaseDateLte) apiParams['first_air_date.lte'] = params.releaseDateLte;
 
     return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/discover/tv', apiParams);
   },

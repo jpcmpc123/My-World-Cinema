@@ -60,6 +60,21 @@ body::after {
 
 
 
+/* ===== Experiência mobile (PWA / app-like) ===== */
+/* Remove o highlight azul de toque do Android/iOS */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+/* Evita seleção acidental de texto ao tocar/segurar botões e links */
+button, a, [role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Hide scrollbars while keeping content scrollable (e.g. horizontal rails) */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* Custom MyWorld scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

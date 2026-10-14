@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Eye, Star, Heart, ChevronDown } from 'lucide-react';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
 import { PosterCard } from '../components/PosterCard';
+import { MobileCatalogSections } from '../components/mobile/MobileCatalogSections';
 
 export const SeriesHubPage: React.FC = () => {
   const [popularSeries, setPopularSeries] = useState<TMDBMovie[]>([]);
+  const [topRatedSeries, setTopRatedSeries] = useState<TMDBMovie[]>([]);
   const [justReviewedSeries, setJustReviewedSeries] = useState<TMDBMovie[]>([]);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   // Search input in "FIND A SERIES"
   const [findQuery, setFindQuery] = useState('');
@@ -61,12 +63,14 @@ export const SeriesHubPage: React.FC = () => {
       setLoading(true);
       window.scrollTo(0, 0);
       try {
-        const [popRes, trendRes] = await Promise.all([
+        const [popRes, trendRes, topRes] = await Promise.all([
           tmdb.discoverTVBatch({ sortBy: 'popularity.desc', pagesToFetch: 2 }),
           tmdb.getTrendingTV('week'),
+          tmdb.getTopRatedTV(1),
         ]);
         setPopularSeries(popRes.results.slice(0, 16));
         setJustReviewedSeries(trendRes.results.slice(0, 12));
+        setTopRatedSeries(topRes.results.slice(0, 6));
       } catch (err) {
         console.error('Failed to load series hub:', err);
       } finally {
@@ -98,8 +102,17 @@ export const SeriesHubPage: React.FC = () => {
 
   return (
     <div className="max-w-[950px] mx-auto px-4 py-6 space-y-8 select-none pb-20">
-      {/* 1. TOP BROWSE BAR (BROWSE BY, YEAR v, RATING v, POPULAR v, GENRE v, SERVICE v, FIND A SERIES) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-lb-elevated pb-2.5 text-xs">
+      {/* 0. 4 SEÇÕES MOBILE (estrutura idêntica à aba Films) */}
+      <MobileCatalogSections
+        basePath="/series"
+        popular={popularSeries}
+        topRated={topRatedSeries}
+        anticipated={justReviewedSeries}
+        loading={loading}
+      />
+
+      {/* 1. TOP BROWSE BAR (BROWSE BY, YEAR v, RATING v, POPULAR v, GENRE v, SERVICE v, FIND A SERIES) — desktop only */}
+      <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-lb-elevated pb-2.5 text-xs">
         {/* Left: BROWSE BY + Dropdowns */}
         <div ref={browseBarRef} className="flex flex-wrap items-center gap-3 font-semibold uppercase tracking-wider text-[11px] text-lb-muted">
           <span className="text-lb-muted font-bold shrink-0">BROWSE BY</span>
@@ -354,8 +367,8 @@ export const SeriesHubPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. POPULAR SERIES THIS WEEK (4 large posters with stats and navigation arrows) */}
-      <section className="space-y-3">
+      {/* 2. POPULAR SERIES THIS WEEK (4 large posters with stats and navigation arrows) — desktop only */}
+      <section className="hidden md:block space-y-3">
         <div className="flex items-center justify-between border-b border-lb-elevated pb-1.5">
           <h2 className="text-[11px] uppercase tracking-widest font-bold text-lb-muted">
             Popular Series This Week
@@ -428,8 +441,8 @@ export const SeriesHubPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. JUST REVIEWED... Section */}
-      <section className="space-y-3">
+      {/* 3. JUST REVIEWED... Section — desktop only */}
+      <section className="hidden md:block space-y-3">
         <div className="flex items-center justify-between border-b border-lb-elevated pb-1.5">
           <h2 className="text-[11px] uppercase tracking-widest font-bold text-lb-muted">
             Just Reviewed...

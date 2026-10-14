@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Eye, Heart, Star, MoreHorizontal } from 'lucide-react';
 import { tmdb } from '../services/tmdb';
 import { useApp } from '../context/AppContext';
+import { useLongPress } from '../hooks/useLongPress';
+import { ActionBottomSheet } from './ActionBottomSheet';
 
 interface PosterCardProps {
   movie: {
@@ -16,6 +18,7 @@ interface PosterCardProps {
   showDetails?: boolean;
   rank?: number;
   tv?: boolean;
+  enableLongPressActions?: boolean;
 }
 
 const PosterCardBase: React.FC<PosterCardProps> = ({
@@ -24,6 +27,7 @@ const PosterCardBase: React.FC<PosterCardProps> = ({
   showDetails = false,
   rank,
   tv = false,
+  enableLongPressActions = false,
 }) => {
   const {
     isMovieWatched,
@@ -52,6 +56,14 @@ const PosterCardBase: React.FC<PosterCardProps> = ({
 
   const year = movie.release_date ? movie.release_date.slice(0, 4) : '';
 
+  const [actionsOpen, setActionsOpen] = React.useState(false);
+  const longPressHandlers = useLongPress(
+    () => {
+      if (enableLongPressActions) setActionsOpen(true);
+    },
+    { threshold: 500 }
+  );
+
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.preventDefault();
     e.stopPropagation();
@@ -61,7 +73,11 @@ const PosterCardBase: React.FC<PosterCardProps> = ({
   return (
     <div className={`group flex flex-col ${posterSizes[size]}`}>
       {/* Poster Image Container */}
-      <div className="relative aspect-[2/3] rounded-[4px] bg-lb-surface overflow-hidden border border-white/15 ring-0 group-hover:ring-1 group-hover:ring-lb-green transition-all duration-200 shadow-md group-hover:shadow-[0_4px_20px_rgba(0,224,84,0.2)]">
+      <div
+        className="relative aspect-[2/3] rounded-[4px] bg-lb-surface overflow-hidden border border-white/15 ring-0 group-hover:ring-1 group-hover:ring-lb-green transition-all duration-200 shadow-md group-hover:shadow-[0_4px_20px_rgba(0,224,84,0.2)]"
+        {...(enableLongPressActions ? longPressHandlers : {})}
+        style={enableLongPressActions ? { touchAction: 'manipulation' } : undefined}
+      >
         {rank !== undefined && (
           <div className="absolute top-1.5 left-1.5 z-20 bg-black/80 text-white font-bold text-xs px-2 py-0.5 rounded border border-white/20 backdrop-blur-xs">
             #{rank}
@@ -175,6 +191,14 @@ const PosterCardBase: React.FC<PosterCardProps> = ({
             ) : null}
           </div>
         </div>
+      )}
+
+      {enableLongPressActions && (
+        <ActionBottomSheet
+          open={actionsOpen}
+          onClose={() => setActionsOpen(false)}
+          movie={{ id: movie.id, title: movie.title, release_date: movie.release_date }}
+        />
       )}
     </div>
   );

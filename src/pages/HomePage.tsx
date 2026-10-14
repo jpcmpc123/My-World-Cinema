@@ -4,24 +4,28 @@ import { ChevronRight } from 'lucide-react';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
 import { PosterCard } from '../components/PosterCard';
 import { useApp } from '../context/AppContext';
+import { MobileCatalogSections } from '../components/mobile/MobileCatalogSections';
 
 export const HomePage: React.FC = () => {
   const { lists, openLogModal } = useApp();
 
   const [popularFilms, setPopularFilms] = useState<TMDBMovie[]>([]);
   const [topRatedFilms, setTopRatedFilms] = useState<TMDBMovie[]>([]);
+  const [nowPlayingFilms, setNowPlayingFilms] = useState<TMDBMovie[]>([]);
   const [featuredFilm, setFeaturedFilm] = useState<TMDBMovie | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [popRes, topRes] = await Promise.all([
+        const [popRes, topRes, nowRes] = await Promise.all([
           tmdb.getPopular(1),
           tmdb.getTopRated(1),
+          tmdb.getNowPlaying(1),
         ]);
         setPopularFilms(popRes.results.slice(0, 12));
         setTopRatedFilms(topRes.results.slice(0, 6));
+        setNowPlayingFilms(nowRes.results.slice(0, 4));
         setFeaturedFilm(popRes.results[0] || null);
       } catch (err) {
         console.error('Failed to load homepage movies:', err);
@@ -32,10 +36,12 @@ export const HomePage: React.FC = () => {
     loadData();
   }, []);
 
+  const popularThisWeek = popularFilms.slice(0, 4);
+
   return (
-    <div className="space-y-12">
-      {/* Hero Section */}
-      <div className="relative h-[380px] md:h-[460px] overflow-hidden bg-lb-bg border-b border-lb-elevated">
+    <div className="space-y-6 md:space-y-12">
+      {/* Hero Section — desktop only; mobile goes straight to PRO banner + sections */}
+      <div className="hidden md:block relative h-[460px] overflow-hidden bg-lb-bg border-b border-lb-elevated">
         {featuredFilm && (
           <img
             src={tmdb.getBackdropUrl(featuredFilm.backdrop_path, 'w1280')}
@@ -79,12 +85,22 @@ export const HomePage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-[950px] mx-auto px-4 space-y-14">
-        {/* Popular Films This Week */}
-        <section className="space-y-4">
+      <div className="max-w-[950px] mx-auto px-4 space-y-8 md:space-y-14">
+        {/* 4 seções de catálogo do app (Popular / Highest rated / Most watched /
+            Most anticipated) — estrutura compartilhada com a aba Series */}
+        <MobileCatalogSections
+          basePath="/films"
+          popular={popularFilms}
+          topRated={topRatedFilms}
+          anticipated={nowPlayingFilms}
+          loading={loading}
+        />
+
+        {/* Popular this week — DESKTOP: no mobile a seção vive no MobileCatalogSections */}
+        <section className="hidden md:block space-y-4">
           <div className="flex items-center justify-between border-b border-lb-elevated pb-2">
-            <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text flex items-center gap-2">
-              <span>Popular Films This Week</span>
+            <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text">
+              Popular Films This Week
             </h2>
             <Link
               to="/films"
@@ -96,15 +112,15 @@ export const HomePage: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-4 gap-2.5">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="aspect-[2/3] bg-lb-surface animate-pulse rounded border border-lb-elevated" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {popularFilms.slice(0, 4).map((movie) => (
-                <PosterCard key={movie.id} movie={movie} size="fluid" showDetails />
+            <div className="grid grid-cols-4 gap-2.5">
+              {popularThisWeek.map((movie) => (
+                <PosterCard key={movie.id} movie={movie} size="fluid" showDetails enableLongPressActions />
               ))}
             </div>
           )}
@@ -156,8 +172,8 @@ export const HomePage: React.FC = () => {
           </section>
         </div>
 
-        {/* Top Rated Showcase */}
-        <section className="space-y-4">
+        {/* Top Rated Showcase — desktop only (no mobile, "Highest rated" cobre) */}
+        <section className="hidden md:block space-y-4">
           <div className="flex items-center justify-between border-b border-lb-elevated pb-2">
             <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text">
               All-Time Classics (Highest Rated)
@@ -173,7 +189,7 @@ export const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
             {topRatedFilms.map((movie) => (
-              <PosterCard key={movie.id} movie={movie} size="fluid" showDetails />
+              <PosterCard key={movie.id} movie={movie} size="fluid" showDetails enableLongPressActions />
             ))}
           </div>
         </section>

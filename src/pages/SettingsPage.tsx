@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, AlertTriangle, Film, Upload, Download, ImageIcon } from 'lucide-react';
+import { Navigate, useSearchParams, useNavigate } from 'react-router-dom';
+import { CheckCircle2, AlertTriangle, Film, Upload, Download, ImageIcon, X, Check, XCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
@@ -64,11 +64,11 @@ export const SettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      <h1 className="text-3xl md:text-4xl font-light text-white tracking-tight mb-6">Account Settings</h1>
+    <div className="max-w-5xl mx-auto px-4 py-4 md:py-10">
+      <h1 className="max-md:hidden text-3xl md:text-4xl font-light text-white tracking-tight mb-6">Account Settings</h1>
 
       {/* Horizontal green tab bar */}
-      <div className="border-b border-lb-elevated mb-8">
+      <div className="max-md:hidden border-b border-lb-elevated mb-8">
         <nav className="flex gap-6 -mb-px">
           {TABS.map((t) => (
             <button
@@ -87,7 +87,17 @@ export const SettingsPage: React.FC = () => {
         </nav>
       </div>
 
-      {activeTab === 'profile' && <ProfileTab />}
+      {activeTab === 'profile' && (
+        <>
+          {/* Mobile "Profile Settings" screen */}
+          <div className="md:hidden">
+            <MobileProfileSettings />
+          </div>
+          <div className="max-md:hidden">
+            <ProfileTab />
+          </div>
+        </>
+      )}
       {activeTab === 'avatar' && <AvatarTab />}
       {activeTab === 'data' && <DataTab />}
     </div>
@@ -330,6 +340,247 @@ const ProfileTab: React.FC = () => {
         <p className="text-[11px] text-lb-muted mt-3">Drag posters to reorder.</p>
       </aside>
     </form>
+  );
+};
+
+/* ─────────────────────── Mobile "Profile Settings" ─────────────────────── */
+
+const mobileInputClass =
+  'w-full bg-[#2c3440] rounded-md px-3 py-2.5 text-sm text-white placeholder:text-lb-muted/70 focus:outline-none focus:ring-1 focus:ring-lb-green transition-shadow';
+
+const MobileField: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div>
+    <span className="block mb-1 text-[10px] font-bold uppercase tracking-widest text-lb-muted">
+      {label}
+    </span>
+    {children}
+  </div>
+);
+
+const MobileProfileSettings: React.FC = () => {
+  const navigate = useNavigate();
+  const { user: authUser, session, signOut } = useAuth();
+  const { user: appUser, updateUser, top4MovieIds, setTop4Movie } = useApp();
+
+  const nameParts = (appUser.displayName || '').split(' ');
+  const [form, setForm] = useState({
+    givenName: nameParts[0] ?? '',
+    familyName: nameParts.slice(1).join(' ') ?? '',
+    location: appUser.location ?? '',
+    website: appUser.website ?? '',
+    bio: appUser.bio ?? '',
+    pronoun: '',
+  });
+  const [customPosters, setCustomPosters] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const [top4Meta, setTop4Meta] = useState<Record<number, { title: string; poster: string | null }>>({});
+
+  // Load Top 4 posters for the FAVORITE FILMS grid
+  useEffect(() => {
+    const load = async () => {
+      const results = await Promise.all(
+        top4MovieIds
+          .filter((id) => id > 0)
+          .map(async (id) => {
+            try {
+              const d = await tmdb.getMovieDetails(id);
+              return [id, { title: d.title, poster: d.poster_path }] as const;
+            } catch {
+              return null;
+            }
+          })
+      );
+      setTop4Meta(Object.fromEntries(results.filter(Boolean) as NonNullable<(typeof results)[number]>[]));
+    };
+    void load();
+  }, [top4MovieIds]);
+
+  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+  const handleSave = async () => {
+    setNotice(null);
+    setSaving(true);
+    const displayName = [form.givenName, form.familyName].filter(Boolean).join(' ');
+    updateUser({
+      displayName,
+      bio: form.bio,
+      location: form.location,
+      website: form.website,
+    });
+    // Best-effort persist to Supabase (same fields as the desktop form)
+    if (supabase && authUser) {
+      await supabase
+        .from('profiles')
+        .update({ bio: form.bio, location: form.location, website: form.website })
+        .eq('id', authUser.id);
+    }
+    setSaving(false);
+    navigate(-1);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/signin');
+  };
+
+  return (
+    <div className="space-y-5 pb-24 -mx-4 px-4">
+      {/* Header: ✕ left, title, ✓ right */}
+      <div className="relative flex items-center justify-center py-2">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Cancel"
+          className="absolute left-0 text-lb-muted hover:text-white transition-colors cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        <h2 className="text-base font-bold text-white">Profile Settings</h2>
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={saving}
+          aria-label="Save"
+          className="absolute right-0 text-lb-green hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+        >
+          <Check className="w-5 h-5" />
+        </button>
+      </div>
+
+      {notice && <Notice kind={notice.kind} message={notice.message} />}
+
+      {/* Sign out */}
+      <button
+        type="button"
+        onClick={() => void handleSignOut()}
+        className="w-full bg-orange-500 text-white rounded-md py-2.5 font-bold text-sm cursor-pointer hover:bg-orange-600 transition-colors"
+      >
+        Sign out
+      </button>
+
+      {/* Dark input rows */}
+      <div className="space-y-4">
+        <MobileField label="Given Name">
+          <input type="text" value={form.givenName} onChange={set('givenName')} className={mobileInputClass} />
+        </MobileField>
+        <MobileField label="Family Name">
+          <input type="text" value={form.familyName} onChange={set('familyName')} className={mobileInputClass} />
+        </MobileField>
+        <MobileField label="Email Address">
+          <input
+            type="email"
+            value={session?.user?.email ?? ''}
+            readOnly
+            disabled
+            className={`${mobileInputClass} opacity-60 cursor-not-allowed`}
+          />
+        </MobileField>
+        <MobileField label="Location">
+          <input type="text" value={form.location} onChange={set('location')} className={mobileInputClass} />
+        </MobileField>
+        <MobileField label="Website">
+          <input type="text" value={form.website} onChange={set('website')} className={mobileInputClass} />
+        </MobileField>
+        <MobileField label="Bio">
+          <textarea rows={3} value={form.bio} onChange={set('bio')} className={`${mobileInputClass} resize-y`} />
+        </MobileField>
+        <MobileField label="Pronoun">
+          <input
+            type="text"
+            value={form.pronoun}
+            onChange={set('pronoun')}
+            placeholder="e.g. they/them"
+            className={mobileInputClass}
+          />
+        </MobileField>
+
+        {/* Custom Posters toggle */}
+        <div className="flex items-center justify-between bg-[#2c3440] rounded-md px-3 py-2.5">
+          <span className="text-sm text-white">Custom Posters</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={customPosters}
+            onClick={() => setCustomPosters((v) => !v)}
+            className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
+              customPosters ? 'bg-lb-green' : 'bg-lb-elevated'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                customPosters ? 'translate-x-5' : ''
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* FAVORITE FILMS — tap ⊗ to remove a poster from the slot */}
+      <section className="space-y-2">
+        <h3 className="text-xs uppercase tracking-widest text-lb-muted font-bold">Favorite Films</h3>
+        <div className="grid grid-cols-4 gap-1.5">
+          {[0, 1, 2, 3].map((slot) => {
+            const id = top4MovieIds[slot];
+            const movie = id ? top4Meta[id] : undefined;
+            return (
+              <div
+                key={`mob-top4-${slot}`}
+                className="relative aspect-[2/3] rounded-md overflow-hidden bg-[#2c3440] border border-white/10"
+              >
+                {id && movie?.poster ? (
+                  <img loading="lazy" decoding="async"
+                    src={tmdb.getImageUrl(movie.poster, 'w185')}
+                    alt={movie.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-lb-muted">
+                    <Film className="w-5 h-5" />
+                  </div>
+                )}
+                {id > 0 && (
+                  <button
+                    type="button"
+                    aria-label="Remove favorite"
+                    onClick={() => setTop4Movie(slot, 0)}
+                    className="absolute top-1 right-1 z-10 text-orange-500 bg-black/60 rounded-full cursor-pointer hover:scale-110 transition-transform"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* FAVORITE SERIES — no series top-4 exists in AppContext yet; removal is a stub */}
+      <section className="space-y-2">
+        <h3 className="text-xs uppercase tracking-widest text-lb-muted font-bold">Favorite Series</h3>
+        <div className="grid grid-cols-4 gap-1.5">
+          {[0, 1, 2, 3].map((slot) => (
+            <div
+              key={`mob-top4tv-${slot}`}
+              className="relative aspect-[2/3] rounded-md overflow-hidden bg-[#2c3440] border border-white/10 flex items-center justify-center text-lb-muted"
+            >
+              <Film className="w-5 h-5" />
+              <button
+                type="button"
+                aria-label="Remove favorite series (stub)"
+                onClick={() => {
+                  /* stub: wire to a series top-4 list when it exists in AppContext */
+                }}
+                className="absolute top-1 right-1 z-10 text-orange-500 bg-black/60 rounded-full cursor-pointer"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 };
 

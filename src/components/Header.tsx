@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Plus, User, BookOpen, Clock, List, X, ChevronDown, Zap, Menu, LogOut, Settings } from 'lucide-react';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Search, Plus, User, BookOpen, Clock, List, X, ChevronDown, Zap, Menu, LogOut, Settings, ArrowLeft, MoreVertical } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
@@ -86,19 +86,87 @@ export const Header: React.FC = () => {
   // Páginas de detalhe (filme/série): navbar flutua transparente por cima do backdrop
   const overBackdrop = /^\/(film|tv)\/\d+/.test(location.pathname);
 
+  // Mobile (<768px): páginas principais exibem título centrado + faixa de 4 abas
+  const path = location.pathname;
+  const isMainPage = !overBackdrop && /^\/(films|series|tv|lists?|reviews)?\/?$/.test(path);
+  // Tela de busca: no mobile o campo ocupa a faixa preta do topo (em vez do título/sign in)
+  const isSearchRoute = path === '/search';
+  // Telas do BROWSE BY (cascata/resultados): no mobile têm header próprio
+  // (preto, com ← voltar) — esconde a barra global "MyWorld" para não duplicar.
+  const isBrowseRoute = path.startsWith('/browse');
+
+  // Área de perfil (mobile): barra própria com ⚙ + usuário + abas
+  const segs = path.split('/').filter(Boolean);
+  const isProfileArea =
+    !overBackdrop &&
+    !isSearchRoute &&
+    ((segs.length === 1 &&
+      !isMainPage &&
+      !['settings', 'signin', 'signup', 'list'].includes(segs[0])) ||
+      (segs.length === 2 &&
+        ['diary', 'lists', 'watchlist'].includes(segs[1]) &&
+        !['film', 'tv', 'actor', 'list', 'browse', 'films', 'series'].includes(segs[0])));
+  // Rotas globais (/profile, /diary, /watchlist) apontam para o usuário logado
+  const profileAreaUser =
+    segs.length >= 1 && !['profile', 'diary', 'watchlist'].includes(segs[0])
+      ? decodeURIComponent(segs[0])
+      : displayUsername;
+  const profileTab: 'profile' | 'diary' | 'lists' | 'watchlist' =
+    (segs[1] as 'diary' | 'lists' | 'watchlist') ||
+    (segs[0] === 'diary' || segs[0] === 'watchlist' ? segs[0] : 'profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParam = searchParams.get('q') ?? '';
+  const activeTab: 'films' | 'series' | 'reviews' | 'lists' =
+    path === '/' || path.startsWith('/films')
+      ? 'films'
+      : path.startsWith('/series') || path.startsWith('/tv')
+        ? 'series'
+        : path === '/reviews' || path.startsWith('/reviews')
+          ? 'reviews'
+          : 'lists';
+  const tabs: { key: typeof activeTab; label: string; to: string }[] = [
+    { key: 'films', label: 'Films', to: '/' },
+    { key: 'series', label: 'Series', to: '/series' },
+    { key: 'reviews', label: 'Reviews', to: '/reviews' },
+    { key: 'lists', label: 'Lists', to: '/lists' },
+  ];
+
+  // Mobile-only: botão de opções nas páginas de detalhe (compartilhar)
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ url });
+        return;
+      }
+      throw new Error('no-share');
+    } catch {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        /* noop */
+      }
+    }
+  };
+
   return (
     <header
       className={
         overBackdrop
           ? 'absolute inset-x-0 top-0 z-50 bg-transparent select-none'
-          : 'sticky top-0 z-50 bg-lb-bg border-b border-lb-elevated shadow-md select-none'
+          : isBrowseRoute
+            ? 'hidden md:block sticky top-0 z-50 bg-[#0d0f12] md:bg-lb-bg border-b border-lb-elevated shadow-md select-none'
+            : 'sticky top-0 z-50 bg-[#0d0f12] md:bg-lb-bg border-b border-lb-elevated shadow-md select-none'
       }
     >
-      <div className={`max-w-[950px] mx-auto px-4 h-14 flex items-center justify-between gap-4 ${
+      <div className={`relative max-w-[950px] mx-auto px-4 h-14 flex items-center justify-between gap-4 ${
         overBackdrop ? '[text-shadow:0_1px_3px_rgba(0,0,0,0.8)] [&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : ''
       }`}>
-        {/* Left: Brand Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
+        {/* Mobile-only (páginas de detalhe): os botões ← e ⋮ flutuantes são
+            renderizados pela própria FilmPage (o ⋮ abre o ActionBottomSheet) */}
+
+        {/* Left: Brand Logo (oculto no mobile em páginas de detalhe e principais) */}
+        <Link to="/" className={`${overBackdrop || isMainPage || isSearchRoute || isProfileArea ? 'hidden md:flex' : 'flex'} items-center gap-2 group`}>
           <svg
             viewBox="0 0 32 32"
             className="w-7 h-7 shrink-0 drop-shadow-[0_2px_6px_rgba(0,224,84,0.35)] transition-transform duration-300 group-hover:rotate-6"
@@ -124,13 +192,53 @@ export const Header: React.FC = () => {
           </span>
         </Link>
 
-        {/* Right Navigation */}
-        <div className="flex items-center gap-3 md:gap-5 text-xs font-bold uppercase tracking-wider">
+        {/* Mobile-only (páginas principais): título centrado "MyWorld" */}
+        {isMainPage && (
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="md:hidden absolute left-1/2 -translate-x-1/2 text-white font-bold text-xl tracking-tight cursor-pointer"
+          >
+            MyWorld
+          </button>
+        )}
+
+        {/* Mobile-only (área de perfil): ⚙ à esquerda + nome de usuário ao lado */}
+        {isProfileArea && (
+          <div className="md:hidden flex items-center gap-3">
+            <Link to="/settings" aria-label="Settings" className="text-lb-muted hover:text-white transition-colors">
+              <Settings className="w-5 h-5" />
+            </Link>
+            <span className="text-base font-bold text-white tracking-tight truncate">
+              {profileAreaUser}
+            </span>
+          </div>
+        )}
+
+        {/* Mobile-only (/search): campo de busca ocupa a faixa preta do topo */}
+        {isSearchRoute && (
+          <div className="md:hidden flex items-center gap-2 bg-[#2c3440] rounded-full px-4 py-2 flex-1">
+            <Search className="w-4 h-4 text-lb-muted shrink-0" />
+            <input
+              type="text"
+              autoFocus
+              value={searchParam}
+              onChange={(e) =>
+                setSearchParams(e.target.value ? { q: e.target.value } : {}, { replace: true })
+              }
+              placeholder="Search films…"
+              className="flex-1 min-w-0 bg-transparent text-sm text-white placeholder-lb-muted focus:outline-none"
+            />
+          </div>
+        )}
+
+        {/* Right Navigation (oculto no mobile em páginas de detalhe e na busca) */}
+        <div className={`${overBackdrop || isSearchRoute || isProfileArea ? 'hidden md:flex' : 'flex'}${isMainPage ? ' ml-auto md:ml-0' : ''} items-center gap-3 md:gap-5 text-xs font-bold uppercase tracking-wider`}>
           {/* User Profile Link & Avatar (or Sign in when logged out) */}
           {!isAuthenticated ? (
             <Link
               to="/signin"
-              className={`transition-colors ${
+              className={`hidden md:block transition-colors ${
                 location.pathname === '/signin' || location.pathname === '/signup'
                   ? 'text-white font-bold'
                   : 'text-lb-text hover:text-white'
@@ -213,7 +321,7 @@ export const Header: React.FC = () => {
           {/* Activity Zap Icon */}
           <Link
             to={`/${displayUsername}?tab=activity`}
-            className="hidden sm:block text-lb-text hover:text-white transition-colors p-1"
+            className="hidden md:block text-lb-text hover:text-white transition-colors p-1"
             title="Activity"
           >
             <Zap className="w-3.5 h-3.5 fill-lb-text text-transparent hover:fill-white" />
@@ -222,14 +330,14 @@ export const Header: React.FC = () => {
           {/* Main Links */}
           <Link
             to="/films"
-            className={`hidden sm:block transition-colors ${
+            className={`hidden md:block transition-colors ${
               location.pathname.startsWith('/films') ? 'text-white font-bold' : 'text-lb-text hover:text-white'
             }`}
           >
             Films
           </Link>          <Link
             to="/series"
-            className={`hidden sm:block transition-colors ${
+            className={`hidden md:block transition-colors ${
               location.pathname.startsWith('/series') || location.pathname.startsWith('/tv') ? 'text-white font-bold' : 'text-lb-text hover:text-white'
             }`}
           >
@@ -245,8 +353,8 @@ export const Header: React.FC = () => {
             Lists
           </Link>
 
-          {/* Search Icon & Typeahead */}
-          <div ref={searchRef} className="relative">
+          {/* Search Icon & Typeahead — desktop only (no mobile a busca vive na BottomNav/rota /search) */}
+          <div ref={searchRef} className="relative hidden md:block">
             {isSearchExpanded ? (
               <div className="flex items-center h-7 bg-white rounded-full px-2.5 w-36 sm:w-44">
                 <input
@@ -312,8 +420,8 @@ export const Header: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile Hamburger Menu */}
-          <div ref={menuRef} className="relative md:hidden">
+          {/* Mobile Hamburger Menu — oculto: a navegação mobile usa a BottomNav */}
+          <div ref={menuRef} className="hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-1 text-lb-text hover:text-white"
@@ -365,7 +473,8 @@ export const Header: React.FC = () => {
           </div>
 
           {/* MyWorld "+ LOG ▼" Button */}
-          <div className="flex items-center">
+          {/* + Log: oculto no mobile (BottomNav tem o botão central de Log) */}
+          <div className="hidden md:flex items-center">
             <button
               onClick={() => openLogModal()}
               className="btn-log-green flex items-center gap-1 text-lb-bg font-black text-xs px-2.5 py-1.5 rounded-l-xs cursor-pointer tracking-wider"
@@ -382,6 +491,59 @@ export const Header: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile-only (área de perfil): faixa de 4 abas Profile / Diary / Lists / Watchlist */}
+      {isProfileArea && (
+        <nav aria-label="Perfil" className="md:hidden grid grid-cols-4 text-center">
+          {([
+            { key: 'profile', label: 'Profile', to: `/${profileAreaUser}` },
+            { key: 'diary', label: 'Diary', to: `/${profileAreaUser}/diary` },
+            { key: 'lists', label: 'Lists', to: `/${profileAreaUser}/lists` },
+            { key: 'watchlist', label: 'Watchlist', to: `/${profileAreaUser}/watchlist` },
+          ] as const).map((tab) => {
+            const active = tab.key === profileTab;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => navigate(tab.to)}
+                className={`flex flex-col items-center gap-1.5 pb-1 pt-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer ${
+                  active ? 'text-white' : 'text-lb-muted'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`h-[3px] w-10 rounded-full ${active ? 'bg-[#00e054]' : 'bg-transparent'}`}
+                />
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      {/* Mobile-only (páginas principais): faixa de 4 abas Films / Series / Reviews / Lists */}
+      {isMainPage && (
+        <nav aria-label="Seções" className="md:hidden grid grid-cols-4 text-center">
+          {tabs.map((tab) => {
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => navigate(tab.to)}
+                className={`flex flex-col items-center gap-1.5 pb-1 pt-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer ${
+                  active ? 'text-white' : 'text-lb-muted'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`h-[3px] w-10 rounded-full ${active ? 'bg-[#00e054]' : 'bg-transparent'}`}
+                />
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </header>
   );
 };

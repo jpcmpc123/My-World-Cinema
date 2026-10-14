@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Eye,
   Heart,
@@ -10,6 +10,13 @@ import {
   BarChart2,
   Layers,
   Copy,
+  ArrowLeft,
+  MoreVertical,
+  MoreHorizontal,
+  Users,
+  MessageSquare,
+  List,
+  ChevronRight,
 } from 'lucide-react';
 import { tmdb, type TMDBMovieDetails } from '../services/tmdb';
 import { useApp } from '../context/AppContext';
@@ -20,6 +27,7 @@ import { WhereToWatch } from '../components/WhereToWatch';
 import { PosterCard } from '../components/PosterCard';
 import { ImagePickerModal } from '../components/ImagePickerModal';
 import { Backdrop } from '../components/Backdrop';
+import { ActionBottomSheet } from '../components/ActionBottomSheet';
 
 function formatNumber(num: number): string {
   if (num >= 1_000_000) {
@@ -52,13 +60,16 @@ export const FilmPage: React.FC = () => {
     movieOverrides,
     setMovieOverride,
   } = useApp();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
+  const navigate = useNavigate();
 
   const [movie, setMovie] = useState<TMDBMovieDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'cast' | 'crew' | 'details' | 'genres'>('cast');
+  const [activeTab, setActiveTab] = useState<'cast' | 'crew' | 'details' | 'genres' | 'releases'>('cast');
   const [copiedLink, setCopiedLink] = useState(false);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
+  const [showFullSynopsis, setShowFullSynopsis] = useState(false);
+  const [showActionSheet, setShowActionSheet] = useState(false);
   const [imagePicker, setImagePicker] = useState<'poster' | 'backdrop' | null>(null);
   const [showSharePanel, setShowSharePanel] = useState(false);
 
@@ -148,6 +159,12 @@ export const FilmPage: React.FC = () => {
   // Format release year
   const releaseYear = movie.release_date ? movie.release_date.slice(0, 4) : '';
 
+  // Mobile header extras: N seasons (TV) and trailer link (videos already fetched in details)
+  const numberOfSeasons = (movie as unknown as { number_of_seasons?: number }).number_of_seasons;
+  const trailerUrl = trailerVideo
+    ? `https://www.youtube.com/watch?v=${trailerVideo.key}`
+    : `https://www.youtube.com/results?search_query=${encodeURIComponent(`${movie.title} trailer`)}`;
+
   const isOdyssey = movie.id === 1368337;
   const isPridePrejudice = movie.id === 4348;
 
@@ -191,10 +208,28 @@ export const FilmPage: React.FC = () => {
       {/* 1. Cinematic Hero Vignette Backdrop */}
       {backdropUrl && <Backdrop src={backdropUrl} alt={movie.title} />}
 
+      {/* Floating back + overflow buttons over the backdrop â€” mobile only (app-style) */}
+      <div className="md:hidden absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-3 pt-3">
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="Back"
+          className="w-9 h-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white shadow-md active:scale-95 transition-transform"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => setShowActionSheet(true)}
+          aria-label="More actions"
+          className="w-9 h-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white shadow-md active:scale-95 transition-transform"
+        >
+          <MoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+
       {/* 2. Main Content Container: 3-column myworld layout */}
       <div
         className={`relative z-10 max-w-[950px] mx-auto px-4 pb-16 ${
-          backdropUrl ? '-mt-[120px] md:-mt-[150px]' : 'pt-20'
+          backdropUrl ? '-mt-10 md:-mt-[150px]' : 'pt-20'
         }`}
       >
         <div className="flex flex-col md:grid md:grid-cols-[230px_minmax(0,1fr)_230px] gap-8 items-start">
@@ -205,7 +240,8 @@ export const FilmPage: React.FC = () => {
               ======================================================== */}
           <div className="w-full md:w-[230px] md:row-span-2 flex-shrink-0 flex flex-col items-center md:items-start">
             {/* Film Poster (230x345px standard) */}
-            <div className="w-[230px] h-[345px] rounded-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.8)] border border-[#303840] bg-lb-surface flex-shrink-0">
+            {/* No mobile o pÃ´ster aparece compacto ao lado do tÃ­tulo (acima) */}
+            <div className="hidden md:block w-[230px] h-[345px] rounded-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.8)] border border-[#303840] bg-lb-surface flex-shrink-0">
               <img loading="lazy" decoding="async"
                 src={posterUrl}
                 alt={movie.title}
@@ -213,8 +249,8 @@ export const FilmPage: React.FC = () => {
               />
             </div>
 
-            {/* MyWorld 4-metric Badge Row directly under poster */}
-            <div className="w-[230px] border-b border-lb-elevated py-2 px-1 flex items-center justify-between text-xs select-none">
+            {/* MyWorld 4-metric Badge Row — desktop only (no mobile ficam os 3 cartões coloridos) */}
+            <div className="hidden md:flex w-[230px] max-w-full border-b border-lb-elevated py-2 px-1 items-center justify-between text-xs select-none">
               <div className="flex items-center gap-1.5" title={`${watchedStat.toLocaleString()} watched`}>
                 <Eye className="w-4 h-4 text-lb-green" />
                 <span className="text-lb-muted font-medium text-[11px]">{formatNumber(watchedStat)}</span>
@@ -233,8 +269,8 @@ export const FilmPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Where to Watch Header + Trailer Button */}
-            <div className="w-[230px] mt-4 space-y-2.5">
+            {/* Where to Watch — desktop only (oculto no mobile para o cabeçalho colar no backdrop) */}
+            <div className="hidden md:block w-[230px] max-w-full mt-4 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold tracking-wider uppercase text-lb-muted">
                   Where to watch
@@ -257,19 +293,20 @@ export const FilmPage: React.FC = () => {
 
           {/* ========================================================
               HEADER: Title + Year + Director + Tagline
-              (ocupa as colunas do centro E da direita — como no Letterboxd,
-              permitindo títulos longos em uma única linha)
+              (ocupa as colunas do centro E da direita â€” como no Letterboxd,
+              permitindo tÃ­tulos longos em uma Ãºnica linha)
               ======================================================== */}
-          <div className="md:col-span-2 min-w-0 md:px-2">
+          <div className="md:col-span-2 min-w-0 md:px-2 flex max-md:items-start md:items-end justify-between gap-4">
+            {/* Bloco de texto: título + ano/diretor + tagline */}
+            <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                <h1 className="font-serif font-bold text-[26px] sm:text-[32px] text-white tracking-tight leading-tight">
+                <h1 className="font-sans md:font-serif font-bold text-2xl sm:text-[32px] text-white tracking-tight leading-tight">
                   {movie.title}
                 </h1>
               </div>
 
-              {/* Ano + Diretor na linha de baixo (padrão Letterboxd):
-                  "2026 Directed by Destin Daniel Cretton" */}
-              <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 mt-1 text-xs text-lb-muted">
+              {/* DESKTOP: ano + diretor + duração na mesma linha */}
+              <div className="hidden md:flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 mt-1 text-xs text-lb-muted">
                 {releaseYear && (
                   <Link
                     to={isTv ? `/series/year/${releaseYear}` : `/films/year/${releaseYear}`}
@@ -289,6 +326,50 @@ export const FilmPage: React.FC = () => {
                     </Link>
                   </span>
                 )}
+                {!isTv && movie.runtime ? (
+                  <span>&bull; {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+                ) : null}
+                {isTv && numberOfSeasons ? (
+                  <span>&bull; {numberOfSeasons} season{numberOfSeasons === 1 ? '' : 's'}</span>
+                ) : null}
+              </div>
+
+              {/* MOBILE (app): "2026 • DIRECTED BY" pequeno cinza + nome do diretor em destaque */}
+              <div className="md:hidden">
+                <p className="text-[11px] tracking-wider uppercase text-[#9ab] mt-1">
+                  {releaseYear}
+                  {releaseYear && director ? ' \u2022 ' : ''}
+                  {director ? (isTv ? 'Created by' : 'Directed by') : ''}
+                </p>
+                {director && (
+                  <Link
+                    to={`/actor/${director.id}`}
+                    className="text-sm font-semibold text-[#def] block mt-0.5"
+                  >
+                    {director.name}
+                  </Link>
+                )}
+
+                {/* Trailer pill + minutos/temporadas */}
+                <div className="flex items-center gap-3 mt-2.5">
+                  <a
+                    href={trailerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 bg-[#2c3440] text-[11px] font-semibold tracking-wider uppercase px-3 py-1 rounded-full text-[#def]"
+                  >
+                    <Play className="w-2.5 h-2.5 fill-[#def] text-[#def]" />
+                    Trailer
+                  </a>
+                  {!isTv && movie.runtime ? (
+                    <span className="text-xs text-[#9ab]">{movie.runtime} mins</span>
+                  ) : null}
+                  {isTv && numberOfSeasons ? (
+                    <span className="text-xs text-[#9ab]">
+                      {numberOfSeasons} season{numberOfSeasons === 1 ? '' : 's'}
+                    </span>
+                  ) : null}
+                </div>
               </div>
 
             {/* Tagline (MyWorld uppercase tracking) */}
@@ -297,19 +378,97 @@ export const FilmPage: React.FC = () => {
                 {movie.tagline.replace(/^"|"$/g, '')}
               </p>
             )}
+            </div>
+
+            {/* PÃ´ster compacto Ã  direita â€” SOMENTE mobile (padrÃ£o app Letterboxd) */}
+            <div className="md:hidden w-[92px] shrink-0">
+              <div className="w-full aspect-[2/3] rounded-[4px] overflow-hidden ring-1 ring-white/15 shadow-xl bg-lb-surface">
+                <img loading="lazy" decoding="async" src={posterUrl} alt={movie.title} className="w-full h-full object-cover" />
+              </div>
+            </div>
           </div>
 
           {/* ========================================================
               CENTER COLUMN: Synopsis, Tabs, Reviews
               ======================================================== */}
           <div className="min-w-0 md:px-2 space-y-3">
-            {/* Overview / Synopsis */}
-            <div className="text-[13px] text-lb-text leading-[1.6] font-normal">
-              <p>{movie.overview || 'Synopsis not available for this film.'}</p>
+            {/* Overview / Synopsis â€” mobile: 3 linhas com toque para expandir */}
+            <div
+              className="text-[13px] text-lb-text leading-[1.6] font-normal cursor-pointer md:cursor-default"
+              onClick={() => setShowFullSynopsis((v) => !v)}
+            >
+              <p className={showFullSynopsis ? '' : 'max-md:line-clamp-3'}>
+                {movie.overview || 'Synopsis not available for this film.'}
+                {!showFullSynopsis && (
+                  <span className="md:hidden text-lb-muted"> ...more</span>
+                )}
+              </p>
             </div>
 
-            {/* MyWorld Tabs Bar: Cast, Crew, Details, Genres */}
-            <div className="pt-2">
+            {/* RATINGS — mobile only: label à esquerda, estrela verde na base,
+                barras verticais cinzas no meio, média grande + 5 estrelas à direita */}
+            <div className="md:hidden border-t border-white/10 pt-3 mt-4">
+              <span className="text-[11px] uppercase tracking-wider text-[#9ab]">Ratings</span>
+              {(() => {
+                const avg = isOdyssey ? 4.01 : movie.vote_average ? movie.vote_average / 2 : 3.8;
+                const scale = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+                const dist = scale.map((r) => Math.max(0.06, Math.exp(-(((r - avg) ** 2)) / 0.75)));
+                const maxVal = Math.max(...dist);
+                const fullStars = Math.round(avg);
+                return (
+                  <div className="flex items-end gap-3 mt-1.5">
+                    {/* Estrela verde pequena à esquerda da base */}
+                    <span className="text-[#00e054] text-sm leading-none pb-0.5">★</span>
+                    {/* Histograma de barras cinzas */}
+                    <div className="flex-1 flex items-end gap-1 h-12 border-b border-white/10">
+                      {dist.map((v, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 bg-[#556677] rounded-t-[1px]"
+                          style={{ height: `${Math.max(8, Math.round((v / maxVal) * 100))}%` }}
+                        />
+                      ))}
+                    </div>
+                    {/* Média grande + 5 estrelinhas verdes */}
+                    <div className="flex flex-col items-end pb-0.5">
+                      <span className="text-2xl font-light text-[#9ab] leading-none">{avg.toFixed(1)}</span>
+                      <span className="text-xs leading-none mt-1">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <span key={i} className={i < fullStars ? 'text-[#00e054]' : 'text-[#3a4550]'}>★</span>
+                        ))}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Barra "Rate, log, review + more": acessada apenas pelo botão ⋮
+                no topo do backdrop (abre o ActionBottomSheet) */}
+
+            {/* 3 cartões coloridos — mobile only (ícone no topo, label em negrito, contagem abaixo) */}
+            <div className="md:hidden grid grid-cols-3 gap-2 my-4">
+              <div className="bg-[#00b020] rounded-md p-2.5 flex flex-col gap-1 text-white">
+                <Eye className="w-4 h-4" />
+                <span className="text-sm font-bold leading-tight">Members</span>
+                <span className="text-[11px] opacity-90">{formatNumber(watchedStat)}</span>
+              </div>
+              <div className="bg-[#445566] rounded-md p-2.5 flex flex-col gap-1 text-white">
+                <MessageSquare className="w-4 h-4" />
+                <span className="text-sm font-bold leading-tight">Reviews</span>
+                <span className="text-[11px] opacity-90">
+                  {movieReviews.length > 0 ? movieReviews.length : formatNumber(ratingsStat)}
+                </span>
+              </div>
+              <div className="bg-[#209ce4] rounded-md p-2.5 flex flex-col gap-1 text-white">
+                <Layers className="w-4 h-4" />
+                <span className="text-sm font-bold leading-tight">Lists</span>
+                <span className="text-[11px] opacity-90">{formatNumber(listsStat)}</span>
+              </div>
+            </div>
+
+            {/* MyWorld Tabs Bar: Cast, Crew, Details, Genres (DESKTOP ONLY — mobile uses app-style tabs below) */}
+            <div className="hidden md:block pt-2">
               <div className="flex items-center gap-6 border-b border-lb-elevated text-[11px] uppercase font-bold tracking-wider pb-1">
                 <button
                   onClick={() => setActiveTab('cast')}
@@ -527,6 +686,210 @@ export const FilmPage: React.FC = () => {
               </div>
             </div>
 
+            {/* App-style tabs — MOBILE ONLY: Cast / Crew / Details / Genre / Releases */}
+            <div className="md:hidden pt-4">
+              <div className="flex items-center gap-5 border-b border-lb-elevated text-[11px] uppercase font-bold tracking-wider overflow-x-auto">
+                {(
+                  [
+                    ['cast', 'Cast'],
+                    ['crew', 'Crew'],
+                    ['details', 'Details'],
+                    ['genres', 'Genre'],
+                    ['releases', 'Releases'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveTab(key)}
+                    className={`pb-2 -mb-[1px] transition-colors cursor-pointer whitespace-nowrap ${
+                      activeTab === key
+                        ? 'text-white border-b-2 border-lb-green'
+                        : 'text-lb-muted hover:text-white'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="py-3">
+                {activeTab === 'cast' && (
+                  movie.credits?.cast && movie.credits.cast.length > 0 ? (
+                    <div className="divide-y divide-lb-elevated">
+                      {movie.credits.cast.slice(0, 18).map((actor) => (
+                        <Link
+                          to={`/actor/${actor.id}`}
+                          key={actor.id}
+                          className="flex items-center gap-3 py-2.5"
+                        >
+                          {actor.profile_path ? (
+                            <img
+                              loading="lazy"
+                              decoding="async"
+                              src={tmdb.getProfileUrl(actor.profile_path, 'w185')}
+                              alt={actor.name}
+                              className="w-10 h-10 rounded-full object-cover ring-1 ring-white/10 shrink-0"
+                            />
+                          ) : (
+                            <span className="w-10 h-10 rounded-full bg-lb-surface ring-1 ring-white/10 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                              {actor.name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white font-medium truncate">{actor.name}</p>
+                            {actor.character && (
+                              <p className="text-xs text-lb-muted truncate">{actor.character}</p>
+                            )}
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-lb-muted shrink-0" />
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-8 text-center text-xs text-lb-muted">
+                      Cast information is not available.
+                    </p>
+                  )
+                )}
+
+                {activeTab === 'crew' && (
+                  <div className="divide-y divide-lb-elevated">
+                    {(movie.credits?.crew ?? [])
+                      .filter((c) =>
+                        [
+                          'Director',
+                          'Creator',
+                          'Screenplay',
+                          'Writer',
+                          'Author',
+                          'Novel',
+                          'Producer',
+                          'Executive Producer',
+                          'Director of Photography',
+                          'Cinematography',
+                          'Original Music Composer',
+                          'Composer',
+                          'Music',
+                        ].includes(c.job),
+                      )
+                      .slice(0, 20)
+                      .map((c, idx) => (
+                        <Link
+                          to={`/actor/${c.id}`}
+                          key={`${c.id}-${idx}`}
+                          className="flex items-center gap-3 py-2.5"
+                        >
+                          {c.profile_path ? (
+                            <img
+                              loading="lazy"
+                              decoding="async"
+                              src={tmdb.getProfileUrl(c.profile_path, 'w185')}
+                              alt={c.name}
+                              className="w-10 h-10 rounded-full object-cover ring-1 ring-white/10 shrink-0"
+                            />
+                          ) : (
+                            <span className="w-10 h-10 rounded-full bg-lb-surface ring-1 ring-white/10 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                              {c.name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white font-medium truncate">{c.name}</p>
+                            <p className="text-xs text-lb-muted truncate">{c.job}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-lb-muted shrink-0" />
+                        </Link>
+                      ))}
+                  </div>
+                )}
+
+                {activeTab === 'details' && (
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
+                    <div>
+                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
+                        Original Title
+                      </span>
+                      <span className="text-white font-medium">{movie.original_title}</span>
+                    </div>
+                    <div>
+                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
+                        Release Date
+                      </span>
+                      <span className="text-white font-medium">{movie.release_date || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
+                        Runtime
+                      </span>
+                      <span className="text-white font-medium">
+                        {isTv
+                          ? numberOfSeasons
+                            ? `${numberOfSeasons} season${numberOfSeasons === 1 ? '' : 's'}`
+                            : 'N/A'
+                          : movie.runtime
+                            ? `${movie.runtime} mins`
+                            : 'N/A'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
+                        Language
+                      </span>
+                      <span className="text-white font-medium">
+                        {(movie as unknown as { original_language?: string }).original_language?.toUpperCase() ||
+                          'N/A'}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
+                        Country
+                      </span>
+                      <span className="text-white font-medium">
+                        {movie.production_countries?.map((c) => c.name).join(', ') || 'N/A'}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
+                        Studios
+                      </span>
+                      <span className="text-white font-medium">
+                        {movie.production_companies?.map((c) => c.name).join(', ') || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'genres' && (
+                  <div className="flex flex-wrap gap-2">
+                    {movie.genres?.map((g) => (
+                      <Link
+                        key={g.id}
+                        to={isTv ? `/series/decade/2020s?genre=${g.id}` : `/films/decade/2020s?genre=${g.id}`}
+                        className="bg-[#202830] border border-lb-elevated hover:border-lb-green text-lb-white hover:text-lb-green px-3 py-1 rounded text-xs transition-colors"
+                      >
+                        {g.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {activeTab === 'releases' && (
+                  <div className="divide-y divide-lb-elevated text-sm">
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="text-white font-medium">Theatrical release</span>
+                      <span className="text-lb-muted text-xs">{movie.release_date || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="text-white font-medium">Original language</span>
+                      <span className="text-lb-muted text-xs">
+                        {(movie as unknown as { original_language?: string }).original_language?.toUpperCase() ||
+                          'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Popular Reviews Section */}
             <div className="pt-4 border-t border-lb-elevated space-y-4">
               <div className="flex items-center justify-between">
@@ -563,7 +926,7 @@ export const FilmPage: React.FC = () => {
                             className="w-6 h-6 rounded-full object-cover border border-lb-elevated"
                           />
                           <span className="font-bold text-white">{rev.author.displayName}</span>
-                          <span className="text-lb-green">? {rev.rating}</span>
+                          <span className="text-lb-green">★ {rev.rating}</span>
                         </div>
                         <span className="text-lb-muted">
                           {new Date(rev.createdAt).toLocaleDateString()}
@@ -582,10 +945,10 @@ export const FilmPage: React.FC = () => {
           </div>
 
           {/* ========================================================
-              RIGHT COLUMN (w-[235px]): Action Panel & Rating Histogram
-              (Strictly NO Pro / Patron ads)
+              RIGHT COLUMN (w-[230px]): Action Panel & Rating Histogram
+              (no mobile Ã© substituÃ­da pela barra rÃ¡pida + gaveta de aÃ§Ãµes)
               ======================================================== */}
-          <div className="w-full md:w-[230px] flex-shrink-0 space-y-5">
+          <div className="hidden md:block w-[230px] flex-shrink-0 space-y-5">
             {/* MyWorld Action Card */}
             <div className="bg-lb-border-light border border-[#556677] rounded-[4px] shadow-lg overflow-hidden text-xs text-lb-text">
               
@@ -831,13 +1194,21 @@ export const FilmPage: React.FC = () => {
         />
       )}
 
+      {/* Gaveta de aÃ§Ãµes mobile (Watch/Like/Watchlist/Rate/Share) */}
+      <ActionBottomSheet
+        open={showActionSheet}
+        onClose={() => setShowActionSheet(false)}
+        movie={{ id: movie.id, title: movie.title, release_date: movie.release_date }}
+        onPickImage={(mode) => setImagePicker(mode)}
+      />
+
       {/* 3. Trailer Modal */}
       {showTrailerModal && trailerVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="relative w-full max-w-3xl bg-lb-bg border border-lb-elevated rounded-lg shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-lb-elevated bg-lb-surface">
               <h3 className="text-sm font-semibold text-white">
-                {movie.title} — Official Trailer
+                {movie.title} â€” Official Trailer
               </h3>
               <button
                 onClick={() => setShowTrailerModal(false)}

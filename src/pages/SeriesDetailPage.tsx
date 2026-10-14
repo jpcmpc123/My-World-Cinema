@@ -15,6 +15,7 @@ export const SeriesDetailPage: React.FC = () => {
   const [show, setShow] = useState<TMDBMovieDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
+  const [showFullSynopsis, setShowFullSynopsis] = useState(false);
 
   useEffect(() => {
     if (!showTrailerModal) return;
@@ -102,13 +103,13 @@ export const SeriesDetailPage: React.FC = () => {
 
       <div
         className={`relative z-10 max-w-[950px] mx-auto px-4 pb-16 ${
-          backdropUrl ? '-mt-[120px] md:-mt-[150px]' : 'pt-20'
+          backdropUrl ? '-mt-14 md:-mt-[150px]' : 'pt-20'
         }`}
       >
         <div className="flex flex-col md:flex-row gap-6 lg:gap-8 items-start">
           {/* LEFT: poster + where to watch */}
           <div className="w-full md:w-[230px] flex-shrink-0 flex flex-col items-center md:items-start">
-            <div className="w-[230px] h-[345px] rounded-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.8)] border border-[#303840] bg-lb-surface flex-shrink-0">
+            <div className="hidden md:block w-[230px] h-[345px] rounded-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.8)] border border-[#303840] bg-lb-surface flex-shrink-0">
               {posterUrl ? (
                 <img loading="lazy" decoding="async" src={posterUrl} alt={show.title} className="w-full h-full object-cover" />
               ) : (
@@ -139,7 +140,8 @@ export const SeriesDetailPage: React.FC = () => {
 
           {/* CENTER: title / year / creators / synopsis / tabs */}
           <div className="flex-1 min-w-0 md:px-2 space-y-3">
-            <div>
+            <div className="flex gap-4 items-start">
+              <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
                 <h1 className="font-serif font-bold text-[26px] sm:text-[32px] text-white tracking-tight leading-tight">
                   {show.title}
@@ -182,10 +184,28 @@ export const SeriesDetailPage: React.FC = () => {
                   {show.tagline.replace(/^"|"$/g, '')}
                 </p>
               )}
+              </div>
+
+              {/* Pôster compacto à direita — SOMENTE mobile (padrão app Letterboxd) */}
+              <div className="md:hidden w-[100px] sm:w-[115px] shrink-0">
+                <div className="w-full aspect-[2/3] rounded-[4px] overflow-hidden border border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.7)] bg-lb-surface">
+                  {posterUrl && (
+                    <img loading="lazy" decoding="async" src={posterUrl} alt={show.title} className="w-full h-full object-cover" />
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Overview */}
-            <div className="text-[13px] text-lb-text leading-[1.6]">{show.overview}</div>
+            {/* Overview — mobile: 3 linhas com toque para expandir */}
+            <div
+              className="text-[13px] text-lb-text leading-[1.6] cursor-pointer md:cursor-default"
+              onClick={() => setShowFullSynopsis((v) => !v)}
+            >
+              <p className={showFullSynopsis ? '' : 'max-md:line-clamp-3'}>
+                {show.overview}
+                {!showFullSynopsis && <span className="md:hidden text-lb-muted"> ...more</span>}
+              </p>
+            </div>
 
             {/* Rating / seasons chips */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
