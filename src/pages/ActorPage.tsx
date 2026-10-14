@@ -103,7 +103,7 @@ export function ActorPage() {
 
   if (error || !person) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center space-y-2">
+      <div className="max-w-[950px] mx-auto px-4 py-20 text-center space-y-2">
         <p className="text-white font-semibold">{error || 'Person not found.'}</p>
         <p className="text-xs text-lb-muted">The requested actor could not be loaded.</p>
       </div>

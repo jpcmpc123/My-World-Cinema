@@ -96,7 +96,7 @@ export const FilmPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-[960px] mx-auto px-4 py-32 flex flex-col items-center justify-center space-y-4">
+      <div className="max-w-[950px] mx-auto px-4 py-32 flex flex-col items-center justify-center space-y-4">
         <div className="w-10 h-10 border-3 border-lb-green border-t-transparent rounded-full animate-spin" />
         <p className="text-xs text-lb-text tracking-wide">{isTv ? 'Loading series...' : 'Loading film...'}</p>
       </div>
@@ -105,7 +105,7 @@ export const FilmPage: React.FC = () => {
 
   if (!movie) {
     return (
-      <div className="max-w-[960px] mx-auto px-4 py-32 text-center">
+      <div className="max-w-[950px] mx-auto px-4 py-32 text-center">
         <h2 className="text-xl font-bold text-white mb-2 font-serif">{isTv ? 'Series not found' : 'Film not found'}</h2>
         <Link to={isTv ? '/series' : '/films'} className="text-sm text-lb-green hover:underline">
           {isTv ? 'Return to series catalog' : 'Return to films catalog'}
@@ -193,11 +193,11 @@ export const FilmPage: React.FC = () => {
 
       {/* 2. Main Content Container: 3-column myworld layout */}
       <div
-        className={`relative z-10 max-w-[960px] mx-auto px-4 pb-16 ${
+        className={`relative z-10 max-w-[950px] mx-auto px-4 pb-16 ${
           backdropUrl ? '-mt-[120px] md:-mt-[150px]' : 'pt-20'
         }`}
       >
-        <div className="flex flex-col md:grid md:grid-cols-[230px_minmax(0,1fr)_235px] gap-6 lg:gap-8 items-start">
+        <div className="flex flex-col md:grid md:grid-cols-[230px_minmax(0,1fr)_230px] gap-8 items-start">
 
           {/* ========================================================
               LEFT COLUMN (w-[230px]): Poster, Stats Bar, Where to Watch
@@ -265,16 +265,21 @@ export const FilmPage: React.FC = () => {
                 <h1 className="font-serif font-bold text-[26px] sm:text-[32px] text-white tracking-tight leading-tight">
                   {movie.title}
                 </h1>
+              </div>
+
+              {/* Ano + Diretor na linha de baixo (padrão Letterboxd):
+                  "2026 Directed by Destin Daniel Cretton" */}
+              <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 mt-1 text-xs text-lb-muted">
                 {releaseYear && (
                   <Link
                     to={isTv ? `/series/year/${releaseYear}` : `/films/year/${releaseYear}`}
-                    className="text-lb-muted hover:text-white text-base sm:text-lg font-normal transition-colors"
+                    className="text-lb-muted hover:text-white underline underline-offset-2 decoration-lb-muted/40 hover:decoration-white transition-colors"
                   >
                     {releaseYear}
                   </Link>
                 )}
                 {director && (
-                  <div className="text-xs text-lb-muted whitespace-nowrap ml-1">
+                  <span className="whitespace-nowrap">
                     {isTv ? 'Created by' : 'Directed by'}{' '}
                     <Link
                       to={`/actor/${director.id}`}
@@ -282,7 +287,7 @@ export const FilmPage: React.FC = () => {
                     >
                       {director.name}
                     </Link>
-                  </div>
+                  </span>
                 )}
               </div>
 
@@ -580,7 +585,7 @@ export const FilmPage: React.FC = () => {
               RIGHT COLUMN (w-[235px]): Action Panel & Rating Histogram
               (Strictly NO Pro / Patron ads)
               ======================================================== */}
-          <div className="w-full md:w-[235px] flex-shrink-0 space-y-5">
+          <div className="w-full md:w-[230px] flex-shrink-0 space-y-5">
             {/* MyWorld Action Card */}
             <div className="bg-lb-border-light border border-[#556677] rounded-[4px] shadow-lg overflow-hidden text-xs text-lb-text">
               

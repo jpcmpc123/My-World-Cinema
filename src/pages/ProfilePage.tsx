@@ -143,7 +143,7 @@ export const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-[950px] mx-auto px-4 py-8 space-y-6">
       {/* 1. Profile Header */}
       <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 pt-2 pb-4">
         {/* Avatar & User Details */}

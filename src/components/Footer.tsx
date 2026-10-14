@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 export const Footer: React.FC = () => {
   return (
     <footer className="mt-20 border-t border-lb-elevated bg-lb-bg text-lb-muted text-xs py-10">
-      <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="max-w-[950px] mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 font-semibold">
           <Link to="/films" className="hover:text-white transition-colors">Filmes</Link>
           <Link to="/lists" className="hover:text-white transition-colors">Listas</Link>

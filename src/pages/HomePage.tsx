@@ -48,7 +48,7 @@ export const HomePage: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-lb-bg via-lb-bg/70 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-lb-bg via-transparent to-lb-bg" />
 
-        <div className="relative max-w-6xl mx-auto px-4 h-full flex flex-col justify-end pb-12">
+        <div className="relative max-w-[950px] mx-auto px-4 h-full flex flex-col justify-end pb-12">
           <div className="max-w-2xl space-y-4">
             <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
               Track films you’ve watched.
@@ -79,7 +79,7 @@ export const HomePage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 space-y-14">
+      <div className="max-w-[950px] mx-auto px-4 space-y-14">
         {/* Popular Films This Week */}
         <section className="space-y-4">
           <div className="flex items-center justify-between border-b border-lb-elevated pb-2">
@@ -96,15 +96,15 @@ export const HomePage: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-              {[...Array(6)].map((_, i) => (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {[...Array(4)].map((_, i) => (
                 <div key={i} className="aspect-[2/3] bg-lb-surface animate-pulse rounded border border-lb-elevated" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-              {popularFilms.slice(0, 6).map((movie) => (
-                <PosterCard key={movie.id} movie={movie} showDetails />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {popularFilms.slice(0, 4).map((movie) => (
+                <PosterCard key={movie.id} movie={movie} size="fluid" showDetails />
               ))}
             </div>
           )}
@@ -171,9 +171,9 @@ export const HomePage: React.FC = () => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
             {topRatedFilms.map((movie) => (
-              <PosterCard key={movie.id} movie={movie} showDetails />
+              <PosterCard key={movie.id} movie={movie} size="fluid" showDetails />
             ))}
           </div>
         </section>

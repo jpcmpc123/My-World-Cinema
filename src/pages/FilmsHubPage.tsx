@@ -98,21 +98,24 @@ export const FilmsHubPage: React.FC = () => {
   const currentPopularBatch = popularFilms.slice(carouselIndex, carouselIndex + 4);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-8 select-none pb-20">
+    <div className="max-w-[950px] mx-auto px-4 py-6 space-y-8 select-none pb-20">
       {/* 1. TOP BROWSE BAR (Matching exact screenshot: BROWSE BY, YEAR v, RATING v, POPULAR v, GENRE v, SERVICE v, OTHER v, FIND A FILM) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-lb-elevated pb-2.5 text-xs">
         {/* Left: BROWSE BY + Dropdowns */}
-        <div ref={browseBarRef} className="flex flex-wrap items-center gap-2.5 sm:gap-4 font-semibold uppercase tracking-wider text-[11px] text-lb-muted">
+        <div ref={browseBarRef} className="flex flex-wrap items-center gap-3 font-semibold uppercase tracking-wider text-[11px] text-lb-muted">
           <span className="text-lb-muted font-bold shrink-0">BROWSE BY</span>
+
+          {/* Grouped dropdown container, Letterboxd style */}
+          <div className="inline-flex items-center border border-[#2c3440] rounded-[3px] divide-x divide-[#2c3440] bg-[#14181c]">
 
           {/* YEAR Dropdown */}
           <div className="relative">
             <button
               onClick={(e) => handleDropdownToggle(e, 'year')}
-              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] tracking-wider uppercase transition-colors cursor-pointer ${
                 openDropdown === 'year'
                   ? 'bg-lb-elevated text-white font-bold'
-                  : 'text-lb-muted hover:text-white'
+                  : 'text-[#9ab] hover:text-white'
               }`}
             >
               <span>YEAR</span>
@@ -146,10 +149,10 @@ export const FilmsHubPage: React.FC = () => {
           <div className="relative">
             <button
               onClick={(e) => handleDropdownToggle(e, 'rating')}
-              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] tracking-wider uppercase transition-colors cursor-pointer ${
                 openDropdown === 'rating'
                   ? 'bg-lb-elevated text-white font-bold'
-                  : 'text-lb-muted hover:text-white'
+                  : 'text-[#9ab] hover:text-white'
               }`}
             >
               <span>RATING</span>
@@ -180,10 +183,10 @@ export const FilmsHubPage: React.FC = () => {
           <div className="relative">
             <button
               onClick={(e) => handleDropdownToggle(e, 'popular')}
-              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] tracking-wider uppercase transition-colors cursor-pointer ${
                 openDropdown === 'popular'
                   ? 'bg-lb-elevated text-white font-bold'
-                  : 'text-lb-muted hover:text-white'
+                  : 'text-[#9ab] hover:text-white'
               }`}
             >
               <span>POPULAR</span>
@@ -221,10 +224,10 @@ export const FilmsHubPage: React.FC = () => {
           <div className="relative">
             <button
               onClick={(e) => handleDropdownToggle(e, 'genre')}
-              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] tracking-wider uppercase transition-colors cursor-pointer ${
                 openDropdown === 'genre'
                   ? 'bg-lb-elevated text-white font-bold'
-                  : 'text-lb-muted hover:text-white'
+                  : 'text-[#9ab] hover:text-white'
               }`}
             >
               <span>GENRE</span>
@@ -251,10 +254,10 @@ export const FilmsHubPage: React.FC = () => {
           <div className="relative">
             <button
               onClick={(e) => handleDropdownToggle(e, 'service')}
-              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] tracking-wider uppercase transition-colors cursor-pointer ${
                 openDropdown === 'service'
                   ? 'bg-lb-elevated text-white font-bold'
-                  : 'text-lb-muted hover:text-white'
+                  : 'text-[#9ab] hover:text-white'
               }`}
             >
               <span>SERVICE</span>
@@ -281,10 +284,10 @@ export const FilmsHubPage: React.FC = () => {
           <div className="relative">
             <button
               onClick={(e) => handleDropdownToggle(e, 'other')}
-              className={`flex items-center gap-1 px-2 py-1 rounded-xs transition-colors cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] tracking-wider uppercase transition-colors cursor-pointer ${
                 openDropdown === 'other'
                   ? 'bg-lb-elevated text-white font-bold'
-                  : 'text-lb-muted hover:text-white'
+                  : 'text-[#9ab] hover:text-white'
               }`}
             >
               <span>OTHER</span>
@@ -309,6 +312,7 @@ export const FilmsHubPage: React.FC = () => {
                 </Link>
               </div>
             )}
+          </div>
           </div>
         </div>
 

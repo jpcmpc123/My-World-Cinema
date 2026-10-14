@@ -49,7 +49,7 @@ export const SeriesDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-[960px] mx-auto px-4 py-32 flex flex-col items-center justify-center space-y-4">
+      <div className="max-w-[950px] mx-auto px-4 py-32 flex flex-col items-center justify-center space-y-4">
         <div className="w-10 h-10 border-3 border-lb-green border-t-transparent rounded-full animate-spin" />
         <p className="text-xs text-lb-text tracking-wide">Loading series...</p>
       </div>
@@ -58,7 +58,7 @@ export const SeriesDetailPage: React.FC = () => {
 
   if (!show) {
     return (
-      <div className="max-w-[960px] mx-auto px-4 py-32 text-center">
+      <div className="max-w-[950px] mx-auto px-4 py-32 text-center">
         <h2 className="text-xl font-bold text-white mb-2 font-serif">Series not found</h2>
         <Link to="/series" className="text-sm text-lb-green hover:underline">
           Return to series catalog
@@ -101,7 +101,7 @@ export const SeriesDetailPage: React.FC = () => {
       {backdropUrl && <Backdrop src={backdropUrl} alt={show.title} />}
 
       <div
-        className={`relative z-10 max-w-[960px] mx-auto px-4 pb-16 ${
+        className={`relative z-10 max-w-[950px] mx-auto px-4 pb-16 ${
           backdropUrl ? '-mt-[120px] md:-mt-[150px]' : 'pt-20'
         }`}
       >
@@ -144,21 +144,23 @@ export const SeriesDetailPage: React.FC = () => {
                 <h1 className="font-serif font-bold text-[26px] sm:text-[32px] text-white tracking-tight leading-tight">
                   {show.title}
                 </h1>
-                {releaseYear && (
-                  <Link
-                    to={`/series/year/${releaseYear}`}
-                    className="text-lb-muted hover:text-white text-base sm:text-lg font-normal transition-colors"
-                  >
-                    {releaseYear}
-                  </Link>
-                )}
                 <span className="text-[10px] uppercase tracking-wider font-bold text-lb-green border border-lb-green/50 rounded px-1.5 py-0.5 flex items-center gap-1">
                   <Tv className="w-3 h-3" /> Series
                 </span>
               </div>
 
+              {/* Ano + Criadores na linha de baixo (padrão Letterboxd) */}
+              <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 mt-1 text-xs text-lb-muted">
+                {releaseYear && (
+                  <Link
+                    to={`/series/year/${releaseYear}`}
+                    className="text-lb-muted hover:text-white underline underline-offset-2 decoration-lb-muted/40 hover:decoration-white transition-colors"
+                  >
+                    {releaseYear}
+                  </Link>
+                )}
               {creators.length > 0 && (
-                <div className="text-xs text-lb-muted mt-1">
+                <span>
                   Created by{' '}
                   {creators.map((c, i) => (
                     <span key={c.id}>
@@ -171,8 +173,9 @@ export const SeriesDetailPage: React.FC = () => {
                       </Link>
                     </span>
                   ))}
-                </div>
+                </span>
               )}
+              </div>
 
               {show.tagline && (
                 <p className="uppercase tracking-[0.14em] font-semibold text-[10px] text-lb-muted mt-2 leading-snug">

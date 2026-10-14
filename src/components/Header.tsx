@@ -94,7 +94,7 @@ export const Header: React.FC = () => {
           : 'sticky top-0 z-50 bg-lb-bg border-b border-lb-elevated shadow-md select-none'
       }
     >
-      <div className={`max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4 ${
+      <div className={`max-w-[950px] mx-auto px-4 h-14 flex items-center justify-between gap-4 ${
         overBackdrop ? '[text-shadow:0_1px_3px_rgba(0,0,0,0.8)] [&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : ''
       }`}>
         {/* Left: Brand Logo */}

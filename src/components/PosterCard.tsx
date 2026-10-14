@@ -61,7 +61,7 @@ const PosterCardBase: React.FC<PosterCardProps> = ({
   return (
     <div className={`group flex flex-col ${posterSizes[size]}`}>
       {/* Poster Image Container */}
-      <div className="relative aspect-[2/3] rounded bg-lb-surface overflow-hidden border border-transparent ring-0 group-hover:ring-1 group-hover:ring-lb-green transition-all duration-200 shadow-md group-hover:shadow-[0_4px_20px_rgba(0,224,84,0.2)]">
+      <div className="relative aspect-[2/3] rounded-[4px] bg-lb-surface overflow-hidden border border-white/15 ring-0 group-hover:ring-1 group-hover:ring-lb-green transition-all duration-200 shadow-md group-hover:shadow-[0_4px_20px_rgba(0,224,84,0.2)]">
         {rank !== undefined && (
           <div className="absolute top-1.5 left-1.5 z-20 bg-black/80 text-white font-bold text-xs px-2 py-0.5 rounded border border-white/20 backdrop-blur-xs">
             #{rank}

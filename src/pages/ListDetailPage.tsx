@@ -33,7 +33,7 @@ export const ListDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-[950px] mx-auto px-4 py-8 space-y-8">
       <Link
         to="/lists"
         className="inline-flex items-center gap-1.5 text-xs text-lb-text hover:text-white"
