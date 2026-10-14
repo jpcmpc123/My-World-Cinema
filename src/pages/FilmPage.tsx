@@ -19,6 +19,7 @@ import { RatingHistogram } from '../components/RatingHistogram';
 import { WhereToWatch } from '../components/WhereToWatch';
 import { PosterCard } from '../components/PosterCard';
 import { ImagePickerModal } from '../components/ImagePickerModal';
+import { Backdrop } from '../components/Backdrop';
 
 function formatNumber(num: number): string {
   if (num >= 1_000_000) {
@@ -188,65 +189,21 @@ export const FilmPage: React.FC = () => {
   return (
     <div className="relative min-h-screen text-lb-text">
       {/* 1. Cinematic Hero Vignette Backdrop */}
-      {backdropUrl && (
-        <div className="absolute top-0 left-0 right-0 h-[480px] md:h-[540px] overflow-hidden -z-0 pointer-events-none">
-          {/* Imagem única, nítida, com máscara composta (radial elíptica ampla INTERSECT linear vertical)
-              — dissolve suavemente em todas as direções, sem arestas */}
-          <div className="absolute inset-0 flex justify-center">
-            <div className="relative w-full max-w-[1150px] h-full">
-              {/* Camada BORRADA (fundo): visível nas laterais e extremidades,
-                  criando a transição nítido → desfoque → fundo */}
-              <img loading="lazy" decoding="async"
-                src={backdropUrl}
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-cover object-[center_25%] scale-110"
-                style={{
-                  filter: 'blur(18px) brightness(0.95)',
-                  maskImage:
-                    'radial-gradient(ellipse 125% 95% at 50% 25%, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 68%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 88%)',
-                  WebkitMaskImage:
-                    'radial-gradient(ellipse 125% 95% at 50% 25%, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 68%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 88%)',
-                  maskComposite: 'intersect',
-                  WebkitMaskComposite: 'source-in',
-                }}
-              />
-              {/* Imagem NÍTIDA (topo): zona central menor — revela o blur nas laterais */}
-              <img loading="lazy" decoding="async"
-                src={backdropUrl}
-                alt={movie.title}
-                className="absolute inset-0 w-full h-full object-cover object-[center_25%] scale-105"
-                style={{
-                  maskImage:
-                    'radial-gradient(ellipse 75% 70% at 50% 25%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 98%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 72%)',
-                  WebkitMaskImage:
-                    'radial-gradient(ellipse 75% 70% at 50% 25%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 98%), linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 72%)',
-                  maskComposite: 'intersect',
-                  WebkitMaskComposite: 'source-in',
-                }}
-              />
-            </div>
-          </div>
-          {/* Overlays sólidos na cor do fundo reforçando a dissolução em todas as direções */}
-          <div className="absolute inset-y-0 left-0 w-[25vw] bg-gradient-to-r from-lb-bg via-lb-bg/60 to-transparent" />
-          <div className="absolute inset-y-0 right-0 w-[25vw] bg-gradient-to-l from-lb-bg via-lb-bg/60 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-[240px] bg-gradient-to-t from-lb-bg via-lb-bg/60 to-transparent" />
-          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-lb-bg/70 to-transparent" />
-        </div>
-      )}
+      {backdropUrl && <Backdrop src={backdropUrl} alt={movie.title} />}
 
       {/* 2. Main Content Container: 3-column myworld layout */}
       <div
         className={`relative z-10 max-w-[960px] mx-auto px-4 pb-16 ${
-          backdropUrl ? 'pt-[400px] md:pt-[460px]' : 'pt-8'
+          backdropUrl ? '-mt-[120px] md:-mt-[150px]' : 'pt-20'
         }`}
       >
-        <div className="flex flex-col md:flex-row gap-6 lg:gap-8 items-start">
-          
+        <div className="flex flex-col md:grid md:grid-cols-[230px_minmax(0,1fr)_235px] gap-6 lg:gap-8 items-start">
+
           {/* ========================================================
               LEFT COLUMN (w-[230px]): Poster, Stats Bar, Where to Watch
+              (ocupa as 2 linhas do grid em telas md+)
               ======================================================== */}
-          <div className="w-full md:w-[230px] flex-shrink-0 flex flex-col items-center md:items-start">
+          <div className="w-full md:w-[230px] md:row-span-2 flex-shrink-0 flex flex-col items-center md:items-start">
             {/* Film Poster (230x345px standard) */}
             <div className="w-[230px] h-[345px] rounded-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.8)] border border-[#303840] bg-lb-surface flex-shrink-0">
               <img loading="lazy" decoding="async"
@@ -299,12 +256,12 @@ export const FilmPage: React.FC = () => {
           </div>
 
           {/* ========================================================
-              CENTER COLUMN: Title, Year, Director, Tagline, Synopsis, Tabs
+              HEADER: Title + Year + Director + Tagline
+              (ocupa as colunas do centro E da direita — como no Letterboxd,
+              permitindo títulos longos em uma única linha)
               ======================================================== */}
-          <div className="flex-1 min-w-0 md:px-2 space-y-3">
-            {/* Header: Title + Year + Director inline */}
-            <div>
-              <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <div className="md:col-span-2 min-w-0 md:px-2">
+            <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
                 <h1 className="font-serif font-bold text-[26px] sm:text-[32px] text-white tracking-tight leading-tight">
                   {movie.title}
                 </h1>
@@ -329,14 +286,18 @@ export const FilmPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Tagline (MyWorld uppercase tracking) */}
-              {movie.tagline && (
-                <p className="uppercase tracking-[0.14em] font-semibold text-[10px] text-lb-muted mt-2 leading-snug">
-                  {movie.tagline.replace(/^"|"$/g, '')}
-                </p>
-              )}
-            </div>
+            {/* Tagline (MyWorld uppercase tracking) */}
+            {movie.tagline && (
+              <p className="uppercase tracking-[0.14em] font-semibold text-[10px] text-lb-muted mt-2 leading-snug">
+                {movie.tagline.replace(/^"|"$/g, '')}
+              </p>
+            )}
+          </div>
 
+          {/* ========================================================
+              CENTER COLUMN: Synopsis, Tabs, Reviews
+              ======================================================== */}
+          <div className="min-w-0 md:px-2 space-y-3">
             {/* Overview / Synopsis */}
             <div className="text-[13px] text-lb-text leading-[1.6] font-normal">
               <p>{movie.overview || 'Synopsis not available for this film.'}</p>

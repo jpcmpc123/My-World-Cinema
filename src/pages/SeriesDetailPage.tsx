@@ -4,6 +4,7 @@ import { Star, Play, X, Tv } from 'lucide-react';
 import { tmdb, type TMDBMovieDetails } from '../services/tmdb';
 import { WhereToWatch } from '../components/WhereToWatch';
 import { PosterCard } from '../components/PosterCard';
+import { Backdrop } from '../components/Backdrop';
 
 // Página de série (/tv/:id) — versão simplificada da FilmPage:
 // navegação/leitura apenas (sem log/diário/rating; o app registra FILMES).
@@ -97,25 +98,11 @@ export const SeriesDetailPage: React.FC = () => {
   return (
     <div className="relative">
       {/* Backdrop hero */}
-      {backdropUrl && (
-        <div className="absolute inset-x-0 top-0 h-[480px] overflow-hidden">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${backdropUrl})` }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(20,24,28,1) 95%)',
-            }}
-          />
-        </div>
-      )}
+      {backdropUrl && <Backdrop src={backdropUrl} alt={show.title} />}
 
       <div
         className={`relative z-10 max-w-[960px] mx-auto px-4 pb-16 ${
-          backdropUrl ? 'pt-[340px] md:pt-[400px]' : 'pt-8'
+          backdropUrl ? '-mt-[120px] md:-mt-[150px]' : 'pt-20'
         }`}
       >
         <div className="flex flex-col md:flex-row gap-6 lg:gap-8 items-start">
