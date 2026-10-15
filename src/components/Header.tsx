@@ -155,8 +155,8 @@ export const Header: React.FC = () => {
         overBackdrop
           ? 'absolute inset-x-0 top-0 z-50 bg-transparent select-none'
           : isBrowseRoute
-            ? 'hidden md:block sticky top-0 z-50 bg-[#0d0f12] md:bg-lb-bg border-b border-lb-elevated shadow-md select-none'
-            : 'sticky top-0 z-50 bg-[#0d0f12] md:bg-lb-bg border-b border-lb-elevated shadow-md select-none'
+            ? 'hidden md:block sticky top-0 z-50 bg-black md:bg-lb-bg border-b border-lb-elevated shadow-md select-none'
+            : 'sticky top-0 z-50 bg-black md:bg-lb-bg border-b border-lb-elevated shadow-md select-none'
       }
     >
       <div className={`relative max-w-[950px] mx-auto px-4 h-14 flex items-center justify-between gap-4 ${
@@ -513,7 +513,7 @@ export const Header: React.FC = () => {
               >
                 <span>{tab.label}</span>
                 <span
-                  className={`h-[3px] w-10 rounded-full ${active ? 'bg-[#00e054]' : 'bg-transparent'}`}
+                  className={`h-[3px] w-full rounded-full ${active ? 'bg-[#00e054]' : 'bg-transparent'}`}
                 />
               </button>
             );
@@ -537,7 +537,7 @@ export const Header: React.FC = () => {
               >
                 <span>{tab.label}</span>
                 <span
-                  className={`h-[3px] w-10 rounded-full ${active ? 'bg-[#00e054]' : 'bg-transparent'}`}
+                  className={`h-[3px] w-full rounded-full ${active ? 'bg-[#00e054]' : 'bg-transparent'}`}
                 />
               </button>
             );

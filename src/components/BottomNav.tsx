@@ -70,8 +70,13 @@ export const BottomNav: React.FC = () => {
         <Zap className={iconCls} />
       </Link>
 
-      {/* 5. Profile (avatar com fallback para silhueta) */}
-      <Link to={`/${displayUsername}`} aria-label="Profile" className={pill(profileActive)}>
+      {/* 5. Profile (avatar com fallback para silhueta).
+          Sem conta logada, o clique leva para /signin (tela de login), como no app Letterboxd */}
+      <Link
+        to={isAuthenticated ? `/${displayUsername}` : '/signin'}
+        aria-label={isAuthenticated ? 'Profile' : 'Sign in'}
+        className={pill(profileActive)}
+      >
         {displayAvatar && !avatarError ? (
           <img
             src={displayAvatar}

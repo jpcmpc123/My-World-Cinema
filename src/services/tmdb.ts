@@ -218,6 +218,54 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string 
   }
 }
 
+// ---------------------------------------------------------------------------
+// Referências de data e mapa de países — usados pelos filtros de elegibilidade
+// das vitrines (Popular / Highest rated / Most watched / Most anticipated) e
+// pelo filtro de nacionalidade (with_origin_country).
+// ---------------------------------------------------------------------------
+export const TMDB_TODAY = new Date().toISOString().split('T')[0];
+export const TMDB_TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+// Gêneros de TV banidos das vitrines e filtros: Talk (Jimmy Fallon, Seth
+// Meyers…), News e Reality diários. Nunca devem aparecer nas abas de séries.
+const TV_EXCLUDED_GENRES = '10767,10763,10764';
+const TV_EXCLUDED_GENRE_IDS = new Set([10767, 10763, 10764]);
+
+// Nome do país (ou código já em ISO) → ISO 3166-1 alpha-2.
+// O filtro de nacionalidade NUNCA envia o nome por extenso à API.
+const COUNTRY_NAME_TO_ISO: Record<string, string> = {
+  'united states': 'US', 'united kingdom': 'GB', brazil: 'BR', france: 'FR',
+  japan: 'JP', 'south korea': 'KR', korea: 'KR', germany: 'DE', italy: 'IT',
+  spain: 'ES', india: 'IN', canada: 'CA', australia: 'AU', mexico: 'MX',
+  argentina: 'AR', portugal: 'PT', china: 'CN', sweden: 'SE', denmark: 'DK',
+  netherlands: 'NL', poland: 'PL',
+};
+
+/** Normaliza qualquer entrada (nome por extenso ou código) para ISO alpha-2 */
+export function toOriginCountryIso(input: string): string | null {
+  const trimmed = input.trim();
+  if (/^[A-Za-z]{2}$/.test(trimmed)) return trimmed.toUpperCase();
+  return COUNTRY_NAME_TO_ISO[trimmed.toLowerCase()] ?? null;
+}
+
+/** Data de exibição/lançamento de um item de lista (filme ou série) */
+function itemDate(m: TMDBMovie): string {
+  const a = m as unknown as Record<string, unknown>;
+  return m.release_date || (a.first_air_date as string) || '';
+}
+
+/** Filme elegível a vitrine: lançado (<= hoje) e com votos mínimos */
+const isReleasedWithVotes = (m: TMDBMovie, minVotes: number) => {
+  const d = itemDate(m);
+  return Boolean(d) && d <= TMDB_TODAY && m.vote_count >= minVotes;
+};
+
+/** Estritamente inédito/futuro (estreia > hoje) */
+const isFuture = (m: TMDBMovie) => {
+  const d = itemDate(m);
+  return Boolean(d) && d > TMDB_TODAY;
+};
+
 export const tmdb = {
   getImageUrl(path: string | null, size: 'w92' | 'w185' | 'w342' | 'w500' | 'w780' | 'original' = 'w500'): string {
     if (!path) return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
@@ -316,11 +364,17 @@ export const tmdb = {
     decade?: number;
     providerId?: number;
     language?: string;
+    /** País/nacionalidade: aceita ISO alpha-2 ou nome por extenso (Brazil → BR) */
+    country?: string;
     sortBy?: string;
     page?: number;
     /** Limites de data de lançamento (YYYY-MM-DD) — usado pelo filtro Released */
     releaseDateGte?: string;
     releaseDateLte?: string;
+    /** Piso de votos explícito (sobrescreve o padrão por sortBy) */
+    minVotes?: number;
+    /** Gêneros excluídos no servidor (ex.: '99,10402' p/ docs/musicais) */
+    withoutGenres?: string;
   }): Promise<TMDBResponse<TMDBMovie>> {
     const apiParams: Record<string, string | number | undefined> = {
       page: params.page || 1,
@@ -329,12 +383,26 @@ export const tmdb = {
       // Quando há limite de data futura, omitimos o piso de votos.
       'vote_count.gte': params.releaseDateGte
         ? undefined
-        : params.sortBy?.includes('vote_average')
-          ? 200
-          : 30,
+        : params.minVotes ??
+          (params.sortBy?.includes('vote_average')
+            ? 200
+            : params.sortBy?.includes('vote_count')
+              ? 100
+              : 30),
       include_adult: 'false',
       language: 'en-US',
     };
+
+    if (params.withoutGenres) {
+      apiParams.without_genres = params.withoutGenres;
+    }
+
+    // Nacionalidade: SEMPRE with_origin_country com código ISO (jamais region
+    // ou watch_region — esses mudam disponibilidade de streaming, não origem)
+    if (params.country) {
+      const iso = toOriginCountryIso(params.country);
+      if (iso) apiParams.with_origin_country = iso;
+    }
 
     if (params.genreId) {
       apiParams.with_genres = params.genreId;
@@ -369,9 +437,14 @@ export const tmdb = {
     decade?: number;
     providerId?: number;
     language?: string;
+    country?: string;
     sortBy?: string;
     page?: number;
     pagesToFetch?: number;
+    releaseDateGte?: string;
+    releaseDateLte?: string;
+    minVotes?: number;
+    withoutGenres?: string;
   }): Promise<{ results: TMDBMovie[]; total_results: number; total_pages: number }> {
     const startPage = ((params.page || 1) - 1) * (params.pagesToFetch || 3) + 1;
     const count = params.pagesToFetch || 3;
@@ -419,26 +492,44 @@ export const tmdb = {
     decade?: number;
     providerId?: number;
     language?: string;
+    /** País/nacionalidade: aceita ISO alpha-2 ou nome por extenso (Brazil → BR) */
+    country?: string;
     sortBy?: string;
     page?: number;
     /** Limites da primeira exibição (YYYY-MM-DD) — usado pelo filtro Released */
     releaseDateGte?: string;
     releaseDateLte?: string;
+    /** Piso de votos explícito (sobrescreve o padrão por sortBy) */
+    minVotes?: number;
+    /** Gêneros excluídos no servidor — SEM reagendar talk/news/reality */
+    withoutGenres?: string;
   }): Promise<TMDBResponse<TMDBMovie>> {
+    // Banimento global anti Talk Show/News/Reality: só é suspenso se o usuário
+    // escolher explicitamente um desses gêneros no filtro de gênero.
+    const antiGenres =
+      params.genreId && TV_EXCLUDED_GENRE_IDS.has(params.genreId)
+        ? params.withoutGenres
+        : [TV_EXCLUDED_GENRES, params.withoutGenres].filter(Boolean).join(',');
+
     const apiParams: Record<string, string | number | undefined> = {
       page: params.page || 1,
       sort_by: params.sortBy || 'popularity.desc',
       // TMDB bug: vote_count.gte + estreias futuras (upcoming) = 0 resultados.
       'vote_count.gte': params.releaseDateGte
         ? undefined
-        : params.sortBy?.includes('vote_average')
-          ? 100
-          : 20,
+        : params.minVotes ?? (params.sortBy?.includes('vote_average') ? 100 : 20),
       include_adult: 'false',
       language: 'en-US',
+      without_genres: antiGenres,
     };
 
     if (params.genreId) apiParams.with_genres = params.genreId;
+
+    // Nacionalidade: SEMPRE with_origin_country com código ISO
+    if (params.country) {
+      const iso = toOriginCountryIso(params.country);
+      if (iso) apiParams.with_origin_country = iso;
+    }
     if (params.providerId) {
       apiParams.with_watch_providers = params.providerId;
       apiParams.watch_region = 'US';
@@ -465,9 +556,14 @@ export const tmdb = {
     decade?: number;
     providerId?: number;
     language?: string;
+    country?: string;
     sortBy?: string;
     page?: number;
     pagesToFetch?: number;
+    releaseDateGte?: string;
+    releaseDateLte?: string;
+    minVotes?: number;
+    withoutGenres?: string;
   }): Promise<{ results: TMDBMovie[]; total_results: number; total_pages: number }> {
     const startPage = ((params.page || 1) - 1) * (params.pagesToFetch || 3) + 1;
     const count = params.pagesToFetch || 3;
@@ -488,6 +584,96 @@ export const tmdb = {
       total_results: firstRes.total_results,
       total_pages: Math.ceil(firstRes.total_pages / count),
     };
+  },
+
+  // ---------------------------------------------------------------------
+  // Seções curadas das abas Films/Series (padrão app Letterboxd).
+  // Regras OBRIGATÓRIAS (validadas no servidor E novamente em JS):
+  //  - Popular/Highest rated/Most watched: APENAS títulos já lançados
+  //    (data <= TODAY) com o piso de votos da seção.
+  //  - Most anticipated: APENAS inéditos (estreia > TODAY), dupla checagem
+  //    em JS e NUNCA compartilhando itens com Popular/Most watched.
+  // ---------------------------------------------------------------------
+
+  /** Aba Films: Popular / Highest rated / Most watched / Most anticipated */
+  async getFilmsHubSections(): Promise<{
+    popular: TMDBMovie[];
+    highestRated: TMDBMovie[];
+    mostWatched: TMDBMovie[];
+    mostAnticipated: TMDBMovie[];
+  }> {
+    const [trendingRes, ratedRes, watchedRes, anticipatedRes] = await Promise.all([
+      fetchFromTMDB<TMDBResponse<TMDBMovie>>('/trending/movie/week', { language: 'en-US' }),
+      this.discoverMoviesBatch({
+        sortBy: 'vote_average.desc',
+        minVotes: 1500,
+        // sem documentários/musicais de nota inflada; só lançados
+        withoutGenres: '99,10402',
+        releaseDateLte: TMDB_TODAY,
+        pagesToFetch: 2,
+      }),
+      this.discoverMoviesBatch({
+        sortBy: 'vote_count.desc',
+        releaseDateLte: TMDB_TODAY,
+        minVotes: 500,
+        pagesToFetch: 1,
+      }),
+      this.discoverMoviesBatch({
+        sortBy: 'popularity.desc',
+        // somente estreias futuras (a partir de amanhã) — servidor
+        releaseDateGte: TMDB_TOMORROW,
+        pagesToFetch: 1,
+      }),
+    ]);
+
+    // Pós-filtros JS obrigatórios: nada sem estrear entra; inéditos não vazam
+    const popular = trendingRes.results.filter((m) => isReleasedWithVotes(m, 50));
+    const highestRated = ratedRes.results.filter((m) => isReleasedWithVotes(m, 1500));
+    const mostWatched = watchedRes.results.filter((m) => isReleasedWithVotes(m, 1));
+
+    // Desduplicação: Most anticipated nunca compartilha itens das outras vitrines
+    const seenIds = new Set([...popular, ...highestRated, ...mostWatched].map((m) => m.id));
+    const mostAnticipated = anticipatedRes.results.filter((m) => isFuture(m) && !seenIds.has(m.id));
+
+    return { popular, highestRated, mostWatched, mostAnticipated };
+  },
+
+  /** Aba Series: mesmas regras usando first_air_date + anti talk-show/news/reality */
+  async getSeriesHubSections(): Promise<{
+    popular: TMDBMovie[];
+    highestRated: TMDBMovie[];
+    mostWatched: TMDBMovie[];
+    mostAnticipated: TMDBMovie[];
+  }> {
+    const [trendingRes, ratedRes, watchedRes, anticipatedRes] = await Promise.all([
+      fetchFromTMDB<TMDBResponse<TMDBMovie>>('/trending/tv/week', { language: 'en-US' }),
+      this.discoverTVBatch({
+        sortBy: 'vote_average.desc',
+        minVotes: 500,
+        releaseDateLte: TMDB_TODAY,
+        pagesToFetch: 2,
+      }),
+      this.discoverTVBatch({
+        sortBy: 'vote_count.desc',
+        releaseDateLte: TMDB_TODAY,
+        minVotes: 100,
+        pagesToFetch: 1,
+      }),
+      this.discoverTVBatch({
+        sortBy: 'popularity.desc',
+        releaseDateGte: TMDB_TOMORROW,
+        pagesToFetch: 1,
+      }),
+    ]);
+
+    const popular = trendingRes.results.filter((m) => isReleasedWithVotes(m, 30));
+    const highestRated = ratedRes.results.filter((m) => isReleasedWithVotes(m, 500));
+    const mostWatched = watchedRes.results.filter((m) => isReleasedWithVotes(m, 1));
+
+    const seenIds = new Set([...popular, ...highestRated, ...mostWatched].map((m) => m.id));
+    const mostAnticipated = anticipatedRes.results.filter((m) => isFuture(m) && !seenIds.has(m.id));
+
+    return { popular, highestRated, mostWatched, mostAnticipated };
   },
 
   // Detalhes de serie normalizados para o formato de filme (title/name etc.)

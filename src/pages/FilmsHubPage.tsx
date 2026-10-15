@@ -61,12 +61,11 @@ export const FilmsHubPage: React.FC = () => {
       setLoading(true);
       window.scrollTo(0, 0);
       try {
-        const [popRes, topRes] = await Promise.all([
-          tmdb.discoverMoviesBatch({ sortBy: 'popularity.desc', pagesToFetch: 2 }),
-          tmdb.getNowPlaying(1),
-        ]);
-        setPopularFilms(popRes.results.slice(0, 16));
-        setJustReviewedFilms(topRes.results.slice(0, 12));
+        // "Just reviewed" do hub desktop passa a ser também curado por data:
+        // nada de lançados na fileira de inéditos
+        const hub = await tmdb.getFilmsHubSections();
+        setPopularFilms(hub.popular.slice(0, 16));
+        setJustReviewedFilms(hub.mostAnticipated.slice(0, 12));
       } catch (err) {
         console.error('Failed to load films hub:', err);
       } finally {

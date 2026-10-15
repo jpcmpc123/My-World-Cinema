@@ -296,7 +296,7 @@ export const FilmPage: React.FC = () => {
               (ocupa as colunas do centro E da direita â€” como no Letterboxd,
               permitindo tÃ­tulos longos em uma Ãºnica linha)
               ======================================================== */}
-          <div className="md:col-span-2 min-w-0 md:px-2 flex max-md:items-start md:items-end justify-between gap-4">
+          <div className="w-full md:col-span-2 min-w-0 md:px-2 flex max-md:items-start md:items-end justify-between gap-4">
             {/* Bloco de texto: título + ano/diretor + tagline */}
             <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
@@ -391,7 +391,7 @@ export const FilmPage: React.FC = () => {
           {/* ========================================================
               CENTER COLUMN: Synopsis, Tabs, Reviews
               ======================================================== */}
-          <div className="min-w-0 md:px-2 space-y-3">
+          <div className="w-full min-w-0 md:px-2 space-y-3">
             {/* Overview / Synopsis â€” mobile: 3 linhas com toque para expandir */}
             <div
               className="text-[13px] text-lb-text leading-[1.6] font-normal cursor-pointer md:cursor-default"

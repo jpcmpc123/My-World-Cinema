@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
+import { App } from '@capacitor/app';
 import { supabase } from '../lib/supabase';
+
+// Deep link de retorno do OAuth dentro do APK (esquema registrado no AndroidManifest)
+const NATIVE_OAUTH_REDIRECT = 'com.myworld.app://auth/callback';
 
 export interface Profile {
   id: string;
@@ -104,6 +110,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) return { error: 'Supabase is not configured.' };
+
+    // ---------------------------------------------------------------
+    // APK (Capacitor nativo): o OAuth roda em Custom Tab via @capacitor/browser
+    // e retorna ao app pelo deep link com.myworld.app://auth/callback?code=...
+    // Assim a sessão é criada DENTRO do apk, sem jogar o usuário pro site.
+    // ---------------------------------------------------------------
+    if (Capacitor.isNativePlatform()) {
+      const client = supabase;
+      const { data, error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: NATIVE_OAUTH_REDIRECT, skipBrowserRedirect: true },
+      });
+      if (error || !data.url) return { error: error?.message ?? 'OAuth failed to start.' };
+
+      // Listener único para o retorno do fluxo OAuth
+      const authPromise = new Promise<{ error: string | null }>((resolve) => {
+        const sub = App.addListener('appUrlOpen', async ({ url }) => {
+          if (!url.startsWith(NATIVE_OAUTH_REDIRECT)) return;
+          (await sub).remove();
+          await Browser.close().catch(() => undefined);
+          try {
+            const parsed = new URL(url);
+            const code = parsed.searchParams.get('code');
+            if (!code) {
+              resolve({ error: 'Google sign-in was cancelled or failed.' });
+              return;
+            }
+            const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
+            resolve({ error: exchangeError ? exchangeError.message : null });
+          } catch (e) {
+            resolve({ error: e instanceof Error ? e.message : 'OAuth callback failed.' });
+          }
+        });
+      });
+
+      await Browser.open({ url: data.url });
+      return authPromise;
+    }
+
+    // Web/PWA: fluxo normal com redirecionamento para a própria origem
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'MyWorld',
   webDir: 'dist',
   android: {
-    backgroundColor: '#14181c',
+    backgroundColor: '#000000',
   },
 };
 

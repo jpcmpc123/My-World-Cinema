@@ -9,6 +9,7 @@ export const SeriesHubPage: React.FC = () => {
   const [popularSeries, setPopularSeries] = useState<TMDBMovie[]>([]);
   const [topRatedSeries, setTopRatedSeries] = useState<TMDBMovie[]>([]);
   const [justReviewedSeries, setJustReviewedSeries] = useState<TMDBMovie[]>([]);
+  const [mostWatchedSeries, setMostWatchedSeries] = useState<TMDBMovie[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Search input in "FIND A SERIES"
@@ -63,14 +64,13 @@ export const SeriesHubPage: React.FC = () => {
       setLoading(true);
       window.scrollTo(0, 0);
       try {
-        const [popRes, trendRes, topRes] = await Promise.all([
-          tmdb.discoverTVBatch({ sortBy: 'popularity.desc', pagesToFetch: 2 }),
-          tmdb.getTrendingTV('week'),
-          tmdb.getTopRatedTV(1),
-        ]);
-        setPopularSeries(popRes.results.slice(0, 16));
-        setJustReviewedSeries(trendRes.results.slice(0, 12));
-        setTopRatedSeries(topRes.results.slice(0, 6));
+        // Vitrines curadas com regras estritas (first_air_date, piso de votos
+        // e banimento de Talk/News/Reality) — ver tmdb.getSeriesHubSections
+        const hub = await tmdb.getSeriesHubSections();
+        setPopularSeries(hub.popular.slice(0, 20));
+        setMostWatchedSeries(hub.mostWatched.slice(0, 18));
+        setJustReviewedSeries(hub.mostAnticipated.slice(0, 18));
+        setTopRatedSeries(hub.highestRated.slice(0, 18));
       } catch (err) {
         console.error('Failed to load series hub:', err);
       } finally {
@@ -107,6 +107,7 @@ export const SeriesHubPage: React.FC = () => {
         basePath="/series"
         popular={popularSeries}
         topRated={topRatedSeries}
+        mostWatched={mostWatchedSeries}
         anticipated={justReviewedSeries}
         loading={loading}
       />

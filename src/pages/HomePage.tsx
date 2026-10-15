@@ -12,21 +12,20 @@ export const HomePage: React.FC = () => {
   const [popularFilms, setPopularFilms] = useState<TMDBMovie[]>([]);
   const [topRatedFilms, setTopRatedFilms] = useState<TMDBMovie[]>([]);
   const [nowPlayingFilms, setNowPlayingFilms] = useState<TMDBMovie[]>([]);
+  const [mostWatchedFilms, setMostWatchedFilms] = useState<TMDBMovie[]>([]);
   const [featuredFilm, setFeaturedFilm] = useState<TMDBMovie | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [popRes, topRes, nowRes] = await Promise.all([
-          tmdb.getPopular(1),
-          tmdb.getTopRated(1),
-          tmdb.getNowPlaying(1),
-        ]);
-        setPopularFilms(popRes.results.slice(0, 12));
-        setTopRatedFilms(topRes.results.slice(0, 6));
-        setNowPlayingFilms(nowRes.results.slice(0, 4));
-        setFeaturedFilm(popRes.results[0] || null);
+        // Vitrines curadas com regras estritas de data/votos (ver tmdb.ts)
+        const hub = await tmdb.getFilmsHubSections();
+        setPopularFilms(hub.popular.slice(0, 18));
+        setTopRatedFilms(hub.highestRated.slice(0, 18));
+        setNowPlayingFilms(hub.mostAnticipated.slice(0, 18));
+        setMostWatchedFilms(hub.mostWatched.slice(0, 18));
+        setFeaturedFilm(hub.popular[0] || null);
       } catch (err) {
         console.error('Failed to load homepage movies:', err);
       } finally {
@@ -85,13 +84,16 @@ export const HomePage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-[950px] mx-auto px-4 space-y-8 md:space-y-14">
+      {/* pt-4 no mobile: respiro entre a faixa de abas e a primeira seção
+          (o hero hidden não gera espaçamento no mobile) */}
+      <div className="max-w-[950px] mx-auto px-4 pt-4 md:pt-0 space-y-8 md:space-y-14">
         {/* 4 seções de catálogo do app (Popular / Highest rated / Most watched /
             Most anticipated) — estrutura compartilhada com a aba Series */}
         <MobileCatalogSections
           basePath="/films"
           popular={popularFilms}
           topRated={topRatedFilms}
+          mostWatched={mostWatchedFilms}
           anticipated={nowPlayingFilms}
           loading={loading}
         />

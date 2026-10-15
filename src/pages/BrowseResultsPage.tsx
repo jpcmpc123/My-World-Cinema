@@ -12,11 +12,10 @@ import { FiltersModal, type FiltersDraft } from '../components/mobile/FiltersMod
  *   released (any|released|upcoming), sort, length (any|short|medium|long),
  *   type (any|movie|tv), fade, watched, watchlist, backdrop.
  *
- * TMDB service limitations (see src/services/tmdb.ts):
- *  - country: discoverMovies/discoverTV expose no with_origin_country param →
- *    stubbed as a client-side no-op (kept in the URL; filters UI stays honest).
- *  - released=upcoming/released: no release-date boundary params in the service
- *    (except decade) → filtered client-side on the fetched pages.
+ * TMDB service notes (see src/services/tmdb.ts):
+ *  - country: convertido para ISO 3166-1 e aplicado via with_origin_country
+ *    (server-side); type=tv sempre exclui Talk/News/Reality (10767,10763,10764).
+ *  - released=upcoming: estritamente após hoje (releaseDateGte = amanhã).
  *  - length: discover results carry no runtime → client-side no-op.
  */
 
@@ -48,6 +47,9 @@ export const BrowseResultsPage: React.FC = () => {
   const genre = searchParams.get('genre') ? Number(searchParams.get('genre')) : undefined;
   const service = searchParams.get('service') ? Number(searchParams.get('service')) : undefined;
   const language = searchParams.get('language') || undefined;
+  // Nacionalidade: código ISO ou nome por extenso — o serviço converte para
+  // ISO e aplica with_origin_country (nunca region/watch_region)
+  const country = searchParams.get('country') || undefined;
   const released = searchParams.get('released') || 'any';
   const fade = searchParams.get('fade') === '1';
   const watchedFilter = searchParams.get('watched') || 'any';
@@ -66,15 +68,18 @@ export const BrowseResultsPage: React.FC = () => {
       setLoading(true);
       try {
         const today = new Date().toISOString().slice(0, 10);
+        const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         const base = {
           genreId: genre,
           year,
           decade,
           providerId: service,
           language,
+          country,
           sortBy: sort,
-          // Released: aplicado no servidor (primary_release_date / first_air_date)
-          releaseDateGte: released === 'upcoming' ? today : undefined,
+          // Released: aplicado no servidor (primary_release_date / first_air_date).
+          // "upcoming" = estritamente após hoje (evita filmes lançados hoje)
+          releaseDateGte: released === 'upcoming' ? tomorrow : undefined,
           releaseDateLte: released === 'released' ? today : undefined,
         };
         let next: GridItem[] = [];
@@ -112,7 +117,7 @@ export const BrowseResultsPage: React.FC = () => {
         setLoading(false);
       }
     },
-    [genre, year, decade, service, language, sort, type, released],
+    [genre, year, decade, service, language, country, sort, type, released],
   );
 
   // Reload from scratch when the discovery params change
