@@ -67,7 +67,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    supabase.auth.getSession().then(async ({ data }) => {
+    // DESENVOLVIMENTO APENAS: autologin conta de teste (.env.development.local).
+    // import.meta.env.DEV é false no build de produção e no APK, então nada disso entra lá.
+    const devAutoLogin = async () => {
+      if (!import.meta.env.DEV || import.meta.env.VITE_DEV_AUTOLOGIN !== '1') return;
+      const email = import.meta.env.VITE_DEV_EMAIL as string | undefined;
+      const password = import.meta.env.VITE_DEV_PASSWORD as string | undefined;
+      if (!email || !password) return;
+      const { data } = await supabase!.auth.getSession();
+      if (data.session) return;
+      await supabase!.auth.signInWithPassword({ email, password });
+    };
+
+    devAutoLogin().then(() => supabase!.auth.getSession()).then(async ({ data }) => {
       setSession(data.session);
       if (data.session?.user) {
         // Aguarda o PERFIL (não só a sessão) antes de liberar o primeiro render,
