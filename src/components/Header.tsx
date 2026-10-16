@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Search, Plus, User, BookOpen, Clock, List, X, ChevronDown, Zap, Menu, LogOut, Settings, ArrowLeft, MoreVertical, Globe } from 'lucide-react';
+import { Search, Plus, User, BookOpen, Clock, List, X, ChevronDown, Zap, Menu, LogOut, Settings, MoreVertical, Globe, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -127,6 +127,9 @@ export const Header: React.FC = () => {
   // Perfil de PESSOA (/actor/:id): no mobile tem Top App Bar própria
   // (← + nome + abas de função) — a barra global some só no mobile.
   const isActorRoute = /^\/actor\/\d+/.test(path);
+  // Configurações (mobile): a tela "Profile Settings" tem o próprio cabeçalho (✕ / ✓),
+  // então a barra global com "MyWorld" some só no mobile.
+  const isSettingsRoute = path === '/settings';
 
   // Área de perfil (mobile): barra própria com ⚙ + usuário + abas
   const segs = path.split('/').filter(Boolean);
@@ -147,7 +150,7 @@ export const Header: React.FC = () => {
   const profileTab: 'profile' | 'diary' | 'lists' | 'watchlist' =
     (segs[1] as 'diary' | 'lists' | 'watchlist') ||
     (segs[0] === 'diary' || segs[0] === 'watchlist' ? segs[0] : 'profile');
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const searchParam = searchParams.get('q') ?? '';
   const activeTab: 'films' | 'series' | 'reviews' | 'lists' =
     path === '/' || path.startsWith('/films')
@@ -236,7 +239,9 @@ export const Header: React.FC = () => {
           ? 'hidden md:block absolute inset-x-0 top-0 z-50 bg-transparent select-none'
           : isBrowseRoute || isActorRoute
             ? 'hidden md:block sticky top-0 z-50 bg-black border-b border-lb-elevated shadow-md select-none'
-            : 'sticky top-0 z-50 bg-black border-b border-lb-elevated shadow-md select-none'
+            : isSearchRoute
+              ? 'hidden md:block sticky top-0 z-50 bg-black md:border-b md:border-lb-elevated md:shadow-md select-none'
+              : 'sticky top-0 z-50 bg-black border-b border-lb-elevated shadow-md select-none'
       }
     >
       {/* Camada de contraste da navbar sobre o backdrop — MESMA receita do
@@ -251,7 +256,7 @@ export const Header: React.FC = () => {
             renderizados pela própria FilmPage (o ⋮ abre o ActionBottomSheet) */}
 
         {/* Left: Brand Logo (oculto no mobile em páginas de detalhe e principais) */}
-        <Link to="/" className={`${overBackdrop || isMainPage || isSearchRoute || isProfileArea ? 'hidden md:flex' : 'flex'} items-center gap-2 group`}>
+        <Link to="/" className={`${overBackdrop || isMainPage || isSearchRoute || isProfileArea || isSettingsRoute ? 'hidden md:flex' : 'flex'} items-center gap-2 group`}>
           <svg
             viewBox="0 0 32 32"
             className="w-7 h-7 shrink-0 drop-shadow-[0_2px_6px_rgba(0,224,84,0.35)] transition-transform duration-300 group-hover:rotate-6"
@@ -277,6 +282,30 @@ export const Header: React.FC = () => {
           </span>
         </Link>
 
+        {/* Mobile-only (Configurações): barra preta com ✕ / "Profile Settings" / ✓,
+            no lugar do "MyWorld". Ações vêm da própria tela via eventos. */}
+        {isSettingsRoute && (
+          <div className="md:hidden absolute inset-0 flex items-center justify-between px-4 pointer-events-none">
+            <button
+              type="button"
+              aria-label={t('btn_cancel')}
+              onClick={() => window.dispatchEvent(new CustomEvent('settings:cancel'))}
+              className="pointer-events-auto text-white hover:text-lb-muted transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <span className="text-base font-bold text-white">{t('hdr_profile_settings')}</span>
+            <button
+              type="button"
+              aria-label={t('btn_save')}
+              onClick={() => window.dispatchEvent(new CustomEvent('settings:save'))}
+              className="pointer-events-auto text-white hover:text-lb-muted transition-colors cursor-pointer"
+            >
+              <Check className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
         {/* Mobile-only (páginas principais): título centrado "MyWorld" */}
         {isMainPage && (
           <button
@@ -292,7 +321,7 @@ export const Header: React.FC = () => {
         {/* Mobile-only (área de perfil): ⚙ à esquerda + nome de usuário ao lado */}
         {isProfileArea && (
           <div className="md:hidden flex items-center gap-3">
-            <Link to="/settings" aria-label="Settings" className="text-lb-muted hover:text-white transition-colors">
+            <Link to="/settings" aria-label={t('nav_settings')} className="text-lb-muted hover:text-white transition-colors">
               <Settings className="w-5 h-5" />
             </Link>
             <span className="text-base font-bold text-white tracking-tight truncate">
@@ -301,41 +330,8 @@ export const Header: React.FC = () => {
           </div>
         )}
 
-        {/* Mobile-only (/search): campo de busca ocupa a faixa preta do topo
-            — Enter confirma a busca, X limpa e volta para a Home */}
-        {isSearchRoute && (
-          <form
-            onSubmit={submitSearch}
-            className="md:hidden flex items-center gap-2 bg-[#2c3440] rounded-full px-4 py-2 flex-1"
-          >
-            <button type="submit" aria-label={t('search_placeholder')} className="shrink-0 cursor-pointer">
-              <Search className="w-4 h-4 text-lb-muted" />
-            </button>
-            <input
-              type="text"
-              autoFocus
-              value={searchParam}
-              onChange={(e) =>
-                setSearchParams(e.target.value ? { q: e.target.value } : {}, { replace: true })
-              }
-              placeholder={t('search_placeholder')}
-              className="no-focus-ring flex-1 min-w-0 bg-transparent text-sm text-white placeholder-lb-muted focus:outline-none"
-            />
-            {searchParam && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchParams({}, { replace: true });
-                  navigate('/');
-                }}
-                aria-label="Clear search"
-                className="shrink-0 text-lb-muted hover:text-white cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </form>
-        )}
+        {/* Mobile (/search): o campo de busca e as abas agora vivem na própria
+            SearchPage (máquina de 3 estados), por isso a faixa do header some no mobile */}
 
         {/* Right Navigation (oculto no mobile em páginas de detalhe e na busca) */}
         <div className={`${overBackdrop || isSearchRoute || isProfileArea ? 'hidden md:flex' : 'flex'}${isMainPage ? ' ml-auto md:ml-0' : ''} items-center gap-3 md:gap-5 text-xs font-bold uppercase tracking-wider`}>
@@ -347,7 +343,7 @@ export const Header: React.FC = () => {
               <button
                 type="button"
                 onClick={toggleLanguage}
-                aria-label="Language / Idioma"
+                aria-label={t('nav_language_label')}
                 title={language === 'pt-BR' ? 'English (US)' : 'Português (Brasil)'}
                 className="text-[11px] text-[#9ab] hover:text-white border border-white/10 rounded px-2 py-1 flex items-center gap-1 bg-white/5 cursor-pointer transition-colors"
               >
@@ -396,21 +392,21 @@ export const Header: React.FC = () => {
                   className="flex items-center gap-2 px-4 py-2 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
                   <BookOpen className="w-3.5 h-3.5 text-lb-blue" />
-                  <span>Diary</span>
+                  <span>{t('hdr_diary')}</span>
                 </Link>
                 <Link
                   to={`/${displayUsername}/watchlist`}
                   className="flex items-center gap-2 px-4 py-2 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
                   <Clock className="w-3.5 h-3.5 text-lb-blue" />
-                  <span>Watchlist</span>
+                  <span>{t('hdr_watchlist')}</span>
                 </Link>
                 <Link
                   to={`/${displayUsername}/lists`}
                   className="flex items-center gap-2 px-4 py-2 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
                   <List className="w-3.5 h-3.5 text-lb-orange" />
-                  <span>Lists</span>
+                  <span>{t('nav_lists')}</span>
                 </Link>
                 <div className="border-t border-lb-elevated my-1" />
                 <Link
@@ -441,7 +437,7 @@ export const Header: React.FC = () => {
           <Link
             to={`/${displayUsername}?tab=activity`}
             className="hidden md:block text-lb-text hover:text-white transition-colors p-1"
-            title="Activity"
+            title={t('nav_activity')}
           >
             <Zap className="w-3.5 h-3.5 fill-lb-text text-transparent hover:fill-white" />
           </Link>
@@ -453,14 +449,14 @@ export const Header: React.FC = () => {
               location.pathname.startsWith('/films') ? 'text-white font-bold' : 'text-lb-text hover:text-white'
             }`}
           >
-            Films
+            {t('nav_films')}
           </Link>          <Link
             to="/series"
             className={`hidden md:block transition-colors ${
               location.pathname.startsWith('/series') || location.pathname.startsWith('/tv') ? 'text-white font-bold' : 'text-lb-text hover:text-white'
             }`}
           >
-            Series
+            {t('nav_series')}
           </Link>
 
           <Link
@@ -469,7 +465,7 @@ export const Header: React.FC = () => {
               location.pathname === '/lists' ? 'text-white' : 'text-lb-text hover:text-white'
             }`}
           >
-            Lists
+            {t('nav_lists')}
           </Link>
 
           {/* Search Icon & Typeahead — desktop only (no mobile a busca vive na BottomNav/rota /search) */}
@@ -505,7 +501,7 @@ export const Header: React.FC = () => {
                       // Na página de resultados, o X volta para a tela inicial
                       if (isSearchRoute) navigate('/');
                     }}
-                    aria-label="Clear search"
+                    aria-label={t('search_clear')}
                     className="ml-1 shrink-0 text-gray-400 hover:text-gray-700 cursor-pointer"
                   >
                     <X className="w-3 h-3" />
@@ -523,8 +519,8 @@ export const Header: React.FC = () => {
               <button
                 onClick={() => setIsSearchExpanded(true)}
                 className="text-lb-text hover:text-white p-1 transition-colors"
-                title="Search"
-                aria-label="Search"
+                title={t('search_label')}
+                aria-label={t('search_label')}
               >
                 <Search className="w-4 h-4" />
               </button>
@@ -578,7 +574,7 @@ export const Header: React.FC = () => {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-1 text-lb-text hover:text-white"
-              aria-label="Open menu"
+              aria-label={t('nav_open_menu')}
             >
               {isMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
@@ -590,14 +586,14 @@ export const Header: React.FC = () => {
                   onClick={() => setIsMenuOpen(false)}
                   className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  Films
+                  {t('nav_films')}
                 </Link>
                 <Link
                   to="/lists"
                   onClick={() => setIsMenuOpen(false)}
                   className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  Lists
+                  {t('nav_lists')}
                 </Link>
                 <div className="border-t border-lb-elevated my-1" />
                 <Link
@@ -605,21 +601,21 @@ export const Header: React.FC = () => {
                   onClick={() => setIsMenuOpen(false)}
                   className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  Diário
+                  {t('hdr_diary')}
                 </Link>
                 <Link
                   to={`/${displayUsername}/watchlist`}
                   onClick={() => setIsMenuOpen(false)}
                   className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  Watchlist
+                  {t('hdr_watchlist')}
                 </Link>
                 <Link
                   to={`/${displayUsername}/lists`}
                   onClick={() => setIsMenuOpen(false)}
                   className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  My Lists
+                  {t('hdr_my_lists')}
                 </Link>
               </div>
             )}
@@ -633,7 +629,7 @@ export const Header: React.FC = () => {
               className="btn-log-green flex items-center gap-1 text-lb-bg font-black text-xs px-2.5 py-1.5 rounded-l-xs cursor-pointer tracking-wider"
             >
               <Plus className="w-3.5 h-3.5 stroke-[3]" />
-              <span>Log</span>
+              <span>{t('nav_log')}</span>
             </button>
             <button
               onClick={() => openLogModal()}
@@ -647,12 +643,12 @@ export const Header: React.FC = () => {
 
       {/* Mobile-only (área de perfil): faixa de 4 abas Profile / Diary / Lists / Watchlist */}
       {isProfileArea && (
-        <nav aria-label="Perfil" className="md:hidden hidden max-md:grid grid-cols-4 text-center">
+        <nav aria-label={t('nav_profile')} className="md:hidden hidden max-md:grid grid-cols-4 text-center mt-1">
           {([
-            { key: 'profile', label: 'Profile', to: `/${profileAreaUser}` },
-            { key: 'diary', label: 'Diary', to: `/${profileAreaUser}/diary` },
-            { key: 'lists', label: 'Lists', to: `/${profileAreaUser}/lists` },
-            { key: 'watchlist', label: 'Watchlist', to: `/${profileAreaUser}/watchlist` },
+            { key: 'profile', label: t('nav_profile'), to: `/${profileAreaUser}` },
+            { key: 'diary', label: t('hdr_diary'), to: `/${profileAreaUser}/diary` },
+            { key: 'lists', label: t('nav_lists'), to: `/${profileAreaUser}/lists` },
+            { key: 'watchlist', label: t('hdr_watchlist'), to: `/${profileAreaUser}/watchlist` },
           ] as const).map((tab) => {
             const active = tab.key === profileTab;
             return (
@@ -682,7 +678,7 @@ export const Header: React.FC = () => {
         <div className="md:hidden hidden max-md:block">
           <nav
             ref={tabsContainerRef}
-            aria-label="Seções"
+            aria-label={t('nav_sections')}
             className="main-tabs-container"
           >
             {tabs.map((tab) => {

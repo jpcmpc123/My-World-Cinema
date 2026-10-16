@@ -1,11 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ChevronRight, Eye, Star } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Eye, Search, Star, X } from 'lucide-react';
 import { tmdb, type TMDBSearchPerson, type TMDBSearchResult } from '../services/tmdb';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useApp } from '../context/AppContext';
 import type { TranslationKey } from '../i18n/translations';
 import { openPersonProfile, personRoleFromDepartment } from '../utils/personNav';
+import { useIsMobile } from '../hooks/useIsMobile';
+import { animateElasticIndicator, type IndicatorPos } from '../utils/tabIndicator';
 
 /**
  * SearchPage — página dedicada de RESULTADOS DE BUSCA no layout do Letterboxd.
@@ -28,6 +30,49 @@ const FILTERS: { id: SearchFilter; labelKey: TranslationKey }[] = [
   { id: 'cast', labelKey: 'search_filter_cast' },
   { id: 'members', labelKey: 'search_filter_members' },
 ];
+
+/** Abas do MOBILE (fluxo do app): Filmes, Séries, Críticas, Listas, Elenco/Equipe/Estúdios */
+const MOBILE_FILTER_IDS: SearchFilter[] = ['films', 'series', 'reviews', 'lists', 'cast'];
+const MOBILE_FILTERS = FILTERS.filter((f) => MOBILE_FILTER_IDS.includes(f.id));
+
+/** Fade-in: monta com opacity-0 e, no frame seguinte, vai para opacity-100 (transição real). */
+/** Fade-in; com `dir` (±1) entra também deslizando lateralmente, como a esteira
+ *  de abas da página de pessoa (translate + 0,32s, mesma curva). */
+const FadeIn: React.FC<{ children: React.ReactNode; dir?: 1 | -1 | 0 }> = ({ children, dir = 0 }) => {
+  const slide = dir !== 0;
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Estado inicial (opacidade 0 / deslocado) é pintado ANTES de animar para o
+  // estado final: força um reflow e só então ativa a transição.
+  useLayoutEffect(() => {
+    void ref.current?.offsetWidth;
+    const id = window.requestAnimationFrame(() => setVisible(true));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
+  const hiddenX = dir > 0 ? '12%' : '-12%';
+  // Com deslizamento: SÓ transform (sem opacity), para o conteúdo não escurecer
+  // durante a troca. Sem deslizamento (modo idle/fade): mantém o fade-in.
+  return (
+    <div
+      ref={ref}
+      style={
+        slide
+          ? {
+              transform: visible ? 'translateX(0)' : `translateX(${hiddenX})`,
+              transition: 'transform 480ms cubic-bezier(0.22,1,0.36,1)',
+            }
+          : {
+              opacity: visible ? 1 : 0,
+              transition: 'opacity 200ms ease-in-out',
+            }
+      }
+    >
+      {children}
+    </div>
+  );
+};
 
 /** Título de seção no estilo Letterboxd (caixa alta, borda inferior). */
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -202,16 +247,116 @@ const PersonRow: React.FC<{ person: TMDBSearchPerson }> = ({ person }) => {
   );
 };
 
+/* ---------------------------------------------------------------------------
+ * Linhas compactas do MOBILE (réplica do app Letterboxd): pôster 40x60,
+ * título em negrito + ano + "dirigido por" em texto corrido, sem badges.
+ * ------------------------------------------------------------------------- */
+const MobilePoster: React.FC<{ path?: string | null; alt: string }> = ({ path, alt }) =>
+  path ? (
+    <img
+      src={tmdb.getImageUrl(path, 'w185')}
+      alt={alt}
+      className="w-10 h-[60px] object-cover rounded border border-white/10 flex-shrink-0"
+      loading="lazy"
+      decoding="async"
+    />
+  ) : (
+    <div
+      className="w-10 h-[60px] rounded border border-white/10 bg-[#1c2228] flex-shrink-0"
+      aria-hidden="true"
+    />
+  );
+
+const MobileMovieRow: React.FC<{ item: TMDBSearchResult; t: (k: TranslationKey) => string }> = ({
+  item,
+  t,
+}) => {
+  const releaseYear = item.release_date ? item.release_date.slice(0, 4) : '';
+  const director = (item.directors ?? []).join(', ');
+  const href = item.media_type === 'tv' ? `/tv/${item.id}` : `/film/${item.id}`;
+  return (
+    <Link to={href} className="flex items-center gap-3.5 px-4 py-2.5 border-b border-white/10 active:bg-white/5">
+      <MobilePoster path={item.poster_path} alt={item.title} />
+      <div className="flex flex-col justify-center min-w-0">
+        <p className="text-sm text-[#9ab] leading-snug">
+          <span className="font-bold text-white text-[15px]">{item.title}</span>{' '}
+          {releaseYear && <span>{releaseYear}</span>}
+          {director && (
+            <span>
+              , {t('search_directed_by').toLowerCase()}{' '}
+              <strong className="font-semibold text-[#cde]">{director}</strong>
+            </span>
+          )}
+        </p>
+      </div>
+    </Link>
+  );
+};
+
+const MobilePersonRow: React.FC<{ person: TMDBSearchPerson }> = ({ person }) => (
+  <Link
+    to={openPersonProfile(person.id, personRoleFromDepartment(person.known_for_department))}
+    className="flex items-center gap-3.5 px-4 py-2.5 border-b border-white/10 active:bg-white/5"
+  >
+    <MobilePoster path={person.profile_path} alt={person.name} />
+    <div className="flex flex-col justify-center min-w-0">
+      <p className="text-sm text-[#9ab] leading-snug">
+        <span className="font-bold text-white text-[15px]">{person.name}</span>
+        {person.known_for_department && <span>, {person.known_for_department}</span>}
+      </p>
+    </div>
+  </Link>
+);
+
+const MobileLocalRow: React.FC<{
+  to: string;
+  title: string;
+  year?: string | number | null;
+  subtitle?: string | null;
+  poster?: string | null;
+}> = ({ to, title, year, subtitle, poster }) => (
+  <Link to={to} className="flex items-center gap-3.5 px-4 py-2.5 border-b border-white/10 active:bg-white/5">
+    <MobilePoster path={poster} alt={title} />
+    <div className="flex flex-col justify-center min-w-0">
+      <p className="text-sm text-[#9ab] leading-snug">
+        <span className="font-bold text-white text-[15px]">{title}</span>
+        {year ? <span> {year}</span> : null}
+        {subtitle ? <span>, {subtitle}</span> : null}
+      </p>
+    </div>
+  </Link>
+);
+
 export const SearchPage: React.FC = () => {
   const { t } = useLanguage();
   const { reviews, lists } = useApp();
+  const isMobile = useIsMobile();
+  // Mobile: estado de foco do input (máquina de 3 estados: idle / focused / typing)
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  // Direção do deslizamento ao trocar de aba (1 = direita, -1 = esquerda, 0 = só fade)
+  const [slideDir, setSlideDir] = useState<1 | -1 | 0>(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Abas mobile: a aba ativa é centralizada no scroll horizontal (como na página de pessoa)
+  const tabsRef = useRef<HTMLElement | null>(null);
+  // Barra verde elástica embaixo da aba ativa (mesma mecânica da Home)
+  const indicatorRef = useRef<HTMLSpanElement | null>(null);
+  const indicatorPosRef = useRef<IndicatorPos>({ left: 0, width: 0 });
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') ?? '';
+  // Mobile: ?r=1 abre a tela de buscas recentes (sem os atalhos de tipo / Browse by)
+  const isRecentView = searchParams.get('r') === '1';
   const rawFilter = searchParams.get('f') as SearchFilter | null;
+  // Mobile: aba padrão é "Filmes" (não "Todos")
+  const validFilterIds = isMobile ? MOBILE_FILTER_IDS : FILTERS.map((f) => f.id);
   const filter: SearchFilter =
-    rawFilter && FILTERS.some((f) => f.id === rawFilter) ? rawFilter : 'all';
+    rawFilter && validFilterIds.includes(rawFilter) ? rawFilter : isMobile ? 'films' : 'all';
 
   const setFilter = (next: SearchFilter) => {
+    // Direção da esteira: indo para a aba da direita desliza da direita, e vice-versa
+    const order = MOBILE_FILTER_IDS;
+    const from = order.indexOf(filter);
+    const to = order.indexOf(next);
+    setSlideDir(from < 0 || to < 0 || from === to ? 0 : to > from ? 1 : -1);
     const params: Record<string, string> = {};
     if (query.trim()) params.q = query;
     if (next !== 'all') params.f = next;
@@ -233,6 +378,67 @@ export const SearchPage: React.FC = () => {
   }, [query]);
 
   const term = debouncedQuery.trim();
+
+  // Histórico de buscas recentes (mobile): salvo no localStorage, máx. 15 itens
+  // Guarda termo + categoria usada (a badge da linha mostra a categoria)
+  const RECENT_KEY = 'recent_searches';
+  type RecentItem = { q: string; f: SearchFilter };
+  const [recent, setRecent] = useState<RecentItem[]>(() => {
+    try {
+      const raw = window.localStorage.getItem(RECENT_KEY);
+      const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter(
+          (x): x is RecentItem =>
+            !!x && typeof (x as RecentItem).q === 'string' && typeof (x as RecentItem).f === 'string'
+        )
+        .slice(0, 15);
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    if (!term) return;
+    setRecent((prev) => {
+      const next = [
+        { q: term, f: filter },
+        ...prev.filter((x) => x.q.toLowerCase() !== term.toLowerCase()),
+      ].slice(0, 15);
+      try {
+        window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+      } catch {
+        /* armazenamento indisponível: segue sem histórico */
+      }
+      return next;
+    });
+  }, [term]);
+  const clearRecent = () => {
+    setRecent([]);
+    try {
+      window.localStorage.removeItem(RECENT_KEY);
+    } catch {
+      /* noop */
+    }
+  };
+  // Centraliza a aba ativa no scroll horizontal (mesma lógica da ActorPage) e
+  // move a barra verde elástica para embaixo dela
+  useEffect(() => {
+    if (!isMobile) return;
+    const container = tabsRef.current;
+    const btn = container?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!container || !btn) return;
+    const id = window.requestAnimationFrame(() => {
+      const target = btn.offsetLeft - container.clientWidth / 2 + btn.clientWidth / 2;
+      container.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+      const indicator = indicatorRef.current;
+      if (indicator) animateElasticIndicator(btn, indicator, indicatorPosRef.current);
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [isMobile, filter, isSearchFocused, query]);
+
+  const labelKeyOf = (id: SearchFilter): TranslationKey =>
+    FILTERS.find((f) => f.id === id)?.labelKey ?? 'search_filter_all';
   const isLocalFilter = filter === 'reviews' || filter === 'lists' || filter === 'members';
 
   // Resultados locais (críticas e listas do próprio usuário)
@@ -332,29 +538,324 @@ export const SearchPage: React.FC = () => {
     };
   }, [requestKey, page, term, filter, isLocalFilter]);
 
+  // Tipo escolhido nos botões Filmes/Séries (?t=movie|tv); vazio = todos
+  const browseType = searchParams.get('t') === 'movie' || searchParams.get('t') === 'tv' ? searchParams.get('t')! : '';
+  const withType = (path: string) => (browseType ? `${path}${path.includes('?') ? '&' : '?'}type=${browseType}` : path);
+  const setBrowseType = (next: '' | 'movie' | 'tv') => {
+    const params = new URLSearchParams(searchParams);
+    if (next) params.set('t', next);
+    else params.delete('t');
+    setSearchParams(params, { replace: true });
+  };
+
   const browseRows: { label: string; to: string }[] = [
-    { label: 'Release date', to: '/browse/release-date' },
-    { label: 'Genre', to: '/browse/genre' },
-    { label: 'Country', to: '/browse/country' },
-    { label: 'Language', to: '/browse/language' },
-    { label: 'Service', to: '/browse/service' },
-    { label: 'Most popular', to: '/browse/results?sort=popularity.desc&title=Most%20Popular' },
-    { label: 'Highest rated', to: '/browse/results?sort=vote_average.desc&title=Highest%20Rated' },
+    { label: t('search_release_date'), to: withType('/browse/release-date') },
+    { label: t('search_genre'), to: withType('/browse/genre') },
+    { label: t('search_country'), to: withType('/browse/country') },
+    { label: t('search_language'), to: withType('/browse/language') },
+    { label: t('search_service'), to: withType('/browse/service') },
+    { label: t('search_most_popular'), to: withType('/browse/results?sort=popularity.desc&title=Most%20Popular') },
+    { label: t('search_highest_rated'), to: withType('/browse/results?sort=vote_average.desc&title=Highest%20Rated') },
     {
-      label: 'Most anticipated',
-      to: '/browse/results?released=upcoming&sort=popularity.desc&title=Most%20Anticipated',
+      label: t('search_most_anticipated'),
+      to: withType('/browse/results?released=upcoming&sort=popularity.desc&title=Most%20Anticipated'),
     },
-    { label: 'Featured lists', to: '/lists' },
+    { label: t('search_featured_lists'), to: '/lists' },
   ];
 
   const totalShown = filter === 'cast' ? people.length : isLocalFilter ? localResults.length : items.length;
   const emptyState = searched && !loading && totalShown === 0;
 
+  /* ------------------------------------------------------------------------
+   * MOBILE — máquina de 3 estados (réplica do app Letterboxd):
+   *  idle    : pílula "Buscar..." + atalhos + lista FILTRAR POR
+   *  focused : cabeçalho preto integrado às abas + BUSCAS RECENTES
+   *  typing  : abas + resultados da aba ativa (fade-in)
+   * Desktop continua abaixo, sem alterações.
+   * --------------------------------------------------------------------- */
+  if (isMobile) {
+    const hasQuery = query.trim().length > 0;
+    const mode: 'idle' | 'focused' | 'typing' = hasQuery
+      ? 'typing'
+      : isSearchFocused
+        ? 'focused'
+        : 'idle';
+
+    const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearchParams(
+        (prev) => {
+          const n = new URLSearchParams(prev);
+          if (value) n.set('q', value);
+          else n.delete('q');
+          return n;
+        },
+        { replace: true }
+      );
+    };
+
+    // ← : limpa a query, sai do foco e volta para o Estado 1 (idle)
+    // Remove só o termo (?q=), preservando a aba (?f=) e o tipo (?t=)
+    const clearQueryParam = () =>
+      setSearchParams(
+        (prev) => {
+          const n = new URLSearchParams(prev);
+          n.delete('q');
+          return n;
+        },
+        { replace: true }
+      );
+
+    const handleBack = () => {
+      clearQueryParam();
+      setIsSearchFocused(false);
+      inputRef.current?.blur();
+    };
+
+    // ✕ : limpa o texto mantendo o foco no input
+    const handleClearText = () => {
+      clearQueryParam();
+      setIsSearchFocused(true);
+      inputRef.current?.focus();
+    };
+
+    const renderMobileBody = () => {
+      if (mode === 'idle') {
+        return (
+          <>
+            <div className="flex gap-2 px-4 pt-5 pb-4">
+              {([
+                { id: 'movie', label: t('search_type_movie') },
+                { id: 'tv', label: t('search_type_tv') },
+              ] as const).map((opt) => {
+                const active = browseType === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setBrowseType(active ? '' : opt.id)}
+                    aria-pressed={active}
+                    className={`flex-1 text-center py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                      active ? 'bg-[#00e054] text-black' : 'bg-[#2c3440] text-white'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <h2 className="uppercase text-xs font-semibold tracking-wider text-[#9ab] px-4 py-3 border-b border-white/5">
+              {t('browse_by')}
+            </h2>
+            <nav className="flex flex-col">
+              {browseRows.map((row) => (
+                <Link
+                  key={row.label}
+                  to={row.to}
+                  className="flex items-center justify-between px-4 py-3.5 border-b border-white/5 text-sm text-[#9ab] active:bg-white/5"
+                >
+                  <span>{row.label}</span>
+                  <ChevronRight className="w-4 h-4 text-lb-muted" />
+                </Link>
+              ))}
+            </nav>
+          </>
+        );
+      }
+
+      if (mode === 'focused') {
+        return (
+          <>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+              <h2 className="uppercase text-xs font-semibold tracking-wider text-[#9ab]">
+                {t('search_recent')}
+              </h2>
+              {recent.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearRecent}
+                  className="text-[0.7rem] uppercase tracking-wider text-[#789] hover:text-white cursor-pointer"
+                >
+                  {t('search_clear')}
+                </button>
+              )}
+            </div>
+            {recent.map((r) => (
+              <button
+                key={`${r.f}-${r.q}`}
+                type="button"
+                onClick={() => setSearchParams({ q: r.q, f: r.f }, { replace: true })}
+                className="w-full flex items-center justify-between px-4 py-3 border-b border-white/5 text-left active:bg-white/5 cursor-pointer"
+              >
+                <span className="text-sm text-[#9ab] truncate pr-3">{r.q}</span>
+                <span className="shrink-0 bg-[#2c3440] text-[#9ab] text-xs px-3 py-1 rounded-full">
+                  {t(labelKeyOf(r.f))}
+                </span>
+              </button>
+            ))}
+          </>
+        );
+      }
+
+      // typing: resultados da aba ativa
+      if (!term || loading) {
+        if (totalShown === 0) {
+          return <p className="text-sm text-[#789] px-4 py-8">{t('search_searching')}</p>;
+        }
+      }
+      if (emptyState) {
+        return (
+          <p className="text-sm text-[#789] px-4 py-8">
+            {t('search_no_results')} “{term}”.
+          </p>
+        );
+      }
+      return (
+        <>
+          {isLocalFilter &&
+            localResults.map((row) => (
+              <MobileLocalRow
+                key={row.key}
+                to={row.to}
+                title={row.title}
+                year={row.year}
+                subtitle={row.subtitle}
+                poster={row.poster}
+              />
+            ))}
+          {!isLocalFilter && filter === 'cast' &&
+            people.map((person) => <MobilePersonRow key={person.id} person={person} />)}
+          {!isLocalFilter && filter !== 'cast' &&
+            items.map((item) => (
+              <MobileMovieRow key={`${item.media_type}-${item.id}`} item={item} t={t} />
+            ))}
+          {hasMore && (
+            <div className="flex justify-center py-6">
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={loading}
+                className="px-5 py-2 rounded-full bg-[#2c3440] hover:bg-[#3a4550] text-white text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {loading ? t('search_searching') : t('search_load_more')}
+              </button>
+            </div>
+          )}
+        </>
+      );
+    };
+
+    return (
+      <div className="bg-[#14181c] min-h-[60vh] overflow-x-clip">
+        <header className={`sticky top-0 z-40 bg-black select-none${mode === 'idle' ? ' pt-3 pb-3' : ''}`}>
+          <div
+            onClick={mode === 'idle' ? () => inputRef.current?.focus() : undefined}
+            className={
+              mode === 'idle'
+                ? 'mx-4 flex items-center gap-3 rounded-full bg-[#2c3440] px-4 py-2.5 cursor-text'
+                : 'flex items-center gap-3 px-4 h-14'
+            }
+          >
+            {mode === 'idle' ? (
+              <Search className="w-5 h-5 text-[#9ab] shrink-0" aria-hidden="true" />
+            ) : (
+              <button
+                type="button"
+                onClick={handleBack}
+                aria-label={t('btn_cancel')}
+                className="shrink-0 text-white cursor-pointer"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={handleQueryChange}
+              onFocus={() => setIsSearchFocused(true)}
+              placeholder={t('search_placeholder')}
+              spellCheck={false}
+              autoComplete="off"
+              className="no-focus-ring flex-1 min-w-0 bg-transparent text-base text-white placeholder-lb-muted focus:outline-none"
+            />
+            {mode !== 'idle' && query.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearText}
+                aria-label={t('search_clear')}
+                className="shrink-0 text-[#9ab] hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Abas de categoria (Estados 2 e 3) — padrão: Filmes */}
+          {mode !== 'idle' && (
+            <nav
+              ref={tabsRef}
+              className="relative flex overflow-x-auto no-scrollbar border-b border-white/10 bg-black"
+              aria-label={t('search_show_results_for')}
+            >
+              {MOBILE_FILTERS.map((f) => {
+                const active = filter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setFilter(f.id)}
+                    aria-current={active ? 'true' : undefined}
+                    className={`shrink-0 whitespace-nowrap px-4 pt-8 pb-2.5 text-sm font-medium transition-colors cursor-pointer ${
+                      active ? 'text-white' : 'text-[#9ab]'
+                    }`}
+                  >
+                    {t(f.labelKey)}
+                  </button>
+                );
+              })}
+              {/* Barra verde elástica (mesma da Home) — desliza até a aba ativa */}
+              <span ref={indicatorRef} className="tab-indicator" aria-hidden="true" />
+            </nav>
+          )}
+        </header>
+
+        <FadeIn key={`${mode}-${filter}`} dir={mode !== 'idle' ? slideDir : 0}>
+          {renderMobileBody()}
+        </FadeIn>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-[980px] mx-auto mt-10 mb-24 md:mb-10 px-5">
+    <div className="max-w-[980px] mx-auto mt-6 md:mt-10 mb-24 md:mb-10 px-5">
       {/* Sem termo: estado padrão com o BROWSE BY (mantém o comportamento antigo) */}
       {!term ? (
         <div className="max-w-[950px]">
+          {/* Atalhos de tipo + BROWSE BY (mobile: só na tela inicial, não nas recentes) */}
+          <div className={isRecentView ? 'hidden md:block' : ''}>
+          {/* Atalhos: ver só filmes ou só séries */}
+          <div className="flex gap-2 mb-6">
+            {([
+              { id: 'movie', label: t('search_type_movie') },
+              { id: 'tv', label: t('search_type_tv') },
+            ] as const).map((opt) => {
+              const active = browseType === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setBrowseType(active ? '' : opt.id)}
+                  aria-pressed={active}
+                  className={`flex-1 text-center py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                    active ? 'bg-[#00e054] text-black' : 'bg-[#2c3440] hover:bg-[#3a4550] text-white'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
           <h2 className="text-xs uppercase tracking-widest text-lb-muted font-bold mb-1">
             {t('browse_by')}
           </h2>
@@ -371,14 +872,53 @@ export const SearchPage: React.FC = () => {
               </Link>
             ))}
           </nav>
+          </div>
+
+          {/* Mobile: buscas recentes ABAIXO da lista de Filtrar por (como no app) */}
+          <div className={isRecentView ? 'md:hidden mt-2' : 'hidden'}>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="uppercase text-[0.78rem] tracking-[0.08em] text-[#9ab]">
+                {t('search_recent')}
+              </h2>
+              {recent.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearRecent}
+                  className="text-[0.72rem] uppercase tracking-wider text-[#789] hover:text-white cursor-pointer"
+                >
+                  {t('search_clear')}
+                </button>
+              )}
+            </div>
+            {recent.length > 0 && (
+              <ul>
+                {recent.map((r) => (
+                  <li key={`${r.f}-${r.q}`} className="border-b border-[#2c3440]">
+                    <button
+                      type="button"
+                      onClick={() => setSearchParams({ q: r.q, ...(filter !== 'all' ? { f: filter } : {}) }, { replace: true })}
+                      className="w-full flex items-center justify-between py-4 text-left text-[#9ab] hover:text-white cursor-pointer"
+                    >
+                      <span className="text-[0.98rem] truncate pr-3">{r.q}</span>
+                      <span className="shrink-0 text-[0.7rem] font-bold uppercase bg-[#456] text-white px-3 py-1 rounded-full">
+                        {t(labelKeyOf(r.f))}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       ) : (
         <div className="flex flex-col md:grid md:grid-cols-[1fr_240px] md:gap-12 md:items-start">
           {/* SIDEBAR — SHOW RESULTS FOR (mobile: chips roláveis acima da lista) */}
-          <aside className="order-1 md:order-2 mb-4 md:mb-0">
-            <SectionTitle>{t('search_show_results_for')}</SectionTitle>
+          <aside className="order-1 md:order-2 mb-4 md:mb-0 -mx-5 md:mx-0">
+            <div className="hidden md:block">
+              <SectionTitle>{t('search_show_results_for')}</SectionTitle>
+            </div>
             <nav
-              className="flex md:flex-col gap-1 overflow-x-auto no-scrollbar md:overflow-visible py-1"
+              className="flex md:flex-col gap-1 overflow-x-auto no-scrollbar md:overflow-visible bg-black md:bg-transparent md:py-1 px-1 md:px-0"
               aria-label={t('search_show_results_for')}
             >
               {FILTERS.map((f) => {
@@ -389,10 +929,10 @@ export const SearchPage: React.FC = () => {
                     type="button"
                     onClick={() => setFilter(f.id)}
                     aria-current={active ? 'true' : undefined}
-                    className={`shrink-0 md:shrink text-left whitespace-nowrap rounded-[3px] transition-colors cursor-pointer ${
+                    className={`shrink-0 md:shrink text-left whitespace-nowrap transition-colors cursor-pointer px-4 pt-4 pb-3 md:pt-[6px] md:pb-[6px] md:px-3 text-[0.95rem] md:text-sm border-b-2 md:border-b-0 md:rounded-[3px] ${
                       active
-                        ? 'bg-[#2c3440] text-white font-semibold py-[7px] px-3'
-                        : 'text-[#789] hover:text-white py-[6px] px-3'
+                        ? 'border-[#00e054] text-white font-semibold md:bg-[#2c3440] md:py-[7px]'
+                        : 'border-transparent text-[#9ab] hover:text-white'
                     }`}
                   >
                     {t(f.labelKey)}
@@ -404,9 +944,11 @@ export const SearchPage: React.FC = () => {
 
           {/* COLUNA ESQUERDA — resultados */}
           <div className="order-2 md:order-1 min-w-0">
-            <SectionTitle>
-              {t('search_showing_matches')} “{term}”
-            </SectionTitle>
+            <div className="hidden md:block">
+              <SectionTitle>
+                {t('search_showing_matches')} “{term}”
+              </SectionTitle>
+            </div>
 
             {loading && totalShown === 0 ? (
               <p className="text-sm text-[#789] py-8">{t('search_searching')}</p>
