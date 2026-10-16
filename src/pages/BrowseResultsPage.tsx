@@ -188,6 +188,21 @@ export const BrowseResultsPage: React.FC = () => {
     load(next);
   };
 
+  // Scroll infinito: quando o sentinela entra na tela, carrega a próxima página
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || loading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { rootMargin: '600px 0px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, loading, page]);
+
   // Client-side account filters (AppContext) + backdrop presence
   const visible = useMemo(
     () =>
@@ -270,16 +285,12 @@ export const BrowseResultsPage: React.FC = () => {
           </div>
         )}
 
-        <div className="flex justify-center py-6 pb-24">
-          {hasMore ? (
-            <button
-              onClick={loadMore}
-              disabled={loading}
-              className="px-6 py-2.5 rounded-full bg-[#2c3440] text-sm font-bold text-white disabled:opacity-50"
-            >
-              {loading ? 'Loading…' : 'Load more'}
-            </button>
-          ) : items.length > 0 ? (
+        {/* Scroll infinito: o sentinela carrega a próxima página ao aparecer na tela */}
+        <div ref={sentinelRef} className="flex justify-center py-6 pb-24">
+          {loading && hasMore ? (
+            <span className="text-xs text-[#9ab]">Loading...</span>
+          ) : null}
+          {!hasMore && items.length > 0 ? (
             <p className="text-xs text-[#9ab]">That’s all.</p>
           ) : null}
         </div>

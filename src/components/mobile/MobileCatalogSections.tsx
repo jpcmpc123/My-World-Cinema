@@ -91,25 +91,6 @@ const PosterRail: React.FC<{ movies: TMDBMovie[]; isSeries: boolean; children?: 
   </div>
 );
 
-/** "★★★★☆ 4.6" — texto cinza-claro abaixo do pôster (seção Highest rated)
- *  Sem nota (vote_average ausente/0) não renderiza nada: nada de 5 estrelas
- *  vazias reservando altura no carrossel. */
-const RatingLine: React.FC<{ movie: TMDBMovie }> = ({ movie }) => {
-  if (!movie.vote_average) return null;
-  const rating5 = movie.vote_average / 2;
-  const full = Math.round(rating5);
-  return (
-    <div className="flex items-center gap-1 px-0.5 pt-1">
-      <span className="text-[10px] leading-none tracking-tight">
-        {Array.from({ length: 5 }, (_, i) => (
-          <span key={i} className={i < full ? 'text-lb-green' : 'text-[#3a4550]'}>★</span>
-        ))}
-      </span>
-      <span className="text-[10px] text-[#9ab]">{rating5.toFixed(1)}</span>
-    </div>
-  );
-};
-
 /** Número compacto: 1234 → "1.2K", 1234567 → "1.2M" */
 function compact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
@@ -160,9 +141,7 @@ export const MobileCatalogSections: React.FC<MobileCatalogSectionsProps> = ({
         {loading ? (
           <SkeletonRow />
         ) : (
-          <PosterRail movies={topRated} isSeries={isSeries}>
-            {(m) => <RatingLine movie={m} />}
-          </PosterRail>
+          <PosterRail movies={topRated} isSeries={isSeries} />
         )}
       </SectionShell>
 

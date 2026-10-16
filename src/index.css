@@ -413,7 +413,7 @@ button, a, [role="button"] {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 3px;
+  height: 4px;
   background-color: #00e054;
   border-radius: 2px 2px 0 0;
   pointer-events: none;
@@ -476,13 +476,14 @@ button, a, [role="button"] {
 .tabs-header {
   position: relative;
   display: grid;
+  /* 4 colunas iguais e encostadas: a barra verde da aba ativa vai da borda
+     até a divisa (meio) com a aba vizinha */
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
   gap: 0;
   width: 100%;
   box-sizing: border-box;
-  /* Mesmo respiro lateral da grade de 4 pôsteres (ver ITEM_W do carrossel) */
-  padding: 0 12px;
+  padding: 0;
   margin: 0;
   background-color: #000000;
   border-bottom: 1px solid #1f2937;
@@ -498,7 +499,7 @@ button, a, [role="button"] {
 .main-tab-btn.active {
   width: 100%;
   min-width: 0;
-  padding: 18px 0 16px;
+  padding: 12px 4px 16px;
   margin: 0;
   text-align: center;
   background: transparent !important;
@@ -509,10 +510,11 @@ button, a, [role="button"] {
 }
 
 .main-tab-btn {
-  /* Fonte fluida: nunca estoura a coluna de 25% em telas estreitas (320-390px) */
+  /* Fonte fluida para telas estreitas (320-390px) */
   font-family: var(--font-brand);
   font-size: clamp(0.8rem, 3.6vw, 1rem);
-  font-weight: 400;
+  font-weight: 400 !important;
+  font-synthesis: none;
   line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -528,7 +530,7 @@ button, a, [role="button"] {
 
 .main-tab-btn.active {
   color: #ffffff !important;
-  font-weight: 400;
+  font-weight: 400 !important;
 }
 
 /* O foco de teclado continua visível pela cor, sem criar caixa nenhuma */

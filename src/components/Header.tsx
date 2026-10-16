@@ -366,7 +366,7 @@ export const Header: React.FC = () => {
               </Link>
             </div>
           ) : (
-          <div ref={userMenuRef} className="relative">
+          <div ref={userMenuRef} className="relative hidden md:block">
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="flex items-center gap-2 text-lb-text hover:text-white transition-colors cursor-pointer"

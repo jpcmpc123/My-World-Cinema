@@ -854,6 +854,20 @@ export const tmdb = {
       language?: string;
     } = {},
   ): Promise<{ results: TMDBMovie[]; total_pages: number; total_results: number }> {
+    // "Popular this week" = trending semanal oficial do TMDB (popularidade da semana)
+    if (preset === 'popular_week') {
+      const trending = type === 'tv'
+        ? await this.getTrendingTV('week')
+        : await this.getTrending('week');
+      // Sem piso de votos: a ordem do trending (popularidade da semana) é mantida.
+      // Só removemos títulos com estreia futura.
+      const results = trending.results.filter((m) => {
+        const d = itemDate(m);
+        return !d || d <= TMDB_TODAY;
+      });
+      return { results, total_pages: trending.total_pages, total_results: results.length };
+    }
+
     const discover = type === 'tv' ? this.discoverTVBatch : this.discoverMoviesBatch;
     const minVotesPopular = type === 'tv' ? 30 : 50;
 
@@ -866,7 +880,7 @@ export const tmdb = {
       highest_rated: {
         sortBy: 'vote_average.desc',
         releaseDateLte: TMDB_TODAY,
-        minVotes: type === 'tv' ? 500 : 1500,
+        minVotes: type === 'tv' ? 1500 : 10000,
         // filmes: sem documentário/musical de nota inflada;
         // séries já banem talk/news/reality por padrão
         withoutGenres: type === 'movie' ? ('99,10402' as string | undefined) : undefined,
@@ -895,7 +909,7 @@ export const tmdb = {
       preset === 'most_anticipated'
         ? isFuture
         : preset === 'highest_rated'
-          ? (m) => isReleasedWithVotes(m, type === 'tv' ? 500 : 1500)
+          ? (m) => isReleasedWithVotes(m, type === 'tv' ? 1500 : 10000)
           : (m) => isReleasedWithVotes(m, preset === 'most_watched' ? 1 : minVotesPopular);
 
     return { ...res, results: res.results.filter(gate) };
