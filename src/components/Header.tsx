@@ -244,7 +244,7 @@ export const Header: React.FC = () => {
           #14181c (sólido no topo) até transparente, opacidade 2/3 parada e
           0.85 no hover. Só existe nas rotas com backdrop (filme/série). */}
       {overBackdrop && <div className="site-header-bg hidden md:block" aria-hidden="true" />}
-      <div className={`relative max-w-[950px] mx-auto px-4 h-14 flex items-center justify-between gap-4 ${
+      <div className={`relative max-w-[950px] mx-auto px-4 ${isMainPage ? 'h-[84px] md:h-14' : 'h-14'} flex items-center justify-between gap-4 ${
         overBackdrop ? '[text-shadow:0_1px_3px_rgba(0,0,0,0.8)] [&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : ''
       }`}>
         {/* Mobile-only (páginas de detalhe): os botões ← e ⋮ flutuantes são
@@ -282,7 +282,8 @@ export const Header: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="md:hidden absolute left-1/2 -translate-x-1/2 text-white font-bold text-xl tracking-tight cursor-pointer"
+            className="md:hidden absolute left-1/2 -translate-x-1/2 text-white text-[26px] font-extrabold tracking-[-0.01em] cursor-pointer leading-none"
+            style={{ fontFamily: 'var(--font-brand)' }}
           >
             MyWorld
           </button>
