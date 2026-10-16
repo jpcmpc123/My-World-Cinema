@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface SelectedListItem {
   id: number;
@@ -15,6 +16,7 @@ interface SelectedListItem {
 export const CreateListPage: React.FC = () => {
   const navigate = useNavigate();
   const { createList } = useApp();
+  const { t } = useLanguage();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -98,10 +100,10 @@ export const CreateListPage: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <div className="border-b border-lb-elevated pb-4">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-          New List
+          {t('create_list_title')}
         </h1>
         <p className="text-xs text-lb-text mt-1">
-          Create and organize your custom list of movies.
+          {t('create_list_desc')}
         </p>
       </div>
 
@@ -110,11 +112,11 @@ export const CreateListPage: React.FC = () => {
         <div className="bg-lb-surface border border-lb-elevated rounded-lg p-5 space-y-4">
           <div>
             <label className="block text-xs uppercase font-bold text-lb-muted mb-1">
-              List Title *
+              {t('create_list_name')} *
             </label>
             <input
               type="text"
-              placeholder="e.g. My Favorite Sci-Fi of all time"
+              placeholder={t('create_list_name_ph')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -124,11 +126,11 @@ export const CreateListPage: React.FC = () => {
 
           <div>
             <label className="block text-xs uppercase font-bold text-lb-muted mb-1">
-              Description
+              {t('create_list_description')}
             </label>
             <textarea
               rows={3}
-              placeholder="Tell others what this list is about..."
+              placeholder={t('create_list_desc_ph')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full bg-lb-bg border border-lb-elevated rounded p-2.5 text-xs text-white focus:outline-none focus:border-lb-green"
@@ -143,7 +145,7 @@ export const CreateListPage: React.FC = () => {
                 onChange={(e) => setIsRanked(e.target.checked)}
                 className="rounded border-lb-elevated text-lb-green bg-lb-bg"
               />
-              <span className="font-semibold">Ranked list (Numbered 1, 2, 3...)</span>
+              <span className="font-semibold">{t('create_list_ranked')}</span>
             </label>
           </div>
         </div>
@@ -151,7 +153,7 @@ export const CreateListPage: React.FC = () => {
         {/* Film Search & Add */}
         <div className="bg-lb-surface border border-lb-elevated rounded-lg p-5 space-y-4">
           <label className="block text-xs uppercase font-bold text-lb-muted">
-            Add Films to List
+            {t('create_list_add_films')}
           </label>
 
           <div className="relative">
@@ -159,7 +161,7 @@ export const CreateListPage: React.FC = () => {
               <Search className="w-4 h-4 text-lb-muted mr-2" />
               <input
                 type="text"
-                placeholder="Search film title to add..."
+                placeholder={t('create_list_search_ph')}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="bg-transparent text-sm text-white focus:outline-none w-full"
@@ -219,7 +221,7 @@ export const CreateListPage: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    placeholder="Add a note about this film (optional)..."
+                    placeholder={t('create_list_note_ph')}
                     value={item.notes}
                     onChange={(e) => updateNotes(item.id, e.target.value)}
                     className="w-full bg-lb-surface border border-lb-elevated rounded px-2 py-1 text-xs text-lb-white focus:outline-none focus:border-lb-green"
@@ -256,7 +258,7 @@ export const CreateListPage: React.FC = () => {
 
             {items.length === 0 && (
               <p className="text-center py-6 text-xs text-lb-muted">
-                No films added yet. Search above to add films to your list.
+                {t('create_list_empty')}
               </p>
             )}
           </div>
@@ -269,7 +271,7 @@ export const CreateListPage: React.FC = () => {
             onClick={() => navigate('/lists')}
             className="px-4 py-2 text-xs font-bold uppercase text-lb-text hover:text-white"
           >
-            Cancel
+            {t('btn_cancel')}
           </button>
           <button
             type="submit"
@@ -280,7 +282,7 @@ export const CreateListPage: React.FC = () => {
                 : 'bg-lb-elevated text-lb-muted cursor-not-allowed'
             }`}
           >
-            Save List
+            {t('create_list_save')}
           </button>
         </div>
       </form>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { tmdb } from '../services/tmdb';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface WhereToWatchProps {
   providers?: {
@@ -15,6 +16,7 @@ interface WhereToWatchProps {
 }
 
 export const WhereToWatch: React.FC<WhereToWatchProps> = ({ providers }) => {
+  const { t } = useLanguage();
   const countryData =
     providers?.results?.US ||
     providers?.results?.BR ||
@@ -29,7 +31,7 @@ export const WhereToWatch: React.FC<WhereToWatchProps> = ({ providers }) => {
   if (allProviders.length === 0) {
     return (
       <div className="bg-lb-surface border border-lb-elevated rounded p-2.5 text-[11px] text-lb-muted flex items-center justify-between">
-        <span>Not currently streaming</span>
+        <span>{t('where_not_streaming')}</span>
         <a
           href="https://www.justwatch.com"
           target="_blank"

@@ -193,7 +193,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     >
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/70 backdrop-blur-xs transition-opacity duration-250 ${
+        className={`absolute inset-0 bg-black/75 transition-opacity duration-250 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={onClose}
@@ -227,20 +227,20 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
               setBump((k) => k + 1);
               toggleWatched(movie.id);
             }}
-            aria-label={watched ? 'Marked as watched' : 'Mark as watched'}
+            aria-label={watched ? t('abs_marked_watched') : t('abs_mark_watched')}
             className={`flex-1 flex flex-col items-center gap-1 py-2 transition-colors ${
               watched ? 'text-[#00e054]' : 'text-lb-text hover:text-white'
             }`}
           >
             <Eye key={`w${bump}`} className={`w-7 h-7 ${watched && bump > 0 ? 'mw-icon-pop' : ''}`} />
-            <span className="text-[10px] uppercase tracking-wide text-lb-text">Watch</span>
+            <span className="text-[10px] uppercase tracking-wide text-lb-text">{t('action_watch')}</span>
           </button>
           <button
             onClick={() => {
               setBump((k) => k + 1);
               toggleLikeMovie(movie.id);
             }}
-            aria-label={liked ? 'Unlike' : 'Like'}
+            aria-label={liked ? t('abs_unlike') : t('action_like')}
             className={`flex-1 flex flex-col items-center gap-1 py-2 transition-colors ${
               liked ? 'text-orange-500' : 'text-lb-text hover:text-white'
             }`}
@@ -249,7 +249,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
               key={`l${bump}`}
               className={`w-7 h-7 ${liked ? 'fill-orange-500' : ''} ${liked && bump > 0 ? 'mw-icon-pop' : ''}`}
             />
-            <span className="text-[10px] uppercase tracking-wide text-lb-text">Like</span>
+            <span className="text-[10px] uppercase tracking-wide text-lb-text">{t('action_like')}</span>
           </button>
           <button
             onClick={() => {
@@ -261,7 +261,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
                 release_date: movie.release_date ?? '',
               });
             }}
-            aria-label={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+            aria-label={inWatchlist ? t('abs_remove_watchlist') : t('abs_add_watchlist')}
             className={`flex-1 flex flex-col items-center gap-1 py-2 transition-colors ${
               inWatchlist ? 'text-[#40bcf4]' : 'text-lb-text hover:text-white'
             }`}
@@ -274,7 +274,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
                 </span>
               )}
             </span>
-            <span className="text-[10px] uppercase tracking-wide text-lb-text">Watchlist</span>
+            <span className="text-[10px] uppercase tracking-wide text-lb-text">{t('action_watchlist')}</span>
           </button>
         </div>
 
@@ -308,7 +308,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
             })}
           </div>
           <span className="text-xs text-lb-muted tabular-nums">
-            {displayRating > 0 ? `${ratingToStars(displayRating)} (${displayRating}/5)` : 'Not rated'}
+            {displayRating > 0 ? `${ratingToStars(displayRating)} (${displayRating}/5)` : t('abs_not_rated')}
           </span>
         </div>
 

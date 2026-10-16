@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowLeft, Check, X } from 'lucide-react';
 import { tmdb } from '../../services/tmdb';
+import { useLanguage } from '../../i18n/LanguageContext';
+import type { TranslationKey } from '../../i18n/translations';
 
 /**
  * FiltersModal — full-screen filters sheet used by BrowseResultsPage.
@@ -20,54 +22,56 @@ import { tmdb } from '../../services/tmdb';
 // ---- Shared option lists (also imported by BrowseDrilldownPage) ----
 export interface FilterOption {
   id: string;
+  /** Chave i18n (opções fixas) ou texto literal (gêneros/serviços vindos da API). */
   label: string;
 }
 
+// Os rótulos são chaves i18n (TranslationKey) — traduzidos em tempo de render.
 export const COUNTRY_OPTIONS: FilterOption[] = [
-  { id: 'US', label: 'United States' },
-  { id: 'GB', label: 'United Kingdom' },
-  { id: 'BR', label: 'Brazil' },
-  { id: 'FR', label: 'France' },
-  { id: 'JP', label: 'Japan' },
-  { id: 'KR', label: 'South Korea' },
-  { id: 'DE', label: 'Germany' },
-  { id: 'IT', label: 'Italy' },
-  { id: 'ES', label: 'Spain' },
-  { id: 'IN', label: 'India' },
-  { id: 'CA', label: 'Canada' },
-  { id: 'AU', label: 'Australia' },
-  { id: 'MX', label: 'Mexico' },
-  { id: 'AR', label: 'Argentina' },
-  { id: 'PT', label: 'Portugal' },
-  { id: 'CN', label: 'China' },
-  { id: 'SE', label: 'Sweden' },
-  { id: 'DK', label: 'Denmark' },
-  { id: 'NL', label: 'Netherlands' },
-  { id: 'PL', label: 'Poland' },
+  { id: 'US', label: 'flt_country_us' },
+  { id: 'GB', label: 'flt_country_gb' },
+  { id: 'BR', label: 'flt_country_br' },
+  { id: 'FR', label: 'flt_country_fr' },
+  { id: 'JP', label: 'flt_country_jp' },
+  { id: 'KR', label: 'flt_country_kr' },
+  { id: 'DE', label: 'flt_country_de' },
+  { id: 'IT', label: 'flt_country_it' },
+  { id: 'ES', label: 'flt_country_es' },
+  { id: 'IN', label: 'flt_country_in' },
+  { id: 'CA', label: 'flt_country_ca' },
+  { id: 'AU', label: 'flt_country_au' },
+  { id: 'MX', label: 'flt_country_mx' },
+  { id: 'AR', label: 'flt_country_ar' },
+  { id: 'PT', label: 'flt_country_pt' },
+  { id: 'CN', label: 'flt_country_cn' },
+  { id: 'SE', label: 'flt_country_se' },
+  { id: 'DK', label: 'flt_country_dk' },
+  { id: 'NL', label: 'flt_country_nl' },
+  { id: 'PL', label: 'flt_country_pl' },
 ];
 
 export const LANGUAGE_OPTIONS: FilterOption[] = [
-  { id: 'en', label: 'English' },
-  { id: 'pt', label: 'Portuguese' },
-  { id: 'es', label: 'Spanish' },
-  { id: 'fr', label: 'French' },
-  { id: 'ja', label: 'Japanese' },
-  { id: 'ko', label: 'Korean' },
-  { id: 'de', label: 'German' },
-  { id: 'it', label: 'Italian' },
-  { id: 'zh', label: 'Mandarin' },
-  { id: 'hi', label: 'Hindi' },
-  { id: 'ru', label: 'Russian' },
-  { id: 'sv', label: 'Swedish' },
+  { id: 'en', label: 'flt_lang_en' },
+  { id: 'pt', label: 'flt_lang_pt' },
+  { id: 'es', label: 'flt_lang_es' },
+  { id: 'fr', label: 'flt_lang_fr' },
+  { id: 'ja', label: 'flt_lang_ja' },
+  { id: 'ko', label: 'flt_lang_ko' },
+  { id: 'de', label: 'flt_lang_de' },
+  { id: 'it', label: 'flt_lang_it' },
+  { id: 'zh', label: 'flt_lang_zh' },
+  { id: 'hi', label: 'flt_lang_hi' },
+  { id: 'ru', label: 'flt_lang_ru' },
+  { id: 'sv', label: 'flt_lang_sv' },
 ];
 
 export const SORT_OPTIONS: FilterOption[] = [
-  { id: 'popularity.desc', label: 'Film popularity' },
-  { id: 'vote_average.desc', label: 'Highest rated' },
-  { id: 'vote_average.asc', label: 'Lowest rated' },
-  { id: 'primary_release_date.desc', label: 'Release date: Newest first' },
-  { id: 'primary_release_date.asc', label: 'Release date: Oldest first' },
-  { id: 'original_title.asc', label: 'Title A-Z' },
+  { id: 'popularity.desc', label: 'flt_sort_popularity' },
+  { id: 'vote_average.desc', label: 'flt_sort_highest' },
+  { id: 'vote_average.asc', label: 'flt_sort_lowest' },
+  { id: 'primary_release_date.desc', label: 'flt_sort_newest' },
+  { id: 'primary_release_date.asc', label: 'flt_sort_oldest' },
+  { id: 'original_title.asc', label: 'flt_sort_title' },
 ];
 
 export const DECADE_OPTIONS: string[] = [
@@ -99,64 +103,67 @@ interface FiltersModalProps {
   onApply: (draft: FiltersDraft) => void;
 }
 
-const SIMPLE_PICKERS: Record<string, { title: string; key: string; options: FilterOption[] }> = {
+const SIMPLE_PICKERS: Record<string, { title: TranslationKey; key: string; options: FilterOption[] }> = {
   released: {
-    title: 'Released',
+    title: 'flt_released',
     key: 'released',
     options: [
-      { id: 'any', label: 'Any' },
-      { id: 'released', label: 'Released' },
-      { id: 'upcoming', label: 'Upcoming' },
+      { id: 'any', label: 'flt_any' },
+      { id: 'released', label: 'flt_released' },
+      { id: 'upcoming', label: 'flt_upcoming' },
     ],
   },
   length: {
-    title: 'Length',
+    title: 'flt_length',
     key: 'length',
     options: [
-      { id: 'any', label: 'Any' },
-      { id: 'short', label: '< 90 mins' },
-      { id: 'medium', label: '90–120 mins' },
-      { id: 'long', label: '> 120 mins' },
+      { id: 'any', label: 'flt_any' },
+      { id: 'short', label: 'flt_len_short' },
+      { id: 'medium', label: 'flt_len_medium' },
+      { id: 'long', label: 'flt_len_long' },
     ],
   },
   type: {
-    title: 'Film/TV',
+    title: 'flt_film_tv',
     key: 'type',
     options: [
-      { id: 'any', label: 'Any' },
-      { id: 'movie', label: 'Films only' },
-      { id: 'tv', label: 'TV Series only' },
+      { id: 'any', label: 'flt_any' },
+      { id: 'movie', label: 'flt_films_only' },
+      { id: 'tv', label: 'flt_tv_only' },
     ],
   },
   watched: {
-    title: 'Watched',
+    title: 'flt_watched',
     key: 'watched',
     options: [
-      { id: 'any', label: 'Any' },
-      { id: 'watched', label: 'Watched' },
-      { id: 'not-watched', label: 'Not watched' },
+      { id: 'any', label: 'flt_any' },
+      { id: 'watched', label: 'flt_watched' },
+      { id: 'not-watched', label: 'flt_not_watched' },
     ],
   },
   watchlist: {
-    title: 'Watchlist',
+    title: 'flt_watchlist',
     key: 'watchlist',
     options: [
-      { id: 'any', label: 'Any' },
-      { id: 'in', label: 'In watchlist' },
-      { id: 'not-in', label: 'Not in watchlist' },
+      { id: 'any', label: 'flt_any' },
+      { id: 'in', label: 'flt_in_watchlist' },
+      { id: 'not-in', label: 'flt_not_in_watchlist' },
     ],
   },
   backdrop: {
-    title: 'Backdrops',
+    title: 'flt_backdrops',
     key: 'backdrop',
     options: [
-      { id: 'any', label: 'Any' },
-      { id: 'with', label: 'With backdrop' },
+      { id: 'any', label: 'flt_any' },
+      { id: 'with', label: 'flt_with_backdrop' },
     ],
   },
 };
 
 export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClose, onApply }) => {
+  const { t } = useLanguage();
+  // Rótulo de opção: chave i18n quando conhecida; senão texto literal (API).
+  const L = (label: string): string => (label.startsWith('flt_') || label.startsWith('filter_') || label.startsWith('wl_') ? t(label as TranslationKey) : label);
   const [draft, setDraft] = useState<FiltersDraft>({});
   const [picker, setPicker] = useState<PickerId>(null);
   const [yearDecade, setYearDecade] = useState<string | null>(null);
@@ -185,39 +192,41 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
     const genreName = (id?: string) => tmdb.genres.find((g) => String(g.id) === id)?.name;
     const serviceName = (id?: string) => tmdb.streamingServices.find((s) => String(s.id) === id)?.name;
     const optLabel = (list: FilterOption[], id?: string) => list.find((o) => o.id === id)?.label;
+    const any = t('flt_any');
     return {
-      sort: SORT_OPTIONS.find((o) => o.id === (draft.sort || 'popularity.desc'))?.label || 'Film popularity',
-      year: draft.year || draft.decade || 'Any',
-      genre: genreName(draft.genre) || 'Any',
-      country: optLabel(COUNTRY_OPTIONS, draft.country) || 'Any',
-      language: optLabel(LANGUAGE_OPTIONS, draft.language) || 'Any',
-      service: serviceName(draft.service) || 'Any',
-      released: optLabel(SIMPLE_PICKERS.released.options, draft.released) || 'Any',
+      sort: L(SORT_OPTIONS.find((o) => o.id === (draft.sort || 'popularity.desc'))?.label ?? 'flt_sort_popularity'),
+      year: draft.year || draft.decade || any,
+      genre: genreName(draft.genre) || any,
+      country: (optLabel(COUNTRY_OPTIONS, draft.country) && L(optLabel(COUNTRY_OPTIONS, draft.country)!)) || any,
+      language: (optLabel(LANGUAGE_OPTIONS, draft.language) && L(optLabel(LANGUAGE_OPTIONS, draft.language)!)) || any,
+      service: serviceName(draft.service) || any,
+      released: L(optLabel(SIMPLE_PICKERS.released.options, draft.released) ?? 'flt_any'),
       length:
         draft.length === 'short'
-          ? '< 90 mins'
+          ? t('flt_len_short')
           : draft.length === 'medium'
-            ? '90–120 mins'
+            ? t('flt_len_medium')
             : draft.length === 'long'
-              ? '> 120 mins'
-              : 'Any',
+              ? t('flt_len_long')
+              : any,
       type:
-        draft.type === 'movie' ? 'Films only' : draft.type === 'tv' ? 'TV Series only' : 'Any',
+        draft.type === 'movie' ? t('flt_films_only') : draft.type === 'tv' ? t('flt_tv_only') : any,
       watched:
         draft.watched === 'watched'
-          ? 'Watched'
+          ? t('flt_watched')
           : draft.watched === 'not-watched'
-            ? 'Not watched'
-            : 'Any',
+            ? t('flt_not_watched')
+            : any,
       watchlist:
         draft.watchlist === 'in'
-          ? 'In watchlist'
+          ? t('flt_in_watchlist')
           : draft.watchlist === 'not-in'
-            ? 'Not in watchlist'
-            : 'Any',
-      backdrop: draft.backdrop === 'with' ? 'With backdrop' : 'Any',
+            ? t('flt_not_in_watchlist')
+            : any,
+      backdrop: draft.backdrop === 'with' ? t('flt_with_backdrop') : any,
     };
-  }, [draft]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, t]);
 
   if (!open) return null;
 
@@ -260,7 +269,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
 
   const pickerHeader = (title: string, back: () => void) => (
     <div className="bg-black h-14 px-4 flex items-center gap-4 border-b border-white/10 shrink-0">
-      <button onClick={back} aria-label="Back" className="text-white">
+      <button onClick={back} aria-label={t('film_back')} className="text-white">
         <ArrowLeft className="w-5 h-5" />
       </button>
       <h2 className="text-lg font-bold text-white">{title}</h2>
@@ -274,12 +283,12 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
     if (picker === 'sort') {
       return (
         <>
-          {pickerHeader('Sort by', () => setPicker(null))}
+          {pickerHeader(t('flt_sort_by'), () => setPicker(null))}
           <div className="flex-1 overflow-y-auto pb-24">
             {SORT_OPTIONS.map((o) => (
               <PickerRow
                 key={o.id}
-                label={o.label}
+                label={L(o.label)}
                 active={(draft.sort || 'popularity.desc') === o.id}
                 onClick={() => {
                   setParam('sort', o.id);
@@ -301,7 +310,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
             {pickerHeader(yearDecade, () => setYearDecade(null))}
             <div className="flex-1 overflow-y-auto pb-24">
               <PickerRow
-                label="Any"
+                label={t('flt_any')}
                 active={draft.decade === yearDecade && !draft.year}
                 onClick={() => {
                   setDraft((d) => {
@@ -341,7 +350,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
           {pickerHeader('Year', () => setPicker(null))}
           <div className="flex-1 overflow-y-auto pb-24">
             <PickerRow
-              label="Any"
+              label={t('flt_any')}
               active={!draft.year && !draft.decade}
               onClick={() => {
                 setDraft((d) => {
@@ -364,14 +373,14 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
     if (picker === 'genre' || picker === 'country' || picker === 'language' || picker === 'service') {
       const config: Record<string, { title: string; key: string; options: FilterOption[] }> = {
         genre: {
-          title: 'Genre',
+          title: 'filter_genre',
           key: 'genre',
           options: tmdb.genres.map((g) => ({ id: String(g.id), label: g.name })),
         },
-        country: { title: 'Country', key: 'country', options: COUNTRY_OPTIONS },
-        language: { title: 'Language', key: 'language', options: LANGUAGE_OPTIONS },
+        country: { title: 'filter_country', key: 'country', options: COUNTRY_OPTIONS },
+        language: { title: 'filter_language', key: 'language', options: LANGUAGE_OPTIONS },
         service: {
-          title: 'Service',
+          title: 'filter_service',
           key: 'service',
           options: tmdb.streamingServices.map((s) => ({ id: String(s.id), label: s.name })),
         },
@@ -379,10 +388,10 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
       const { title, key, options } = config[picker];
       return (
         <>
-          {pickerHeader(title, () => setPicker(null))}
+          {pickerHeader(t(title as TranslationKey), () => setPicker(null))}
           <div className="flex-1 overflow-y-auto pb-24">
             <PickerRow
-              label="Any"
+              label={t('flt_any')}
               active={!draft[key]}
               onClick={() => {
                 setParam(key, '');
@@ -392,7 +401,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
             {options.map((o) => (
               <PickerRow
                 key={o.id}
-                label={o.label}
+                label={L(o.label)}
                 active={draft[key] === o.id}
                 onClick={() => {
                   setParam(key, o.id);
@@ -410,12 +419,12 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
     if (cfg) {
       return (
         <>
-          {pickerHeader(cfg.title, () => setPicker(null))}
+          {pickerHeader(t(cfg.title), () => setPicker(null))}
           <div className="flex-1 overflow-y-auto pb-24">
             {cfg.options.map((o) => (
               <PickerRow
                 key={o.id}
-                label={o.label}
+                label={L(o.label)}
                 active={(draft[cfg.key] || 'any') === o.id}
                 onClick={() => {
                   setParam(cfg.key, o.id);
@@ -443,13 +452,13 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
         <>
           {/* Header */}
           <div className="bg-black h-14 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
-            <button onClick={onClose} aria-label="Close filters" className="text-white">
+            <button onClick={onClose} aria-label={t('flt_close')} className="text-white">
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-white font-bold">Filters</h2>
+            <h2 className="text-white font-bold">{t('flt_filters')}</h2>
             <button
               onClick={() => onApply(draft)}
-              aria-label="Apply filters"
+              aria-label={t('flt_apply')}
               className="text-[#00e054]"
             >
               <Check className="w-5 h-5" />
@@ -459,15 +468,15 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
           {/* Body */}
           <div className="flex-1 overflow-y-auto">
             <div className="divide-y divide-white/10">
-              <Row label="Sort by" value={valueLabel.sort} onClick={() => setPicker('sort')} />
+              <Row label={t('flt_sort_by')} value={valueLabel.sort} onClick={() => setPicker('sort')} />
 
               <div>
                 <h3 className="text-[11px] uppercase tracking-wider text-lb-muted px-4 pt-4 pb-1">
-                  Appearance
+                  {t('flt_appearance')}
                 </h3>
                 <div className="divide-y divide-white/10">
                   <div className="px-4 py-3.5 flex items-center justify-between">
-                    <span className="text-[15px] text-[#ccd6e0]">Fade watched films</span>
+                    <span className="text-[15px] text-[#ccd6e0]">{t('flt_fade_watched')}</span>
                     <button
                       type="button"
                       role="switch"
@@ -484,57 +493,57 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
                   </div>
                   {/* Stub: custom posters are always applied site-wide via movieOverrides */}
                   <div className="px-4 py-3.5 flex items-center justify-between">
-                    <span className="text-[15px] text-[#ccd6e0]">Custom posters</span>
-                    <span className="text-[15px] text-[#789]">Enabled ›</span>
+                    <span className="text-[15px] text-[#ccd6e0]">{t('flt_custom_posters')}</span>
+                    <span className="text-[15px] text-[#789]">{t('flt_enabled')} ›</span>
                   </div>
                 </div>
               </div>
 
               <div>
                 <h3 className="text-[11px] uppercase tracking-wider text-lb-muted px-4 pt-4 pb-1">
-                  Content
+                  {t('flt_content')}
                 </h3>
                 <div className="divide-y divide-white/10">
-                  <Row label="Year" value={valueLabel.year} onClick={() => setPicker('year')} />
-                  <Row label="Genre" value={valueLabel.genre} onClick={() => setPicker('genre')} />
+                  <Row label={t('filter_year')} value={valueLabel.year} onClick={() => setPicker('year')} />
+                  <Row label={t('filter_genre')} value={valueLabel.genre} onClick={() => setPicker('genre')} />
                   <Row
-                    label="Country"
+                    label={t('filter_country')}
                     value={valueLabel.country}
                     onClick={() => setPicker('country')}
                   />
                   <Row
-                    label="Language"
+                    label={t('filter_language')}
                     value={valueLabel.language}
                     onClick={() => setPicker('language')}
                   />
                   <Row
-                    label="Service"
+                    label={t('filter_service')}
                     value={valueLabel.service}
                     onClick={() => setPicker('service')}
                   />
                   <Row
-                    label="Released"
+                    label={t('filter_released')}
                     value={valueLabel.released}
                     onClick={() => setPicker('released')}
                   />
-                  <Row label="Length" value={valueLabel.length} onClick={() => setPicker('length')} />
-                  <Row label="Film/TV" value={valueLabel.type} onClick={() => setPicker('type')} />
+                  <Row label={t('flt_length')} value={valueLabel.length} onClick={() => setPicker('length')} />
+                  <Row label={t('flt_film_tv')} value={valueLabel.type} onClick={() => setPicker('type')} />
                 </div>
               </div>
 
               <div>
                 <h3 className="text-[11px] uppercase tracking-wider text-lb-muted px-4 pt-4 pb-1">
-                  Your account
+                  {t('flt_your_account')}
                 </h3>
                 <div className="divide-y divide-white/10">
-                  <Row label="Watched" value={valueLabel.watched} onClick={() => setPicker('watched')} />
+                  <Row label={t('flt_watched')} value={valueLabel.watched} onClick={() => setPicker('watched')} />
                   <Row
-                    label="Watchlist"
+                    label={t('flt_watchlist')}
                     value={valueLabel.watchlist}
                     onClick={() => setPicker('watchlist')}
                   />
                   <Row
-                    label="Backdrops"
+                    label={t('flt_backdrops')}
                     value={valueLabel.backdrop}
                     onClick={() => setPicker('backdrop')}
                   />
@@ -550,7 +559,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
               onClick={reset}
               className="text-[#ff8000] font-medium text-[15px]"
             >
-              Reset filters
+              {t('flt_reset')}
             </button>
           </div>
         </>

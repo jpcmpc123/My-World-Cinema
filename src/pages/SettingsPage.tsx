@@ -5,15 +5,16 @@ import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { useLanguage } from '../i18n/LanguageContext';
 import { LANGUAGES } from '../i18n/translations';
+import type { TranslationKey } from '../i18n/translations';
 import { supabase } from '../lib/supabase';
 import { tmdb } from '../services/tmdb';
 
 type TabKey = 'profile' | 'avatar' | 'data';
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'profile', label: 'Profile' },
-  { key: 'avatar', label: 'Avatar' },
-  { key: 'data', label: 'Data' },
+const TABS: { key: TabKey; label: TranslationKey }[] = [
+  { key: 'profile', label: 'nav_profile' },
+  { key: 'avatar', label: 'cfg_tab_avatar' },
+  { key: 'data', label: 'cfg_tab_data' },
 ];
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
@@ -56,7 +57,7 @@ const LanguageBlock: React.FC = () => {
       <div className="flex items-center gap-2 mb-3">
         <Globe className="w-4 h-4 text-lb-green" />
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-lb-muted">
-          {t('filter_language')} / Language
+          {t('filter_language')}
         </h2>
       </div>
       <div className="flex gap-2">
@@ -81,6 +82,7 @@ const LanguageBlock: React.FC = () => {
 
 export const SettingsPage: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const tabParam = searchParams.get('tab') as TabKey | null;
@@ -93,29 +95,29 @@ export const SettingsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-16 text-center text-lb-muted text-sm">Loading settings…</div>
+      <div className="max-w-5xl mx-auto px-4 py-16 text-center text-lb-muted text-sm">{t('cfg_loading')}</div>
     );
   }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-4 md:py-10">
-      <h1 className="max-md:hidden text-3xl md:text-4xl font-light text-white tracking-tight mb-6">Account Settings</h1>
+      <h1 className="max-md:hidden text-3xl md:text-4xl font-light text-white tracking-tight mb-6">{t('cfg_title')}</h1>
 
       {/* Horizontal green tab bar */}
       <div className="max-md:hidden border-b border-lb-elevated mb-8">
         <nav className="flex gap-6 -mb-px">
-          {TABS.map((t) => (
+          {TABS.map((tb) => (
             <button
-              key={t.key}
+              key={tb.key}
               type="button"
-              onClick={() => setTab(t.key)}
+              onClick={() => setTab(tb.key)}
               className={`pb-2.5 text-xs font-bold uppercase tracking-widest cursor-pointer border-b-2 transition-colors ${
-                activeTab === t.key
+                activeTab === tb.key
                   ? 'border-lb-green text-lb-green'
                   : 'border-transparent text-lb-muted hover:text-white'
               }`}
             >
-              {t.label}
+              {t(tb.label)}
             </button>
           ))}
         </nav>
@@ -123,6 +125,7 @@ export const SettingsPage: React.FC = () => {
 
       {activeTab === 'profile' && (
         <>
+          {/* Troca de idioma (PT / EN) — desktop e mobile */}
           <LanguageBlock />
           {/* Mobile "Profile Settings" screen */}
           <div className="md:hidden">
@@ -151,6 +154,7 @@ interface ProfileForm {
 const ProfileTab: React.FC = () => {
   const { user: authUser, session, profile } = useAuth();
   const { updateUser, top4MovieIds, openTop4Picker } = useApp();
+  const { t } = useLanguage();
 
   const [form, setForm] = useState<ProfileForm>({
     username: profile?.username ?? '',
@@ -220,12 +224,12 @@ const ProfileTab: React.FC = () => {
     if (!USERNAME_RE.test(form.username)) {
       setNotice({
         kind: 'error',
-        message: 'Username must be 3–20 characters using only lowercase letters, numbers and underscores (a-z, 0-9, _).',
+        message: t('cfg_username_invalid'),
       });
       return;
     }
     if (!supabase || !authUser) {
-      setNotice({ kind: 'error', message: 'Supabase is not configured.' });
+      setNotice({ kind: 'error', message: t('cfg_supabase_missing') });
       return;
     }
 
@@ -254,7 +258,7 @@ const ProfileTab: React.FC = () => {
       const isUnique = error.code === '23505' || /duplicate key|unique/i.test(error.message);
       setNotice({
         kind: 'error',
-        message: isUnique ? `Username "${form.username}" is already taken.` : error.message,
+        message: isUnique ? `${t('cfg_username')} "${form.username}" ${t('cfg_is_taken')}` : error.message,
       });
       return;
     }
@@ -265,7 +269,7 @@ const ProfileTab: React.FC = () => {
       location: form.location,
       website: form.website,
     });
-    setNotice({ kind: 'success', message: 'Profile updated successfully.' });
+    setNotice({ kind: 'success', message: t('cfg_profile_updated') });
   };
 
   return (
@@ -275,18 +279,18 @@ const ProfileTab: React.FC = () => {
         {!extraFieldsAvailable && (
           <Notice
             kind="info"
-            message="The location and website fields require a database migration (supabase/migration_settings.sql). Run it in the Supabase SQL Editor to enable them."
+            message={t('cfg_ext_migration')}
           />
         )}
         {notice && <Notice kind={notice.kind} message={notice.message} />}
 
         <div>
-          <FieldLabel hint="3–20 chars, lowercase, numbers and _ only">Username</FieldLabel>
+          <FieldLabel hint={t('cfg_username_hint')}>{t('cfg_username')}</FieldLabel>
           <input type="text" value={form.username} onChange={set('username')} className={inputClass} />
         </div>
 
         <div>
-          <FieldLabel hint="cannot be changed">Email address</FieldLabel>
+          <FieldLabel hint={t('cfg_email_hint')}>{t('cfg_email')}</FieldLabel>
           <input
             type="email"
             value={session?.user?.email ?? ''}
@@ -297,36 +301,36 @@ const ProfileTab: React.FC = () => {
         </div>
 
         <div>
-          <FieldLabel>Location</FieldLabel>
+          <FieldLabel>{t('cfg_location')}</FieldLabel>
           <input
             type="text"
             value={form.location}
             onChange={set('location')}
-            placeholder="e.g. São Paulo, Brazil"
+            placeholder={t('cfg_location_ph')}
             className={inputClass}
             disabled={!extraFieldsAvailable}
           />
         </div>
 
         <div>
-          <FieldLabel>Website</FieldLabel>
+          <FieldLabel>{t('cfg_website')}</FieldLabel>
           <input
             type="text"
             value={form.website}
             onChange={set('website')}
-            placeholder="e.g. mysite.com"
+            placeholder={t('cfg_website_ph')}
             className={inputClass}
             disabled={!extraFieldsAvailable}
           />
         </div>
 
         <div>
-          <FieldLabel>Bio</FieldLabel>
+          <FieldLabel>{t('cfg_bio')}</FieldLabel>
           <textarea
             value={form.bio}
             onChange={set('bio')}
             rows={5}
-            placeholder="Tell the world about your taste in film…"
+            placeholder={t('cfg_bio_ph')}
             className={`${inputClass} resize-y`}
           />
         </div>
@@ -336,14 +340,14 @@ const ProfileTab: React.FC = () => {
           disabled={saving}
           className="btn-log-green text-lb-bg font-black text-sm px-8 py-3 rounded uppercase tracking-widest cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Saving…' : 'Save changes'}
+          {saving ? t('cfg_saving') : t('cfg_save_changes')}
         </button>
       </div>
 
       {/* Right column: FAVORITE FILMS panel */}
       <aside className="lg:w-64 shrink-0">
         <h3 className="text-[10px] font-bold uppercase tracking-widest text-lb-muted border-b border-lb-elevated pb-2 mb-3">
-          Favorite films
+          {t('cfg_favorite_films')}
         </h3>
         <div className="grid grid-cols-2 gap-2">
           {[0, 1, 2, 3].map((slot) => {
@@ -354,7 +358,7 @@ const ProfileTab: React.FC = () => {
                 key={slot}
                 type="button"
                 onClick={() => openTop4Picker(slot)}
-                title={movie ? `${movie.title} — click to change` : 'Pick a film'}
+                title={movie ? `${movie.title} ${t('cfg_click_change')}` : t('cfg_pick_film')}
                 className="aspect-[2/3] rounded overflow-hidden bg-lb-bg border border-lb-elevated hover:border-lb-green transition-colors cursor-pointer relative group"
               >
                 {id && movie?.poster ? (
@@ -372,7 +376,7 @@ const ProfileTab: React.FC = () => {
             );
           })}
         </div>
-        <p className="text-[11px] text-lb-muted mt-3">Drag posters to reorder.</p>
+        <p className="text-[11px] text-lb-muted mt-3">{t('cfg_drag_reorder')}</p>
       </aside>
     </form>
   );
@@ -394,8 +398,22 @@ const MobileField: React.FC<{ label: string; children: React.ReactNode }> = ({ l
 
 const MobileProfileSettings: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { user: authUser, session, signOut } = useAuth();
   const { user: appUser, updateUser, top4MovieIds, setTop4Movie } = useApp();
+
+  // Barra preta do Header (✕ / ✓) dispara estes eventos
+  const handleSaveRef = useRef<() => Promise<void>>(async () => {});
+  useEffect(() => {
+    const onCancel = () => navigate(-1);
+    const onSave = () => void handleSaveRef.current();
+    window.addEventListener('settings:cancel', onCancel);
+    window.addEventListener('settings:save', onSave);
+    return () => {
+      window.removeEventListener('settings:cancel', onCancel);
+      window.removeEventListener('settings:save', onSave);
+    };
+  }, [navigate]);
 
   const nameParts = (appUser.displayName || '').split(' ');
   const [form, setForm] = useState({
@@ -460,29 +478,12 @@ const MobileProfileSettings: React.FC = () => {
     navigate('/signin');
   };
 
+  // Mantém a ref da barra apontando para o save mais recente (com o form atual)
+  handleSaveRef.current = handleSave;
+
   return (
     <div className="space-y-5 pb-24 -mx-4 px-4">
-      {/* Header: ✕ left, title, ✓ right */}
-      <div className="relative flex items-center justify-center py-2">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          aria-label="Cancel"
-          className="absolute left-0 text-lb-muted hover:text-white transition-colors cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-        <h2 className="text-base font-bold text-white">Profile Settings</h2>
-        <button
-          type="button"
-          onClick={() => void handleSave()}
-          disabled={saving}
-          aria-label="Save"
-          className="absolute right-0 text-lb-green hover:text-white transition-colors cursor-pointer disabled:opacity-50"
-        >
-          <Check className="w-5 h-5" />
-        </button>
-      </div>
+      {/* ✕ / título / ✓ ficam na barra preta do Header (ver Header.tsx, isSettingsRoute) */}
 
       {notice && <Notice kind={notice.kind} message={notice.message} />}
 
@@ -492,18 +493,18 @@ const MobileProfileSettings: React.FC = () => {
         onClick={() => void handleSignOut()}
         className="w-full bg-orange-500 text-white rounded-md py-2.5 font-bold text-sm cursor-pointer hover:bg-orange-600 transition-colors"
       >
-        Sign out
+        {t('nav_sign_out')}
       </button>
 
       {/* Dark input rows */}
       <div className="space-y-4">
-        <MobileField label="Given Name">
+        <MobileField label={t('cfg_given_name')}>
           <input type="text" value={form.givenName} onChange={set('givenName')} className={mobileInputClass} />
         </MobileField>
-        <MobileField label="Family Name">
+        <MobileField label={t('cfg_family_name')}>
           <input type="text" value={form.familyName} onChange={set('familyName')} className={mobileInputClass} />
         </MobileField>
-        <MobileField label="Email Address">
+        <MobileField label={t('cfg_email')}>
           <input
             type="email"
             value={session?.user?.email ?? ''}
@@ -512,28 +513,28 @@ const MobileProfileSettings: React.FC = () => {
             className={`${mobileInputClass} opacity-60 cursor-not-allowed`}
           />
         </MobileField>
-        <MobileField label="Location">
+        <MobileField label={t('cfg_location')}>
           <input type="text" value={form.location} onChange={set('location')} className={mobileInputClass} />
         </MobileField>
-        <MobileField label="Website">
+        <MobileField label={t('cfg_website')}>
           <input type="text" value={form.website} onChange={set('website')} className={mobileInputClass} />
         </MobileField>
-        <MobileField label="Bio">
+        <MobileField label={t('cfg_bio')}>
           <textarea rows={3} value={form.bio} onChange={set('bio')} className={`${mobileInputClass} resize-y`} />
         </MobileField>
-        <MobileField label="Pronoun">
+        <MobileField label={t('cfg_pronoun')}>
           <input
             type="text"
             value={form.pronoun}
             onChange={set('pronoun')}
-            placeholder="e.g. they/them"
+            placeholder={t('cfg_pronoun_ph')}
             className={mobileInputClass}
           />
         </MobileField>
 
-        {/* Custom Posters toggle */}
+        {/* Alternância de pôsteres personalizados */}
         <div className="flex items-center justify-between bg-[#2c3440] rounded-md px-3 py-2.5">
-          <span className="text-sm text-white">Custom Posters</span>
+          <span className="text-sm text-white">{t('cfg_custom_posters')}</span>
           <button
             type="button"
             role="switch"
@@ -554,7 +555,7 @@ const MobileProfileSettings: React.FC = () => {
 
       {/* FAVORITE FILMS — tap ⊗ to remove a poster from the slot */}
       <section className="space-y-2">
-        <h3 className="text-xs uppercase tracking-widest text-lb-muted font-bold">Favorite Films</h3>
+        <h3 className="text-xs uppercase tracking-widest text-lb-muted font-bold">{t('cfg_favorite_films')}</h3>
         <div className="grid grid-cols-4 gap-1.5">
           {[0, 1, 2, 3].map((slot) => {
             const id = top4MovieIds[slot];
@@ -578,7 +579,7 @@ const MobileProfileSettings: React.FC = () => {
                 {id > 0 && (
                   <button
                     type="button"
-                    aria-label="Remove favorite"
+                    aria-label={t('cfg_remove_favorite')}
                     onClick={() => setTop4Movie(slot, 0)}
                     className="absolute top-1 right-1 z-10 text-orange-500 bg-black/60 rounded-full cursor-pointer hover:scale-110 transition-transform"
                   >
@@ -593,7 +594,7 @@ const MobileProfileSettings: React.FC = () => {
 
       {/* FAVORITE SERIES — no series top-4 exists in AppContext yet; removal is a stub */}
       <section className="space-y-2">
-        <h3 className="text-xs uppercase tracking-widest text-lb-muted font-bold">Favorite Series</h3>
+        <h3 className="text-xs uppercase tracking-widest text-lb-muted font-bold">{t('cfg_favorite_series')}</h3>
         <div className="grid grid-cols-4 gap-1.5">
           {[0, 1, 2, 3].map((slot) => (
             <div
@@ -603,7 +604,7 @@ const MobileProfileSettings: React.FC = () => {
               <Film className="w-5 h-5" />
               <button
                 type="button"
-                aria-label="Remove favorite series (stub)"
+                aria-label={t('cfg_remove_fav_series')}
                 onClick={() => {
                   /* stub: wire to a series top-4 list when it exists in AppContext */
                 }}
@@ -624,6 +625,7 @@ const MobileProfileSettings: React.FC = () => {
 const AvatarTab: React.FC = () => {
   const { user: authUser, profile } = useAuth();
   const { user: appUser, updateUser } = useApp();
+  const { t } = useLanguage();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentAvatar = profile?.avatar_url || appUser.avatarUrl;
@@ -637,7 +639,7 @@ const AvatarTab: React.FC = () => {
 
   const applyAvatarToProfile = async (url: string) => {
     if (!supabase || !authUser) {
-      setNotice({ kind: 'error', message: 'Supabase is not configured.' });
+      setNotice({ kind: 'error', message: t('cfg_supabase_missing') });
       return false;
     }
     const { error } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', authUser.id);
@@ -657,7 +659,7 @@ const AvatarTab: React.FC = () => {
       return;
     }
     if (!supabase || !authUser) {
-      setNotice({ kind: 'error', message: 'Supabase is not configured.' });
+      setNotice({ kind: 'error', message: t('cfg_supabase_missing') });
       return;
     }
 
@@ -673,7 +675,7 @@ const AvatarTab: React.FC = () => {
       setUploading(false);
       setNotice({
         kind: 'error',
-        message: `Upload failed: ${uploadError.message}. Configure o bucket 'avatars' público no Supabase Storage, ou cole a URL de uma imagem abaixo.`,
+        message: `${t('cfg_upload_failed')}: ${uploadError.message}. ${t('cfg_bucket_hint')}`,
       });
       return;
     }
@@ -684,32 +686,32 @@ const AvatarTab: React.FC = () => {
 
     const ok = await applyAvatarToProfile(publicUrl);
     setUploading(false);
-    if (ok) setNotice({ kind: 'success', message: 'Avatar updated.' });
+    if (ok) setNotice({ kind: 'success', message: t('cfg_avatar_updated') });
   };
 
   const handleSaveUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotice(null);
     if (!avatarUrlInput.trim()) {
-      setNotice({ kind: 'error', message: 'Paste an image URL first.' });
+      setNotice({ kind: 'error', message: t('cfg_paste_url_first') });
       return;
     }
     setSavingUrl(true);
     const ok = await applyAvatarToProfile(avatarUrlInput.trim());
     setSavingUrl(false);
-    if (ok) setNotice({ kind: 'success', message: 'Avatar updated.' });
+    if (ok) setNotice({ kind: 'success', message: t('cfg_avatar_updated') });
   };
 
   return (
     <div className="flex flex-col md:flex-row gap-10 items-start">
-      {/* Current avatar preview */}
+      {/* Pré-visualização do avatar atual */}
       <div className="flex flex-col items-center gap-3">
         <img loading="lazy" decoding="async"
           src={avatarSrc}
-          alt="Current avatar"
+          alt={t('cfg_current_avatar')}
           className="w-40 h-40 rounded-full object-cover border-2 border-lb-elevated bg-lb-bg shadow-xl"
         />
-        <span className="text-[10px] uppercase font-bold tracking-widest text-lb-muted">Current avatar</span>
+        <span className="text-[10px] uppercase font-bold tracking-widest text-lb-muted">{t('cfg_current_avatar')}</span>
       </div>
 
       <div className="flex-1 min-w-0 space-y-6 w-full">
@@ -717,7 +719,7 @@ const AvatarTab: React.FC = () => {
 
         {/* Upload */}
         <section className="bg-lb-surface border border-lb-elevated rounded p-5">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-lb-muted mb-3">Upload a new avatar</h2>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-lb-muted mb-3">{t('cfg_upload_avatar')}</h2>
           <input
             ref={fileInputRef}
             type="file"
@@ -736,18 +738,17 @@ const AvatarTab: React.FC = () => {
             className="btn-log-green text-lb-bg font-black text-xs px-5 py-2.5 rounded uppercase tracking-widest cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <Upload className="w-3.5 h-3.5 stroke-[2.5]" />
-            {uploading ? 'Uploading…' : 'Choose image'}
+            {uploading ? t('cfg_uploading') : t('cfg_choose_image')}
           </button>
           <p className="text-[11px] text-lb-muted mt-3">
-            JPG, PNG or WebP. Uploads to the public <code className="text-lb-blue">avatars</code> bucket in Supabase
-            Storage.
+            {t('cfg_avatar_hint_1')} <code className="text-lb-blue">avatars</code> {t('cfg_avatar_hint_2')}
           </p>
         </section>
 
         {/* URL fallback */}
         <section className="bg-lb-surface border border-lb-elevated rounded p-5">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-lb-muted mb-3">
-            Or paste an image URL
+            {t('cfg_or_paste_url')}
           </h2>
           <form onSubmit={handleSaveUrl} className="flex gap-2">
             <input
@@ -763,7 +764,7 @@ const AvatarTab: React.FC = () => {
               className="shrink-0 btn-log-green text-lb-bg font-black text-xs px-5 py-2 rounded uppercase tracking-widest cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <ImageIcon className="w-3.5 h-3.5" />
-              {savingUrl ? 'Saving…' : 'Save'}
+              {savingUrl ? t('cfg_saving') : t('cfg_save')}
             </button>
           </form>
         </section>
@@ -791,6 +792,7 @@ interface PendingImport {
 const DataTab: React.FC = () => {
   const { user: authUser, isAuthenticated } = useAuth();
   const { logs, watchlist, saveLog } = useApp();
+  const { t } = useLanguage();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -813,7 +815,7 @@ const DataTab: React.FC = () => {
       const lines = text.split(/\r?\n/).filter((l) => l.trim());
 
       if (lines.length < 2) {
-        setNotice({ kind: 'error', message: 'The CSV file appears to be empty (no data rows).' });
+        setNotice({ kind: 'error', message: t('cfg_csv_empty') });
         return;
       }
 
@@ -850,7 +852,7 @@ const DataTab: React.FC = () => {
       if (!hasFilmId && !hasName) {
         setNotice({
           kind: 'error',
-          message: 'Unrecognized CSV format. Expected columns "film_id,rating,liked,watched_on" or a simple CSV with "Name,Year".',
+          message: t('cfg_csv_unrecognized'),
         });
         return;
       }
@@ -889,20 +891,20 @@ const DataTab: React.FC = () => {
       }
 
       if (hasFilmId) {
-        setNotice({ kind: 'success', message: `${count} films imported to your diary.` });
+        setNotice({ kind: 'success', message: `${count} ${t('cfg_films_imported')}` });
       } else if (newPending.length > 0) {
         const merged = [...pendingImports, ...newPending];
         setPendingImports(merged);
         localStorage.setItem('lb_pending_imports', JSON.stringify(merged));
         setNotice({
           kind: 'info',
-          message: `${newPending.length} imported (saved locally as pending — names/years only, no film IDs).`,
+          message: `${newPending.length} ${t('cfg_pending_saved')}`,
         });
       } else {
-        setNotice({ kind: 'error', message: 'No valid rows found in the CSV.' });
+        setNotice({ kind: 'error', message: t('cfg_no_valid_rows') });
       }
     } catch (err) {
-      setNotice({ kind: 'error', message: err instanceof Error ? err.message : 'Failed to import CSV.' });
+      setNotice({ kind: 'error', message: err instanceof Error ? err.message : t('cfg_import_failed') });
     } finally {
       setImporting(false);
     }
@@ -954,9 +956,9 @@ const DataTab: React.FC = () => {
       a.download = 'myworld-export.csv';
       a.click();
       URL.revokeObjectURL(url);
-      setNotice({ kind: 'success', message: 'Export downloaded as myworld-export.csv.' });
+      setNotice({ kind: 'success', message: t('cfg_export_done') });
     } catch (err) {
-      setNotice({ kind: 'error', message: err instanceof Error ? err.message : 'Failed to export data.' });
+      setNotice({ kind: 'error', message: err instanceof Error ? err.message : t('cfg_export_failed') });
     } finally {
       setExporting(false);
     }
@@ -969,10 +971,10 @@ const DataTab: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Import */}
         <section className="bg-lb-surface border border-lb-elevated rounded p-5 flex flex-col">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-white mb-2">Import your data</h2>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-white mb-2">{t('cfg_import_title')}</h2>
           <p className="text-xs text-lb-muted mb-4 flex-1">
-            Upload a CSV with columns <code className="text-lb-blue">film_id,rating,liked,watched_on</code> — or a
-            simple CSV with <code className="text-lb-blue">Name,Year</code> columns.
+            {t('cfg_import_desc_1')} <code className="text-lb-blue">film_id,rating,liked,watched_on</code> {t('cfg_import_desc_2')}{' '}
+            <code className="text-lb-blue">Name,Year</code> {t('cfg_import_desc_3')}
           </p>
           <input
             ref={fileInputRef}
@@ -992,16 +994,16 @@ const DataTab: React.FC = () => {
             className="btn-log-green text-lb-bg font-black text-xs px-4 py-2.5 rounded uppercase tracking-widest cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Upload className="w-3.5 h-3.5 stroke-[2.5]" />
-            {importing ? 'Importing…' : 'Import your data'}
+            {importing ? t('cfg_importing') : t('cfg_import_title')}
           </button>
         </section>
 
         {/* Export */}
         <section className="bg-lb-surface border border-lb-elevated rounded p-5 flex flex-col">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-white mb-2">Export your data</h2>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-white mb-2">{t('cfg_export_title')}</h2>
           <p className="text-xs text-lb-muted mb-4 flex-1">
-            Download a CSV with your diary entries and watchlist
-            {isAuthenticated ? ' (from Supabase)' : ' (local data — sign in to export from the cloud)'}.
+            {t('cfg_export_desc_1')}
+            {isAuthenticated ? t('cfg_export_cloud') : t('cfg_export_local')}.
           </p>
           <button
             type="button"
@@ -1010,7 +1012,7 @@ const DataTab: React.FC = () => {
             className="btn-log-green text-lb-bg font-black text-xs px-4 py-2.5 rounded uppercase tracking-widest cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-            {exporting ? 'Exporting…' : 'Export your data'}
+            {exporting ? t('cfg_exporting') : t('cfg_export_title')}
           </button>
         </section>
       </div>
@@ -1019,7 +1021,7 @@ const DataTab: React.FC = () => {
         <section className="bg-lb-surface border border-lb-elevated rounded p-5">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xs font-bold uppercase tracking-widest text-white">
-              Pending imports <span className="text-lb-muted font-normal">({pendingImports.length} saved locally)</span>
+              {t('cfg_pending_title')} <span className="text-lb-muted font-normal">({pendingImports.length} {t('cfg_saved_locally')})</span>
             </h2>
             <button
               type="button"
@@ -1029,11 +1031,11 @@ const DataTab: React.FC = () => {
               }}
               className="text-[10px] uppercase font-bold text-lb-muted hover:text-red-400 cursor-pointer"
             >
-              Clear
+              {t('cfg_clear')}
             </button>
           </div>
           <p className="text-[11px] text-lb-muted mb-2">
-            These films came from a Name/Year CSV and have no TMDB id yet:
+            {t('cfg_pending_desc')}
           </p>
           <ul className="text-xs text-lb-text max-h-40 overflow-y-auto divide-y divide-lb-elevated/60">
             {pendingImports.slice(0, 50).map((p, i) => (

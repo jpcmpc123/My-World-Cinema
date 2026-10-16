@@ -3,8 +3,10 @@ import { useSearchParams, useParams, Link, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, LayoutGrid, List as ListIcon, Star, ChevronDown } from 'lucide-react';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
 import { PosterCard } from '../components/PosterCard';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const SeriesPage: React.FC = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { genre: urlGenre, decade: urlDecade, year: urlYear } = useParams<{
     genre?: string;
@@ -64,18 +66,18 @@ export const SeriesPage: React.FC = () => {
   const decadeYears = Array.from({ length: 10 }, (_, i) => parsedDecade + i);
 
   const sortOptions = [
-    { label: 'SERIES POPULARITY', value: 'vote_count.desc' },
-    { label: 'AVERAGE RATING', value: 'vote_average.desc' },
-    { label: 'FIRST AIR DATE (NEWEST)', value: 'first_air_date.desc' },
-    { label: 'FIRST AIR DATE (OLDEST)', value: 'first_air_date.asc' },
+    { label: t('cat_series_popularity'), value: 'vote_count.desc' },
+    { label: t('cat_average_rating'), value: 'vote_average.desc' },
+    { label: t('cat_air_newest'), value: 'first_air_date.desc' },
+    { label: t('cat_air_oldest'), value: 'first_air_date.asc' },
   ];
 
   const currentSortLabel =
-    sortOptions.find((o) => o.value === currentSort)?.label || 'SERIES POPULARITY';
+    sortOptions.find((o) => o.value === currentSort)?.label || t('cat_series_popularity');
   const currentGenreName =
-    tmdb.tvGenres.find((g) => g.id === currentGenre)?.name || 'GENRE';
+    tmdb.tvGenres.find((g) => g.id === currentGenre)?.name || t('cat_genre_upper');
   const currentServiceName =
-    tmdb.streamingServices.find((s) => s.id === currentProvider)?.name || 'SERVICE';
+    tmdb.streamingServices.find((s) => s.id === currentProvider)?.name || t('cat_service_upper');
 
   useEffect(() => {
     async function loadCatalog() {
@@ -291,7 +293,7 @@ export const SeriesPage: React.FC = () => {
               className={`p-1 rounded cursor-pointer transition-colors ${
                 viewMode === 'grid' ? 'text-white' : 'text-lb-muted hover:text-white'
               }`}
-              title="Grid view"
+              title={t('common_grid_view')}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
             </button>
@@ -300,7 +302,7 @@ export const SeriesPage: React.FC = () => {
               className={`p-1 rounded cursor-pointer transition-colors ${
                 viewMode === 'list' ? 'text-white' : 'text-lb-muted hover:text-white'
               }`}
-              title="List view"
+              title={t('common_list_view')}
             >
               <ListIcon className="w-3.5 h-3.5" />
             </button>
@@ -412,7 +414,7 @@ export const SeriesPage: React.FC = () => {
                     ) : null}
                   </div>
                   <p className="text-xs text-lb-text line-clamp-2 leading-relaxed">
-                    {movie.overview || 'Sinopse não disponível.'}
+                    {movie.overview || t('cat_no_synopsis')}
                   </p>
                 </div>
               </div>

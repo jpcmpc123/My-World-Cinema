@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect, useSyncExternalStore } from 'react';
+import { createMovieStore, type MovieSnapshot } from '../store/movieStore';
 import type { UserProfile, LogEntry, MovieList, Review } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
@@ -106,6 +107,10 @@ const initialReviewsList: Review[] = (jpcmpc23Logs as LogEntry[])
 
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+// Armazenamento por filme: alimentado pelo provider, lido pelos PosterCard
+// via useMovieState (cada cartão só re-renderiza quando o próprio filme muda).
+const movieStore = createMovieStore();
 
 // Row shape of public.film_logs in Supabase
 interface FilmLogRow {
@@ -786,6 +791,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActionSheetMovie(null);
   }, []);
 
+  // Registra a ação de abrir a gaveta para o atalho estável (useOpenActionSheet)
+  useLayoutEffect(() => {
+    openSheetImpl = openActionSheet;
+  }, [openActionSheet]);
+
+  // Alimenta o armazenamento por filme e notifica só os cartões que mudaram.
+  // useLayoutEffect: a atualização chega antes do paint, sem flicker.
+  useLayoutEffect(() => {
+    movieStore.setState({
+      watchedIds: watchedMovieIds,
+      likedIds: likedMovieIds,
+      ratings: ratingsMap,
+      overrides: movieOverrides,
+    });
+    movieStore.flush();
+  }, [watchedMovieIds, likedMovieIds, ratingsMap, movieOverrides]);
+
   const value = useMemo<AppContextType>(
     () => ({
       user,
@@ -854,6 +876,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     </AppContext.Provider>
   );
 };
+
+/**
+ * Estado de um único filme (assistido / curtido / nota / pôster). Usar nos
+ * cartões em vez de useApp(): só re-renderiza quando ESTE filme muda.
+ */
+export const useMovieState = (movieId: number): MovieSnapshot => {
+  // subscribe/getSnapshot estáveis por filme: funções novas a cada render fariam
+  // o React reinscrever o listener e reler o snapshot sem parar.
+  const subscribe = useCallback(
+    (listener: () => void) => movieStore.subscribe(movieId, listener),
+    [movieId],
+  );
+  const getSnapshot = useCallback(() => movieStore.get(movieId), [movieId]);
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+};
+
+/**
+ * Abrir a gaveta de ações sem assinar o contexto. A função é a mesma por toda a
+ * vida do app (módulo), então o cartão não re-renderiza com mudanças de dados.
+ */
+type OpenSheet = (movie: { id: number; title: string; release_date?: string }) => void;
+let openSheetImpl: OpenSheet | null = null;
+const openSheetStable: OpenSheet = (movie) => {
+  if (typeof window !== 'undefined' && window.innerWidth >= 768) return;
+  openSheetImpl?.(movie);
+};
+export const useOpenActionSheet = (): OpenSheet => openSheetStable;
 
 export const useApp = () => {
   const context = useContext(AppContext);

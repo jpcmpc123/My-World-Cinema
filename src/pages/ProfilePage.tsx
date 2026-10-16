@@ -7,8 +7,10 @@ import { useAuth } from '../context/AuthContext';
 import { useProfileByUsername } from '../lib/useProfileByUsername';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
 import { PosterCard } from '../components/PosterCard';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const ProfilePage: React.FC = () => {
+  const { t } = useLanguage();
   const { username } = useParams<{ username: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || 'profile';
@@ -149,16 +151,16 @@ export const ProfilePage: React.FC = () => {
       : 0;
 
   const mobileCounters: { label: string; count: number; to: string }[] = [
-    { label: 'Films', count: viewFilmsCount, to: `/${viewUsername}?tab=films` },
-    { label: 'Series', count: 0, to: '/series' },
-    { label: 'Diary', count: viewDiaryCount, to: `/${viewUsername}/diary` },
-    { label: 'Reviews', count: viewReviewsCount, to: `/${viewUsername}?tab=reviews` },
-    { label: 'Watchlist', count: viewWatchlistCount, to: `/${viewUsername}/watchlist` },
-    { label: 'Lists', count: viewListsCount, to: `/${viewUsername}/lists` },
-    { label: 'Likes', count: viewLikesCount, to: `/${viewUsername}?tab=likes` },
-    { label: 'Tags', count: 0, to: `/${viewUsername}?tab=tags` },
-    { label: 'Following', count: viewFollowingCount, to: `/${viewUsername}?tab=network` },
-    { label: 'Followers', count: viewFollowersCount, to: `/${viewUsername}?tab=network` },
+    { label: t('nav_films'), count: viewFilmsCount, to: `/${viewUsername}?tab=films` },
+    { label: t('nav_series'), count: 0, to: '/series' },
+    { label: t('hdr_diary'), count: viewDiaryCount, to: `/${viewUsername}/diary` },
+    { label: t('reviews_label'), count: viewReviewsCount, to: `/${viewUsername}?tab=reviews` },
+    { label: t('hdr_watchlist'), count: viewWatchlistCount, to: `/${viewUsername}/watchlist` },
+    { label: t('nav_lists'), count: viewListsCount, to: `/${viewUsername}/lists` },
+    { label: t('pp_likes'), count: viewLikesCount, to: `/${viewUsername}?tab=likes` },
+    { label: t('pp_tags'), count: 0, to: `/${viewUsername}?tab=tags` },
+    { label: t('pp_following'), count: viewFollowingCount, to: `/${viewUsername}?tab=network` },
+    { label: t('pp_followers'), count: viewFollowersCount, to: `/${viewUsername}?tab=network` },
   ];
 
   // Guard: username desconhecido (sem perfil local nem no Supabase) vai para home
@@ -192,13 +194,13 @@ export const ProfilePage: React.FC = () => {
                 to="/settings?tab=profile"
                 className="btn-edit-profile text-[10px] uppercase font-bold tracking-wider text-lb-white px-3 py-1 rounded-sm border border-lb-border-light/60 cursor-pointer"
               >
-                EDIT PROFILE
+                {t('pp_edit_profile')}
               </Link>
 
               <Link
                 to="/settings"
                 className="bg-lb-elevated hover:bg-lb-border text-lb-text p-1 rounded-full cursor-pointer transition-colors"
-                title="Account settings"
+                title={t('pp_account_settings')}
               >
                 <MoreHorizontal className="w-3.5 h-3.5" />
               </Link>
@@ -211,23 +213,23 @@ export const ProfilePage: React.FC = () => {
         <div className="flex items-center gap-6 sm:gap-8 text-center pt-2">
           <div>
             <span className="block text-xl sm:text-2xl font-bold text-white tracking-tight">{viewFilmsCount}</span>
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-lb-muted">Films</span>
+            <span className="text-[10px] uppercase tracking-wider font-semibold text-lb-muted">{t('nav_films')}</span>
           </div>
           <div>
             <span className="block text-xl sm:text-2xl font-bold text-white tracking-tight">{viewThisYearCount}</span>
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-lb-muted">This Year</span>
+            <span className="text-[10px] uppercase tracking-wider font-semibold text-lb-muted">{t('pp_this_year')}</span>
           </div>
           <div>
             <span className="block text-xl sm:text-2xl font-bold text-white tracking-tight">{viewListsCount}</span>
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-lb-muted">Lists</span>
+            <span className="text-[10px] uppercase tracking-wider font-semibold text-lb-muted">{t('nav_lists')}</span>
           </div>
           <div>
             <span className="block text-xl sm:text-2xl font-bold text-white tracking-tight">{viewFollowingCount}</span>
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-lb-muted">Following</span>
+            <span className="text-[10px] uppercase tracking-wider font-semibold text-lb-muted">{t('pp_following')}</span>
           </div>
           <div>
             <span className="block text-xl sm:text-2xl font-bold text-white tracking-tight">{viewFollowersCount}</span>
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-lb-muted">Followers</span>
+            <span className="text-[10px] uppercase tracking-wider font-semibold text-lb-muted">{t('pp_followers')}</span>
           </div>
         </div>
       </div>
@@ -236,16 +238,16 @@ export const ProfilePage: React.FC = () => {
       <div className="max-md:hidden border-b border-lb-elevated flex items-center justify-between text-xs font-semibold overflow-x-auto pb-0.5">
         <div className="flex items-center gap-6">
           {[
-            { id: 'profile', label: 'Profile' },
-            { id: 'activity', label: 'Activity' },
-            { id: 'films', label: 'Films' },
-            { id: 'diary', label: 'Diary' },
-            { id: 'reviews', label: 'Reviews' },
-            { id: 'watchlist', label: 'Watchlist' },
-            { id: 'lists', label: 'Lists' },
-            { id: 'likes', label: 'Likes' },
-            { id: 'tags', label: 'Tags' },
-            { id: 'network', label: 'Network' },
+            { id: 'profile', label: t('nav_profile') },
+            { id: 'activity', label: t('nav_activity') },
+            { id: 'films', label: t('nav_films') },
+            { id: 'diary', label: t('hdr_diary') },
+            { id: 'reviews', label: t('reviews_label') },
+            { id: 'watchlist', label: t('hdr_watchlist') },
+            { id: 'lists', label: t('nav_lists') },
+            { id: 'likes', label: t('pp_likes') },
+            { id: 'tags', label: t('pp_tags') },
+            { id: 'network', label: t('pp_network') },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -269,13 +271,13 @@ export const ProfilePage: React.FC = () => {
 
       {/* 3. Mobile Profile layout (avatar, favorites, recent activity, ratings, counters) */}
       {currentTab === 'profile' && (
-        <div className="md:hidden space-y-8 pt-2">
-          {/* Big centered avatar */}
-          <div className="flex flex-col items-center gap-2 pt-2">
+        <div className="md:hidden pt-0">
+          {/* Big centered avatar (subido em relação ao topo; linhas separam os blocos) */}
+          <div className="flex flex-col items-center gap-2 pt-0 pb-5 border-b border-white/10 -mx-4 px-4 -mt-4">
             <img loading="lazy" decoding="async"
               src={viewAvatar}
               alt={viewUsername}
-              className="w-28 h-28 rounded-full object-cover border border-lb-border-light shadow-xl"
+              className="w-16 h-16 rounded-full object-cover border border-lb-border-light shadow-xl"
             />
             {user.displayName && remote.isRemote === false && (
               <span className="text-xs text-lb-muted">{user.displayName}</span>
@@ -284,9 +286,9 @@ export const ProfilePage: React.FC = () => {
 
           {/* FAVORITES (Top 4) */}
           {!remote.isRemote && (
-            <section className="space-y-2">
+            <section className="space-y-2 pt-6 pb-6 border-b border-white/10 -mx-4 px-4">
               <h2 className="text-xs uppercase tracking-widest text-lb-muted font-bold">
-                Favorites
+                {t('pp_favorites')}
               </h2>
               <div className="grid grid-cols-4 gap-1.5">
                 {top4Movies.map((movie, idx) => (
@@ -314,13 +316,13 @@ export const ProfilePage: React.FC = () => {
           )}
 
           {/* RECENT ACTIVITY (4 posters withstars beneath) */}
-          <section className="space-y-2">
+          <section className="space-y-2 pt-6 pb-6 border-b border-white/10 -mx-4 px-4">
             <h2 className="text-xs uppercase tracking-widest text-lb-muted font-bold">
-              Recent Activity
+              {t('pp_recent_activity')}
             </h2>
             {recentLogs.length === 0 ? (
               <p className="text-xs text-lb-muted py-2">
-                Recent activity will appear when you log films.
+                {t('pp_recent_empty')}
               </p>
             ) : (
               <div className="grid grid-cols-4 gap-1.5">
@@ -349,7 +351,7 @@ export const ProfilePage: React.FC = () => {
 
           {/* RATINGS histogram */}
           {ratedLogs.length > 0 && (
-            <section className="space-y-2">
+            <section className="space-y-2 pt-6 pb-6 border-b border-white/10 -mx-4 px-4">
               <RatingHistogram averageRating={avgRating} voteCount={ratedLogs.length} />
             </section>
           )}
@@ -360,7 +362,7 @@ export const ProfilePage: React.FC = () => {
               <Link
                 key={c.label}
                 to={c.to}
-                className="flex items-center justify-between py-3 border-b border-white/5 text-sm text-white"
+                className="flex items-center justify-between py-3 text-sm text-white"
               >
                 <span>{c.label}</span>
                 <span className="flex items-center gap-2 text-lb-muted">
@@ -383,14 +385,14 @@ export const ProfilePage: React.FC = () => {
             <section className="space-y-3">
               <div className="border-b border-lb-elevated pb-1.5 flex items-center justify-between">
                 <h2 className="text-[11px] uppercase tracking-wider font-bold text-lb-text">
-                  Favorite Films
+                  {t('cfg_favorite_films')}
                 </h2>
               </div>
 
               {top4Movies.every((m) => !m) ? (
                 <div className="py-12 text-center space-y-2">
-                  <p className="text-sm text-white font-semibold">Nothing here yet</p>
-                  <p className="text-xs text-lb-muted">Pick up to four favorite films to show off on your profile.</p>
+                  <p className="text-sm text-white font-semibold">{t('person_nothing')}</p>
+                  <p className="text-xs text-lb-muted">{t('pp_pick_four')}</p>
                 </div>
               ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
@@ -409,7 +411,7 @@ export const ProfilePage: React.FC = () => {
                       </Link>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-lb-muted text-xs">
-                        Slot #{idx + 1}
+                        {t('pp_slot')} #{idx + 1}
                       </div>
                     )}
                   </div>
@@ -423,20 +425,20 @@ export const ProfilePage: React.FC = () => {
             <section className="space-y-3">
               <div className="border-b border-lb-elevated pb-1.5 flex items-center justify-between">
                 <h2 className="text-[11px] uppercase tracking-wider font-bold text-lb-text">
-                  Recent Activity
+                  {t('pp_recent_activity')}
                 </h2>
                 <button
                   onClick={() => setTab('diary')}
                   className="text-[10px] uppercase font-bold tracking-wider text-lb-muted hover:text-white"
                 >
-                  All
+                  {t('pp_all')}
                 </button>
               </div>
 
               {recentLogs.length === 0 ? (
                 <div className="py-12 text-center space-y-2">
-                  <p className="text-sm text-white font-semibold">Nothing here yet</p>
-                  <p className="text-xs text-lb-muted">Recent activity will appear when you log films.</p>
+                  <p className="text-sm text-white font-semibold">{t('person_nothing')}</p>
+                  <p className="text-xs text-lb-muted">{t('pp_recent_empty')}</p>
                 </div>
               ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
@@ -472,7 +474,7 @@ export const ProfilePage: React.FC = () => {
               {/* Overlapping mini-posters */}
               {viewWatchlistCount === 0 ? (
                 <p className="text-[11px] text-lb-muted pt-2">
-                  No films in watchlist yet.
+                  {t('pp_no_watchlist')}
                 </p>
               ) : (
                 <div className="flex items-center -space-x-4 pt-1">
@@ -504,14 +506,14 @@ export const ProfilePage: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between border-b border-lb-elevated pb-1 text-xs">
                 <span className="uppercase tracking-wider font-bold text-lb-text text-[11px]">
-                  Diary
+                  {t('hdr_diary')}
                 </span>
                 <span className="text-lb-muted text-[11px]">{viewDiaryCount}</span>
               </div>
 
               <div className="space-y-1.5 text-xs text-lb-white">
                 {viewDiaryCount === 0 ? (
-                  <p className="text-[11px] text-lb-muted pt-1">No diary entries yet.</p>
+                  <p className="text-[11px] text-lb-muted pt-1">{t('pp_no_diary')}</p>
                 ) : viewLogs.slice(0, 3).map((l, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <span className="text-[10px] font-mono text-lb-muted">
@@ -535,7 +537,7 @@ export const ProfilePage: React.FC = () => {
       {currentTab === 'films' && (
         <div className="space-y-4">
           <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text border-b border-lb-elevated pb-2">
-            All Watched Films ({logs.length})
+            {t('pp_all_watched')} ({logs.length})
           </h2>
           {/* Mobile: strict 4-col grid with rating stars under each poster */}
           <div className="md:hidden grid grid-cols-4 gap-1.5 px-2">
@@ -582,7 +584,7 @@ export const ProfilePage: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-lb-elevated pb-2">
             <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text">
-              Film Diary ({logs.length} entries)
+              {t('pp_film_diary')} ({logs.length} {t('pp_entries')})
             </h2>
           </div>
 
@@ -590,11 +592,11 @@ export const ProfilePage: React.FC = () => {
             <table className="w-full min-w-[560px] text-xs text-left">
               <thead className="bg-lb-bg border-b border-lb-elevated text-[11px] uppercase font-bold text-lb-muted">
                 <tr>
-                  <th className="py-2.5 px-4">Date</th>
-                  <th className="py-2.5 px-4">Film</th>
-                  <th className="py-2.5 px-4">Released</th>
-                  <th className="py-2.5 px-4">Rating</th>
-                  <th className="py-2.5 px-4 text-center">Like</th>
+                  <th className="py-2.5 px-4">{t('pp_th_date')}</th>
+                  <th className="py-2.5 px-4">{t('pp_th_film')}</th>
+                  <th className="py-2.5 px-4">{t('filter_released')}</th>
+                  <th className="py-2.5 px-4">{t('filter_rating')}</th>
+                  <th className="py-2.5 px-4 text-center">{t('action_like')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-lb-elevated/60">
@@ -655,8 +657,8 @@ export const ProfilePage: React.FC = () => {
           </h2>
           {logs.length === 0 ? (
             <div className="py-12 text-center space-y-2">
-              <p className="text-sm text-white font-semibold">Nothing here yet</p>
-              <p className="text-xs text-lb-muted">Activity will appear when you log films.</p>
+              <p className="text-sm text-white font-semibold">{t('person_nothing')}</p>
+              <p className="text-xs text-lb-muted">{t('pp_activity_empty')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
@@ -680,12 +682,12 @@ export const ProfilePage: React.FC = () => {
       {currentTab === 'watchlist' && (
         <div className="space-y-4">
           <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text border-b border-lb-elevated pb-2">
-            Watchlist ({viewWatchlistCount})
+            {t('hdr_watchlist')} ({viewWatchlistCount})
           </h2>
           {viewWatchlistCount === 0 ? (
             <div className="py-12 text-center space-y-2">
-              <p className="text-sm text-white font-semibold">Nothing here yet</p>
-              <p className="text-xs text-lb-muted">Add films to your watchlist and they will appear here.</p>
+              <p className="text-sm text-white font-semibold">{t('person_nothing')}</p>
+              <p className="text-xs text-lb-muted">{t('pp_watchlist_empty')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
@@ -713,12 +715,12 @@ export const ProfilePage: React.FC = () => {
       {currentTab === 'likes' && (
         <div className="space-y-4">
           <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text border-b border-lb-elevated pb-2">
-            Likes
+            {t('pp_likes')}
           </h2>
           {likedMovies.length === 0 ? (
             <div className="py-12 text-center space-y-2">
-              <p className="text-sm text-white font-semibold">Nothing here yet</p>
-              <p className="text-xs text-lb-muted">Films you like will appear here.</p>
+              <p className="text-sm text-white font-semibold">{t('person_nothing')}</p>
+              <p className="text-xs text-lb-muted">{t('pp_likes_empty')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
@@ -733,11 +735,11 @@ export const ProfilePage: React.FC = () => {
       {currentTab === 'tags' && (
         <div className="space-y-4">
           <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text border-b border-lb-elevated pb-2">
-            Tags
+            {t('pp_tags')}
           </h2>
           <div className="py-12 text-center space-y-2">
-            <p className="text-sm text-white font-semibold">Nothing here yet</p>
-            <p className="text-xs text-lb-muted">Tags you add to your logs will appear here.</p>
+            <p className="text-sm text-white font-semibold">{t('person_nothing')}</p>
+            <p className="text-xs text-lb-muted">{t('pp_tags_empty')}</p>
           </div>
         </div>
       )}
@@ -745,11 +747,11 @@ export const ProfilePage: React.FC = () => {
       {currentTab === 'network' && (
         <div className="space-y-4">
           <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text border-b border-lb-elevated pb-2">
-            Network
+            {t('pp_network')}
           </h2>
           <div className="py-12 text-center space-y-2">
-            <p className="text-sm text-white font-semibold">Nothing here yet</p>
-            <p className="text-xs text-lb-muted">Members you follow and their activity will appear here.</p>
+            <p className="text-sm text-white font-semibold">{t('person_nothing')}</p>
+            <p className="text-xs text-lb-muted">{t('pp_network_empty')}</p>
           </div>
         </div>
       )}
@@ -759,11 +761,11 @@ export const ProfilePage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
           <div className="bg-lb-surface border border-lb-elevated w-full max-w-md rounded p-6 shadow-2xl">
             <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">
-              Edit Profile
+              {t('pp_edit_profile_title')}
             </h3>
             <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
               <div>
-                <label className="block text-lb-muted uppercase font-bold mb-1">Display Name</label>
+                <label className="block text-lb-muted uppercase font-bold mb-1">{t('pp_display_name')}</label>
                 <input
                   type="text"
                   value={editForm.displayName}
@@ -772,7 +774,7 @@ export const ProfilePage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-lb-muted uppercase font-bold mb-1">Bio</label>
+                <label className="block text-lb-muted uppercase font-bold mb-1">{t('cfg_bio')}</label>
                 <textarea
                   rows={3}
                   value={editForm.bio}
@@ -787,13 +789,13 @@ export const ProfilePage: React.FC = () => {
                   onClick={() => setIsEditingBio(false)}
                   className="px-3 py-1.5 text-lb-muted hover:text-white"
                 >
-                  Cancel
+                  {t('btn_cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 bg-lb-green text-lb-bg font-bold rounded"
                 >
-                  Save
+                  {t('btn_save')}
                 </button>
               </div>
             </form>

@@ -71,6 +71,18 @@
   color: #99aabb;
 }
 
+/* Sinopse e tagline menores no mobile (páginas de filme/série) */
+@media (max-width: 767px) {
+  .letterboxd-synopsis.synopsis-mobile-sm {
+    font-size: 0.8125rem; /* 13px (antes 15px) */
+    line-height: 1.55;
+  }
+  .letterboxd-tagline.tagline-mobile-sm {
+    font-size: 0.6875rem; /* 11px (antes 13px) */
+    letter-spacing: 0.06em;
+  }
+}
+
 .letterboxd-stats-list {
   font-size: 0.75rem; /* 12px */
   color: #667788;
@@ -131,25 +143,13 @@ body {
 body::after {
   content: "";
   position: fixed;
-  inset: -100%;
+  inset: 0;
   z-index: 2147483646;
   pointer-events: none;
   opacity: 0.045;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: film-grain 1.2s steps(4) infinite;
-}
-
-@keyframes film-grain {
-  0%   { transform: translate(0, 0); }
-  25%  { transform: translate(-1.5%, 1%); }
-  50%  { transform: translate(1%, -1.5%); }
-  75%  { transform: translate(-1%, -1%); }
-  100% { transform: translate(0, 0); }
-}
-
-/* Respeita usuários que preferem menos movimento */
-@media (prefers-reduced-motion: reduce) {
-  body::after { animation: none; }
+  /* Sem animação: a camada de 300% da tela era recomposta a cada quadro e
+     custava FPS no scroll (principalmente no celular). O grão fica estático. */
 }
 
 
@@ -268,13 +268,20 @@ button, a, [role="button"] {
 
 /* Skeleton shimmer escuro para pôsteres/imagens carregando */
 @keyframes mwShimmer {
-  0% { background-position: -200px 0; }
-  100% { background-position: 200px 0; }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
+/* Anima só transform (compositor, sem repintar a cada quadro) num pseudo-elemento */
 .mw-shimmer {
+  overflow: hidden;
   background-color: #1b2228;
-  background-image: linear-gradient(90deg, #1b2228 0%, #242c34 50%, #1b2228 100%);
-  background-size: 400px 100%;
+}
+.mw-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0) 100%);
+  transform: translateX(-100%);
   animation: mwShimmer 1.2s linear infinite;
 }
 
@@ -331,7 +338,7 @@ button, a, [role="button"] {
 
 /* Respeita preferência de movimento reduzido */
 @media (prefers-reduced-motion: reduce) {
-  .mw-page-in, .mw-fade, .mw-pop-in, .mw-shimmer,
+  .mw-page-in, .mw-fade, .mw-pop-in, .mw-shimmer, .mw-shimmer::after,
   .mw-sheet-up, .mw-overlay-fade, .mw-icon-pop {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
@@ -368,7 +375,7 @@ button, a, [role="button"] {
   background-image: linear-gradient(to top, #1f2937 0, #1f2937 1px, transparent 1px);
   scrollbar-width: none;
   -ms-overflow-style: none;
-  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
   /* offsetLeft das abas / indicador é medido a partir daqui */
   position: relative;
 }
@@ -384,7 +391,7 @@ button, a, [role="button"] {
 
 .person-tab {
   flex: 0 0 auto;
-  padding: 12px 16px;
+  padding: 16px 16px 12px;
   font-size: 0.9rem;
   font-weight: 500;
   color: #9ab;
@@ -432,6 +439,9 @@ button, a, [role="button"] {
   width: 100%;
   overflow: hidden;
   position: relative;
+  /* Scroll vertical continua nativo (60fps, sem JS); o arrasto horizontal
+     vira evento de ponteiro para o swipe entre abas (TabViewPager). */
+  touch-action: pan-y;
 }
 
 /* Trilho que contém os painéis lado a lado e desliza */
@@ -441,7 +451,7 @@ button, a, [role="button"] {
   /* O painel mais longo não estica os outros */
   align-items: flex-start;
   will-change: transform;
-  transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Cada painel de conteúdo ocupa 100% da largura da tela */
@@ -460,6 +470,7 @@ button, a, [role="button"] {
   max-height: 0;
   overflow: hidden;
   visibility: hidden;
+  content-visibility: hidden;
 }
 
 /* ---------------------------------------------------------------------------
@@ -667,11 +678,11 @@ button, a, [role="button"] {
   }
 }
 
-/* Camada da imagem com background-position: center 0px e 100% 100% */
+/* Camada da imagem: posição 0 0 (canto superior esquerdo), horizontal e vertical */
 .backdrop-wrapper > .backdropimage {
   background-repeat: no-repeat;
   background-size: 100% 100%;
-  background-position: center 0px;
+  background-position: 0 0;
   width: 100%;
   height: 99.95%;
   position: absolute;
@@ -682,7 +693,7 @@ button, a, [role="button"] {
 @media (max-width: 767px) {
   .backdrop-wrapper > .backdropimage {
     background-size: cover;
-    background-position: center 20%;
+    background-position: 0 0;
     height: 100%;
   }
 }
@@ -739,8 +750,8 @@ button, a, [role="button"] {
     left: 0;
     transform: none;
     background-image:
-      linear-gradient(to top, #14181c 0%, #14181c 8%, rgba(20, 24, 28, 0.8) 22%, transparent 38%),
-      linear-gradient(to bottom, rgba(20, 24, 28, 0.75) 0%, rgba(20, 24, 28, 0.3) 12%, transparent 25%);
+      linear-gradient(to top, #14181c 0%, #14181c 3%, rgba(20, 24, 28, 0.9) 10%, rgba(20, 24, 28, 0.55) 20%, rgba(20, 24, 28, 0.2) 32%, transparent 42%),
+      linear-gradient(to bottom, rgba(20, 24, 28, 0.35) 0%, rgba(20, 24, 28, 0.1) 8%, transparent 16%);
   }
 }
 
@@ -790,6 +801,8 @@ header:not(:hover):not(:focus-within) > .site-header-bg {
 .similar-section {
   padding: 16px 0;
   border-top: 1px solid #222a33;
+  /* Linha vai de borda a borda no mobile (a página tem px-4 de margem) */
+  margin: 0 -16px;
 }
 
 .similar-header {

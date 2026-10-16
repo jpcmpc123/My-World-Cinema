@@ -5,9 +5,11 @@ import confetti from 'canvas-confetti';
 import { useApp } from '../context/AppContext';
 import { PosterCard } from '../components/PosterCard';
 import { tmdb } from '../services/tmdb';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const WatchlistPage: React.FC = () => {
   const { watchlist } = useApp();
+  const { t } = useLanguage();
 
   const [shuffledMovie, setShuffledMovie] = useState<{
     id: number;
@@ -64,11 +66,11 @@ export const WatchlistPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-lb-elevated pb-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            <span>Watchlist</span>
-            <span className="text-sm font-normal text-lb-muted">({watchlist.length} films)</span>
+            <span>{t('hdr_watchlist')}</span>
+            <span className="text-sm font-normal text-lb-muted">({watchlist.length} {t('wl_films_count')})</span>
           </h1>
           <p className="text-xs text-lb-text mt-1">
-            Films you want to watch. Add from any film page or search.
+            {t('wl_desc')}
           </p>
         </div>
 
@@ -78,7 +80,7 @@ export const WatchlistPage: React.FC = () => {
             className="flex items-center gap-2 bg-lb-blue hover:bg-[#32a8dd] text-lb-bg font-black text-xs uppercase px-4 py-2 rounded-sm transition-all shadow-[0_0_12px_rgba(64,188,244,0.3)] cursor-pointer"
           >
             <Shuffle className="w-4 h-4 stroke-[2.5]" />
-            <span>Shuffle (Pick For Me)</span>
+            <span>{t('wl_shuffle')}</span>
           </button>
         )}
       </div>
@@ -93,15 +95,15 @@ export const WatchlistPage: React.FC = () => {
       ) : (
         <div className="bg-lb-surface border border-lb-elevated rounded-lg p-16 text-center space-y-3">
           <Clock className="w-10 h-10 text-lb-muted mx-auto" />
-          <h3 className="text-base font-bold text-white">Your watchlist is empty</h3>
+          <h3 className="text-base font-bold text-white">{t('wl_empty')}</h3>
           <p className="text-xs text-lb-text">
-            Browse films and click the clock icon to save them for later!
+            {t('wl_hint')}
           </p>
           <Link
             to="/films"
             className="inline-block mt-2 bg-lb-green text-lb-bg font-black text-xs uppercase px-5 py-2 rounded-sm"
           >
-            Browse Popular Films
+            {t('wl_browse')}
           </Link>
         </div>
       )}
@@ -113,11 +115,11 @@ export const WatchlistPage: React.FC = () => {
             <div className="flex justify-between items-center border-b border-lb-elevated pb-2">
               <span className="text-xs uppercase font-bold tracking-wider text-lb-blue flex items-center gap-1.5">
                 <Shuffle className="w-3.5 h-3.5" />
-                Tonight's Recommendation
+                {t('wl_tonight')}
               </span>
               <button
                 onClick={() => setIsModalOpen(false)}
-                aria-label="Close"
+                aria-label={t('btn_close')}
                 className="text-lb-muted hover:text-white"
               >
                 <X className="w-4 h-4" />
@@ -153,14 +155,14 @@ export const WatchlistPage: React.FC = () => {
                 disabled={isShuffling}
                 className="flex-1 py-2 bg-lb-elevated hover:bg-lb-border text-white text-xs font-bold uppercase rounded transition-colors"
               >
-                Spin Again
+                {t('wl_spin')}
               </button>
               <Link
                 to={`/film/${shuffledMovie.id}`}
                 onClick={() => setIsModalOpen(false)}
                 className="flex-1 py-2 bg-lb-green hover:bg-lb-green-hover text-lb-bg text-xs font-black uppercase rounded transition-colors"
               >
-                View Film
+                {t('wl_view_film')}
               </Link>
             </div>
           </div>

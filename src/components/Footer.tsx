@@ -1,26 +1,27 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const Footer: React.FC = () => {
+  const { t } = useLanguage();
   return (
     <footer className="hidden md:block mt-20 border-t border-lb-elevated bg-lb-bg text-lb-muted text-xs py-10">
       <div className="max-w-[950px] mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 font-semibold">
-          <Link to="/films" className="hover:text-white transition-colors">Filmes</Link>
-          <Link to="/lists" className="hover:text-white transition-colors">Listas</Link>
-          <Link to="/members" className="hover:text-white transition-colors">Membros</Link>
-          <Link to="/journal" className="hover:text-white transition-colors">Journal</Link>
+          <Link to="/films" className="hover:text-white transition-colors">{t('nav_films')}</Link>
+          <Link to="/lists" className="hover:text-white transition-colors">{t('nav_lists')}</Link>
+          <Link to="/members" className="hover:text-white transition-colors">{t('members')}</Link>
+          <Link to="/journal" className="hover:text-white transition-colors">{t('footer_journal')}</Link>
         </div>
 
         <div className="flex flex-col md:items-end text-center md:text-right gap-1 text-[11px]">
-          <p>© MyWorld — My World Cinema. Feito por fãs de cinema.</p>
+          <p>© MyWorld — My World Cinema. {t('footer_made')}</p>
           <p className="flex items-center justify-center md:justify-end gap-1.5">
             <a
               href="https://github.com/jpcmpc123/My-World-Cinema"
               target="_blank"
               rel="noreferrer"
-              title="GitHub repository"
+              title={t('footer_github')}
               className="flex items-center gap-1.5 text-lb-text hover:text-lb-green font-semibold transition-colors"
             >
               <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -29,7 +30,7 @@ export const Footer: React.FC = () => {
               GitHub
             </a>
             <span className="text-lb-muted/50">•</span>
-            <span>Film data from</span>
+            <span>{t('footer_film_data')}</span>
             <a
               href="https://www.themoviedb.org/"
               target="_blank"

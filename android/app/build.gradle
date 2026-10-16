@@ -16,8 +16,30 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Assinatura de release: keystore fora do repositório (ver %USERPROFILE%\MyWorld-keystore)
+    def releaseProps = new Properties()
+    def releaseCfg = new File(System.getProperty('user.home'), 'MyWorld-keystore/senha.txt')
+    if (releaseCfg.exists()) {
+        releaseCfg.eachLine { line ->
+            def parts = line.split('=', 2)
+            if (parts.length == 2) releaseProps.setProperty(parts[0].trim(), parts[1].trim())
+        }
+    }
+    signingConfigs {
+        release {
+            if (releaseCfg.exists()) {
+                storeFile file(System.getProperty('user.home') + '/MyWorld-keystore/myworld-release.jks')
+                storePassword releaseProps.getProperty('storePassword')
+                keyAlias releaseProps.getProperty('alias')
+                keyPassword releaseProps.getProperty('keyPassword')
+            }
+        }
+    }
     buildTypes {
         release {
+            if (releaseCfg.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

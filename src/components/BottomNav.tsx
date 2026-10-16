@@ -39,16 +39,16 @@ export const BottomNav: React.FC = () => {
 
   return (
     <nav
-      aria-label="Navegação principal"
+      aria-label={t('nav_main')}
       className="bottom-nav fixed bottom-0 inset-x-0 z-50 md:hidden"
     >
       {/* 1. Home / Catálogo */}
-      <Link to="/" aria-label="Home" className={item(isHomeActive)}>
+      <Link to="/" aria-label={t('nav_home')} className={item(isHomeActive)}>
         <Layers className={iconCls} />
       </Link>
 
       {/* 2. Search / Browse */}
-      <Link to="/search" aria-label="Search" className={item(isSearchActive)}>
+      <Link to="/search" aria-label={t('search_label')} className={item(isSearchActive)}>
         <Search className={iconCls} />
       </Link>
 
@@ -64,7 +64,7 @@ export const BottomNav: React.FC = () => {
       </button>
 
       {/* 4. Activity */}
-      <Link to="/activity" aria-label="Activity" className={item(isActivityActive)}>
+      <Link to="/activity" aria-label={t('nav_activity')} className={item(isActivityActive)}>
         <Zap className={iconCls} />
       </Link>
 

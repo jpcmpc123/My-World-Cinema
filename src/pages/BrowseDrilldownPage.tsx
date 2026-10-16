@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { tmdb } from '../services/tmdb';
 import {
@@ -7,6 +7,8 @@ import {
   DECADE_OPTIONS,
   LANGUAGE_OPTIONS,
 } from '../components/mobile/FiltersModal';
+import { useLanguage } from '../i18n/LanguageContext';
+import type { TranslationKey } from '../i18n/translations';
 
 /**
  * BrowseDrilldownPage — cascade browse menus (Release date / Genre / Country /
@@ -22,15 +24,22 @@ type Kind = 'decades' | 'years' | 'genre' | 'country' | 'language' | 'service';
 
 export const BrowseDrilldownPage: React.FC<{ kind: Kind }> = ({ kind }) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { decade: decadeParam } = useParams<{ decade?: string }>();
+  const [searchParams] = useSearchParams();
+  // Tipo escolhido na busca (?type=movie|tv); qualquer outro valor = sem filtro.
+  // Deve ser propagado a TODOS os links gerados, senão a grade mistura filmes e séries.
+  const rawType = searchParams.get('type');
+  const type = rawType === 'movie' || rawType === 'tv' ? rawType : '';
+  const withType = (path: string) => (type ? `${path}${path.includes('?') ? '&' : '?'}type=${type}` : path);
 
   let title = '';
   let rows: Row[] = [];
 
   if (kind === 'decades') {
-    title = 'Release Date';
+    title = t('filter_released');
     rows = [
-      { label: 'Upcoming', to: '/browse/results?released=upcoming&title=Upcoming' },
+      { label: t('flt_upcoming'), to: '/browse/results?released=upcoming&title=Upcoming' },
       ...DECADE_OPTIONS.map((d) => ({ label: d, to: `/browse/release-date/${d}` })),
     ];
   } else if (kind === 'years') {
@@ -38,42 +47,52 @@ export const BrowseDrilldownPage: React.FC<{ kind: Kind }> = ({ kind }) => {
     const start = parseInt(decade.replace('s', ''), 10);
     title = decade;
     rows = [
-      { label: 'Any', to: `/browse/results?decade=${decade}&title=${decade}` },
+      { label: t('flt_any'), to: `/browse/results?decade=${decade}&title=${decade}` },
     ];
     for (let y = start + 9; y >= start; y--) {
       rows.push({ label: String(y), to: `/browse/results?year=${y}&title=${y}` });
     }
   } else if (kind === 'genre') {
-    title = 'Genre';
-    rows = tmdb.genres.map((g) => ({
+    title = t('filter_genre');
+    // Séries usam IDs próprios (ex.: "Action & Adventure" = 10759); filmes usam tmdb.genres.
+    // Talk/News/Reality ficam de fora nas séries, como no resto do app.
+    const TV_EXCLUDED = new Set([10763, 10764, 10767]);
+    const genreList =
+      type === 'tv'
+        ? tmdb.tvGenres.filter((g) => !TV_EXCLUDED.has(g.id))
+        : tmdb.genres;
+    rows = genreList.map((g) => ({
       label: g.name,
       to: `/browse/results?genre=${g.id}&title=${encodeURIComponent(g.name)}`,
     }));
   } else if (kind === 'country') {
-    title = 'Country';
+    title = t('filter_country');
     rows = COUNTRY_OPTIONS.map((c) => ({
-      label: c.label,
-      to: `/browse/results?country=${c.id}&title=${encodeURIComponent(c.label)}`,
+      label: t(c.label as TranslationKey),
+      to: `/browse/results?country=${c.id}&title=${encodeURIComponent(t(c.label as TranslationKey))}`,
     }));
   } else if (kind === 'language') {
-    title = 'Language';
+    title = t('filter_language');
     rows = LANGUAGE_OPTIONS.map((l) => ({
-      label: l.label,
-      to: `/browse/results?language=${l.id}&title=${encodeURIComponent(l.label)}`,
+      label: t(l.label as TranslationKey),
+      to: `/browse/results?language=${l.id}&title=${encodeURIComponent(t(l.label as TranslationKey))}`,
     }));
   } else if (kind === 'service') {
-    title = 'Service';
+    title = t('filter_service');
     rows = tmdb.streamingServices.map((s) => ({
       label: s.name,
       to: `/browse/results?service=${s.id}&title=${encodeURIComponent(s.name)}`,
     }));
   }
 
+  // Propaga o type em todas as linhas (sub-níveis de década/ano incluídos)
+  rows = rows.map((row) => ({ ...row, to: withType(row.to) }));
+
   return (
     <div className="min-h-screen bg-[#14181c]">
       <div className="max-w-[950px] mx-auto">
         <div className="bg-black h-14 px-4 flex items-center gap-4 sticky top-0 z-30">
-          <button onClick={() => navigate(-1)} aria-label="Back" className="text-white">
+          <button onClick={() => navigate(-1)} aria-label={t('film_back')} className="text-white">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-lg font-bold text-white">{title}</h1>

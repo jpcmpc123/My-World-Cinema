@@ -4,9 +4,11 @@ import confetti from 'canvas-confetti';
 import { useApp } from '../context/AppContext';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
 import { StarRating } from './StarRating';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const LogModal: React.FC = () => {
   const { isLogModalOpen, closeLogModal, selectedMovieForLog, saveLog, ratingsMap, isMovieLiked } = useApp();
+  const { t } = useLanguage();
 
   const [movie, setMovie] = useState<TMDBMovie | { id: number; title: string; poster_path: string | null; release_date?: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,11 +119,11 @@ export const LogModal: React.FC = () => {
         {/* Header */}
         <div className="px-5 py-3.5 bg-lb-bg border-b border-lb-elevated flex items-center justify-between">
           <span className="text-xs uppercase font-bold tracking-wider text-lb-text">
-            {movie ? `Log film: ${movie.title}` : 'Log a film'}
+            {movie ? `${t('log_film_prefix')} ${movie.title}` : t('log_a_film')}
           </span>
           <button
             onClick={closeLogModal}
-            aria-label="Close"
+            aria-label={t('btn_close')}
             className="text-lb-muted hover:text-white transition-colors"
           >
             <X className="w-4 h-4" />
@@ -133,7 +135,7 @@ export const LogModal: React.FC = () => {
           {!movie ? (
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase text-lb-muted">
-                Find film
+                {t('log_find_film')}
               </label>
               <div className="relative">
                 <div className="flex items-center bg-lb-bg border border-lb-elevated rounded px-3 py-2">
@@ -196,7 +198,7 @@ export const LogModal: React.FC = () => {
                 onClick={() => setMovie(null)}
                 className="text-xs text-lb-blue hover:underline"
               >
-                Change
+                {t('log_change')}
               </button>
             </div>
           )}
@@ -205,7 +207,7 @@ export const LogModal: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold uppercase text-lb-muted block mb-1">
-                Date Watched
+                {t('log_date_watched')}
               </label>
               <div className="flex items-center bg-lb-bg border border-lb-elevated rounded px-3 py-1.5">
                 <Calendar className="w-3.5 h-3.5 text-lb-muted mr-2" />
@@ -226,7 +228,7 @@ export const LogModal: React.FC = () => {
                   onChange={(e) => setIsRewatch(e.target.checked)}
                   className="rounded border-lb-elevated text-lb-green focus:ring-0 focus:ring-offset-0 bg-lb-bg"
                 />
-                <span>I've watched this film before (Rewatch)</span>
+                <span>{t('log_rewatch')}</span>
               </label>
             </div>
           </div>
@@ -235,7 +237,7 @@ export const LogModal: React.FC = () => {
           <div className="flex items-center justify-between bg-lb-bg p-3 rounded border border-lb-elevated">
             <div>
               <label className="text-xs font-semibold uppercase text-lb-muted block mb-1">
-                Rating
+                {t('log_rating')}
               </label>
               <div className="flex items-center gap-2">
                 <StarRating value={rating} onChange={setRating} size="lg" />
@@ -247,7 +249,7 @@ export const LogModal: React.FC = () => {
 
             <div className="flex flex-col items-center">
               <label className="text-xs font-semibold uppercase text-lb-muted block mb-1">
-                Like
+                {t('action_like')}
               </label>
               <button
                 type="button"
@@ -266,11 +268,11 @@ export const LogModal: React.FC = () => {
           {/* Review text */}
           <div>
             <label className="text-xs font-semibold uppercase text-lb-muted block mb-1">
-              Add a review...
+              {t('log_add_review')}
             </label>
             <textarea
               rows={4}
-              placeholder="What did you think of the film? Write your thoughts..."
+              placeholder={t('log_review_ph')}
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
               className="w-full bg-lb-bg border border-lb-elevated rounded p-3 text-sm text-white placeholder-lb-muted focus:outline-none focus:border-lb-green"
@@ -288,17 +290,17 @@ export const LogModal: React.FC = () => {
               />
               <span className="flex items-center gap-1 font-semibold">
                 <AlertTriangle className="w-3.5 h-3.5" />
-                This review contains spoilers
+                {t('log_spoilers')}
               </span>
             </label>
 
             <div>
               <label className="text-[11px] font-semibold uppercase text-lb-muted block mb-1">
-                Tags (comma-separated)
+                {t('log_tags')}
               </label>
               <input
                 type="text"
-                placeholder="e.g. sci-fi, cinema, 2026, rewatch"
+                placeholder={t('log_tags_ph')}
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 className="w-full bg-lb-bg border border-lb-elevated rounded px-3 py-1.5 text-xs text-white placeholder-lb-muted focus:outline-none focus:border-lb-green"
@@ -313,7 +315,7 @@ export const LogModal: React.FC = () => {
               onClick={closeLogModal}
               className="px-4 py-2 text-xs font-bold uppercase text-lb-text hover:text-white transition-colors"
             >
-              Cancel
+              {t('btn_cancel')}
             </button>
             <button
               type="submit"
@@ -324,7 +326,7 @@ export const LogModal: React.FC = () => {
                   : 'bg-lb-elevated text-lb-muted cursor-not-allowed'
               }`}
             >
-              Save Log
+              {t('log_save')}
             </button>
           </div>
         </form>

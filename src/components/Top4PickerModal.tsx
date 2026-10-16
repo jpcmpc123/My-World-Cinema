@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { X, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const Top4PickerModal: React.FC = () => {
   const { isTop4PickerOpen, closeTop4Picker, activeTop4Slot, setTop4Movie } = useApp();
+  const { t } = useLanguage();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TMDBMovie[]>([]);
@@ -56,9 +58,9 @@ export const Top4PickerModal: React.FC = () => {
       <div className="bg-lb-surface border border-lb-elevated w-full max-w-lg rounded-lg shadow-2xl overflow-hidden">
         <div className="px-5 py-3.5 bg-lb-bg border-b border-lb-elevated flex items-center justify-between">
           <span className="text-xs uppercase font-bold tracking-wider text-lb-text">
-            Select Favorite Film #{activeTop4Slot + 1}
+            {t('top4_select')} #{activeTop4Slot + 1}
           </span>
-          <button onClick={closeTop4Picker} aria-label="Close" className="text-lb-muted hover:text-white">
+          <button onClick={closeTop4Picker} aria-label={t('btn_close')} className="text-lb-muted hover:text-white">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -68,7 +70,7 @@ export const Top4PickerModal: React.FC = () => {
             <Search className="w-4 h-4 text-lb-muted mr-2" />
             <input
               type="text"
-              placeholder="Search movie title..."
+              placeholder={t('top4_search_ph')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               autoFocus
@@ -96,9 +98,9 @@ export const Top4PickerModal: React.FC = () => {
               </button>
             ))}
 
-            {loading && <p className="text-center text-xs text-lb-green py-4">Searching...</p>}
+            {loading && <p className="text-center text-xs text-lb-green py-4">{t('search_searching')}</p>}
             {!loading && query.length >= 2 && results.length === 0 && (
-              <p className="text-center text-xs text-lb-muted py-4">No films found.</p>
+              <p className="text-center text-xs text-lb-muted py-4">{t('top4_no_films')}</p>
             )}
           </div>
         </div>

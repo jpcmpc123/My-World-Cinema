@@ -6,10 +6,12 @@ import { WhereToWatch } from '../components/WhereToWatch';
 import { PosterCard } from '../components/PosterCard';
 import { Backdrop } from '../components/Backdrop';
 import { openPersonProfile } from '../utils/personNav';
+import { useLanguage } from '../i18n/LanguageContext';
 
 // Página de série (/tv/:id) — versão simplificada da FilmPage:
 // navegação/leitura apenas (sem log/diário/rating; o app registra FILMES).
 export const SeriesDetailPage: React.FC = () => {
+  const { t } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const tvId = Number(id);
 
@@ -53,7 +55,7 @@ export const SeriesDetailPage: React.FC = () => {
     return (
       <div className="max-w-[950px] mx-auto px-4 py-32 flex flex-col items-center justify-center space-y-4">
         <div className="w-10 h-10 border-3 border-lb-green border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-lb-text tracking-wide">Loading series...</p>
+        <p className="text-xs text-lb-text tracking-wide">{t('series_loading')}</p>
       </div>
     );
   }
@@ -61,9 +63,9 @@ export const SeriesDetailPage: React.FC = () => {
   if (!show) {
     return (
       <div className="max-w-[950px] mx-auto px-4 py-32 text-center">
-        <h2 className="text-xl font-bold text-white mb-2 font-serif">Series not found</h2>
+        <h2 className="text-xl font-bold text-white mb-2 font-serif">{t('series_not_found')}</h2>
         <Link to="/series" className="text-sm text-lb-green hover:underline">
-          Return to series catalog
+          {t('film_return_series')}
         </Link>
       </div>
     );
@@ -100,11 +102,15 @@ export const SeriesDetailPage: React.FC = () => {
   return (
     <div className="relative">
       {/* Backdrop hero */}
-      {backdropUrl && <Backdrop src={backdropUrl} alt={show.title} />}
+      {backdropUrl && (
+        <div className="max-md:absolute max-md:inset-x-0 max-md:top-0 max-md:h-[calc(56.25vw+26px)] max-md:overflow-hidden max-md:z-0 max-md:[&_.backdrop-container]:!h-full max-md:[&_.backdrop-container]:!pt-0 max-md:[&_.backdropimage]:!bg-[length:110%_auto] max-md:[&_.backdropimage]:!bg-[position:-5vw_0]">
+          <Backdrop src={backdropUrl} alt={show.title} />
+        </div>
+      )}
 
       <div
         className={`relative z-10 max-w-[950px] mx-auto px-4 md:px-0 pb-16 ${
-          backdropUrl ? 'pt-[210px] md:pt-[472px]' : 'pt-20'
+          backdropUrl ? 'pt-[calc(56.25vw+11px)] md:pt-[472px]' : 'pt-20'
         }`}
       >
         <div className="flex flex-col md:flex-row gap-6 md:gap-[50px] items-start">
@@ -123,7 +129,7 @@ export const SeriesDetailPage: React.FC = () => {
             <div className="w-[230px] mt-4 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold tracking-wider uppercase text-lb-muted">
-                  Where to watch
+                  {t('film_where_watch')}
                 </span>
                 {trailerVideo && (
                   <button
@@ -131,7 +137,7 @@ export const SeriesDetailPage: React.FC = () => {
                     className="inline-flex items-center gap-1.5 bg-[#202830] hover:bg-lb-elevated border border-lb-elevated text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full transition-colors cursor-pointer"
                   >
                     <Play className="w-2.5 h-2.5 fill-white text-white" />
-                    <span>Trailer</span>
+                    <span>{t('trailer')}</span>
                   </button>
                 )}
               </div>
@@ -149,7 +155,7 @@ export const SeriesDetailPage: React.FC = () => {
                     {show.title}
                   </h1>
                   <span className="text-[10px] uppercase tracking-wider font-bold text-lb-green border border-lb-green/50 rounded px-1.5 py-0.5 inline-flex items-center gap-1 shrink-0 mr-3 align-middle">
-                    <Tv className="w-3 h-3" /> Series
+                    <Tv className="w-3 h-3" /> {t('nav_series')}
                   </span>
                   <div className="inline-block items-baseline">
                     {releaseYear && (
@@ -162,7 +168,7 @@ export const SeriesDetailPage: React.FC = () => {
                     )}
                     {creators.length > 0 && (
                       <span className="letterboxd-credits whitespace-nowrap mr-3 inline">
-                        Created by{' '}
+                        {t('created_by')}{' '}
                         {creators.map((c, i) => (
                           <span key={c.id}>
                             {i > 0 && ', '}
@@ -186,13 +192,13 @@ export const SeriesDetailPage: React.FC = () => {
                       {show.title}
                     </h1>
                     <span className="text-[10px] uppercase tracking-wider font-bold text-lb-green border border-lb-green/50 rounded px-1.5 py-0.5 flex items-center gap-1 shrink-0">
-                      <Tv className="w-3 h-3" /> Series
+                      <Tv className="w-3 h-3" /> {t('nav_series')}
                     </span>
                   </div>
                   {(releaseYear || creators.length > 0) && (
                     <p className="text-[11px] tracking-wider uppercase text-[#9ab] mt-1">
                       {releaseYear}
-                      {releaseYear && creators.length > 0 ? ' \u2022 CREATED BY' : ''}
+                      {releaseYear && creators.length > 0 ? ` \u2022 ${t('created_by').toUpperCase()}` : ''}
                     </p>
                   )}
                   {creators.length > 0 && (
@@ -211,7 +217,7 @@ export const SeriesDetailPage: React.FC = () => {
               </div>
 
               {/* Pôster compacto à direita — SOMENTE mobile (padrão app Letterboxd) */}
-              <div className="md:hidden w-[92px] shrink-0">
+              <div className="md:hidden w-[80px] shrink-0">
                 <div className="w-full aspect-[2/3] rounded-[4px] overflow-hidden border border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.7)] bg-lb-surface">
                   {posterUrl && (
                     <img loading="lazy" decoding="async" src={posterUrl} alt={show.title} className="w-full h-full object-cover" />
@@ -222,19 +228,19 @@ export const SeriesDetailPage: React.FC = () => {
 
             {/* Tagline */}
             {show.tagline && (
-              <h4 className="letterboxd-tagline mt-[-2px] mb-[10px]">
+              <h4 className="letterboxd-tagline tagline-mobile-sm mt-[-2px] mb-[10px]">
                 {show.tagline.replace(/^"|"$/g, '')}
               </h4>
             )}
 
             {/* Overview / Synopsis */}
             <div
-              className="letterboxd-synopsis cursor-pointer md:cursor-default"
+              className="letterboxd-synopsis synopsis-mobile-sm cursor-pointer md:cursor-default"
               onClick={() => setShowFullSynopsis((v) => !v)}
             >
               <p className={showFullSynopsis ? '' : 'max-md:line-clamp-3'}>
                 {show.overview}
-                {!showFullSynopsis && <span className="md:hidden text-lb-muted"> ...more</span>}
+                {!showFullSynopsis && <span className="md:hidden text-lb-muted"> {t('search_more')}</span>}
               </p>
             </div>
 
@@ -248,7 +254,7 @@ export const SeriesDetailPage: React.FC = () => {
               )}
               {numberOfSeasons !== undefined && (
                 <span className="text-lb-muted">
-                  {numberOfSeasons} season{numberOfSeasons === 1 ? '' : 's'}
+                  {numberOfSeasons} {numberOfSeasons === 1 ? t('film_season') : t('film_seasons')}
                 </span>
               )}
               {show.runtime > 0 && <span className="text-lb-muted">~{show.runtime} min/ep</span>}
@@ -273,7 +279,7 @@ export const SeriesDetailPage: React.FC = () => {
             {cast.length > 0 && (
               <section className="pt-4 space-y-2">
                 <h2 className="text-[11px] uppercase tracking-wider font-bold text-lb-text border-b border-lb-elevated pb-1.5">
-                  Cast
+                  {t('tab_cast')}
                 </h2>
                 <div className="flex flex-wrap gap-1.5">
                   {cast.map((actor) => (
@@ -297,13 +303,13 @@ export const SeriesDetailPage: React.FC = () => {
             {(writers.length > 0 || producers.length > 0) && (
               <section className="pt-2 space-y-2">
                 <h2 className="text-[11px] uppercase tracking-wider font-bold text-lb-text border-b border-lb-elevated pb-1.5">
-                  Crew
+                  {t('tab_crew')}
                 </h2>
                 <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
                   {writers.length > 0 && (
                     <div>
                       <span className="text-lb-muted uppercase block text-[10px] font-bold">
-                        Writers
+                        {t('crew_writers')}
                       </span>
                       <span className="text-white font-medium">
                         {writers.map((w, i) => (
@@ -323,7 +329,7 @@ export const SeriesDetailPage: React.FC = () => {
                   {producers.length > 0 && (
                     <div>
                       <span className="text-lb-muted uppercase block text-[10px] font-bold">
-                        Producers
+                        {t('crew_producers')}
                       </span>
                       <span className="text-white font-medium">
                         {producers.map((p, i) => (
@@ -348,7 +354,7 @@ export const SeriesDetailPage: React.FC = () => {
             {similar.length > 0 && (
               <section className="pt-4 space-y-2">
                 <h2 className="text-[11px] uppercase tracking-wider font-bold text-lb-text border-b border-lb-elevated pb-1.5">
-                  Similar series
+                  {t('film_similar_series')}
                 </h2>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                   {similar.map((m) => (
@@ -374,7 +380,7 @@ export const SeriesDetailPage: React.FC = () => {
             <button
               onClick={() => setShowTrailerModal(false)}
               className="absolute top-2 right-2 z-10 bg-black/60 hover:bg-black text-white rounded-full p-1.5 transition-colors cursor-pointer"
-              aria-label="Close trailer"
+              aria-label={t('film_close_trailer')}
             >
               <X className="w-4 h-4" />
             </button>
@@ -382,7 +388,7 @@ export const SeriesDetailPage: React.FC = () => {
               key={trailerVideo.key}
               className="w-full h-full"
               src={`https://www.youtube.com/embed/${trailerVideo.key}?autoplay=1&rel=0`}
-              title={`${show.title} — Official Trailer`}
+              title={`${show.title} ${t('series_trailer_title')}`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />

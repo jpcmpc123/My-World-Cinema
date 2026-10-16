@@ -11,11 +11,13 @@ const GoogleIcon: React.FC = () => (
   </svg>
 );
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const AuthPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
 
   const isSignUpRoute = location.pathname === '/signup';
   const [mode, setMode] = useState<'signin' | 'signup'>(isSignUpRoute ? 'signup' : 'signin');
@@ -47,7 +49,7 @@ export const AuthPage: React.FC = () => {
     if (mode === 'signup') {
       const usernameOk = /^[a-z0-9_]{3,20}$/.test(username);
       if (!usernameOk) {
-        setError('Username must be 3-20 chars: lowercase letters, numbers and underscores only.');
+        setError(t('auth_username_invalid'));
         return;
       }
     }
@@ -61,7 +63,7 @@ export const AuthPage: React.FC = () => {
       } else {
         const { error } = await signUp(email.trim(), password, username.trim());
         if (error) setError(error);
-        else setInfo('Account created! Check your email to confirm, then sign in.');
+        else setInfo(t('auth_created'));
       }
     } finally {
       setIsSubmitting(false);
@@ -80,12 +82,10 @@ export const AuthPage: React.FC = () => {
         {/* Heading */}
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-extrabold text-white tracking-tight">
-            {mode === 'signin' ? 'Sign in' : 'Create account'}
+            {mode === 'signin' ? t('auth_sign_in_title') : t('auth_create_title')}
           </h1>
           <p className="text-xs text-lb-text">
-            {mode === 'signin'
-              ? 'Welcome back. Pick up where you left off.'
-              : 'Join to keep your diary, watchlist and reviews in sync.'}
+            {mode === 'signin' ? t('auth_welcome_back') : t('auth_join_text')}
           </p>
         </div>
 
@@ -96,13 +96,13 @@ export const AuthPage: React.FC = () => {
           className="w-full flex items-center justify-center gap-2 bg-lb-elevated hover:bg-lb-border-light border border-lb-elevated text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm transition-colors cursor-pointer"
         >
           <GoogleIcon />
-          <span>Continue with Google</span>
+          <span>{t('auth_google')}</span>
         </button>
 
         {/* Divider */}
         <div className="flex items-center gap-3 text-[11px] uppercase font-bold text-lb-muted">
           <div className="flex-1 h-px bg-lb-elevated" />
-          <span>or with email</span>
+          <span>{t('auth_or_email')}</span>
           <div className="flex-1 h-px bg-lb-elevated" />
         </div>
 
@@ -110,7 +110,7 @@ export const AuthPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="auth-email" className="block text-[11px] uppercase font-bold text-lb-muted mb-1.5">
-              Email
+              {t('auth_email')}
             </label>
             <input
               id="auth-email"
@@ -126,7 +126,7 @@ export const AuthPage: React.FC = () => {
           {mode === 'signup' && (
             <div>
               <label htmlFor="auth-username" className="block text-[11px] uppercase font-bold text-lb-muted mb-1.5">
-                Username
+                {t('cfg_username')}
               </label>
               <input
                 id="auth-username"
@@ -142,7 +142,7 @@ export const AuthPage: React.FC = () => {
 
           <div>
             <label htmlFor="auth-password" className="block text-[11px] uppercase font-bold text-lb-muted mb-1.5">
-              Password
+              {t('auth_password')}
             </label>
             <input
               id="auth-password"
@@ -178,12 +178,12 @@ export const AuthPage: React.FC = () => {
             ) : mode === 'signin' ? (
               <>
                 <LogIn className="w-4 h-4 stroke-[2.5]" />
-                <span>Sign in</span>
+                <span>{t('auth_btn_signin')}</span>
               </>
             ) : (
               <>
                 <UserPlus className="w-4 h-4 stroke-[2.5]" />
-                <span>Create account</span>
+                <span>{t('auth_btn_create')}</span>
               </>
             )}
           </button>
@@ -193,16 +193,16 @@ export const AuthPage: React.FC = () => {
         <p className="text-center text-xs text-lb-text">
           {mode === 'signin' ? (
             <>
-              New here?{' '}
+              {t('auth_new_here')}{' '}
               <button type="button" onClick={() => switchMode('signup')} className="text-lb-green hover:underline font-bold cursor-pointer">
-                Create an account
+                {t('auth_create_link')}
               </button>
             </>
           ) : (
             <>
-              Already have an account?{' '}
+              {t('auth_have_account')}{' '}
               <button type="button" onClick={() => switchMode('signin')} className="text-lb-green hover:underline font-bold cursor-pointer">
-                Sign in
+                {t('auth_btn_signin')}
               </button>
             </>
           )}
@@ -210,9 +210,9 @@ export const AuthPage: React.FC = () => {
 
         {/* Anonymous fallback */}
         <p className="text-center text-[11px] text-lb-muted">
-          Prefer not to?{' '}
+          {t('auth_prefer_not')}{' '}
           <Link to="/" className="text-lb-text hover:text-white underline underline-offset-2">
-            Continue browsing without an account
+            {t('auth_continue_browsing')}
           </Link>
         </p>
       </div>

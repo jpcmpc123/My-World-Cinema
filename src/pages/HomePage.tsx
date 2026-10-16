@@ -58,14 +58,14 @@ export const HomePage: React.FC = () => {
         <div className="relative max-w-[950px] mx-auto px-4 h-full flex flex-col justify-end pb-12">
           <div className="max-w-2xl space-y-4">
             <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-              Track films you’ve watched.
+              {t('home_hero_1')}
               <br />
-              <span className="text-lb-green">Save those you want to see.</span>
+              <span className="text-lb-green">{t('home_hero_2')}</span>
               <br />
-              Tell your friends what’s good.
+              {t('home_hero_3')}
             </h1>
             <p className="text-sm md:text-base text-lb-text">
-              A rede social para quem ama cinema. Registre suas sessões, monte listas e descubra novos clássicos.
+              {t('home_hero_sub')}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -73,13 +73,13 @@ export const HomePage: React.FC = () => {
                 onClick={() => openLogModal()}
                 className="bg-lb-green hover:bg-lb-green-hover text-lb-bg font-black text-xs uppercase tracking-wider px-6 py-2.5 rounded-sm transition-all shadow-[0_0_15px_rgba(0,224,84,0.4)] cursor-pointer"
               >
-                + Log Film Now
+                {t('home_log_now')}
               </button>
               <Link
                 to="/films"
                 className="bg-lb-elevated/80 hover:bg-lb-border text-white font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded-sm transition-all border border-white/10"
               >
-                Explore Films
+                {t('explore_films')}
               </Link>
             </div>
           </div>
@@ -110,7 +110,7 @@ export const HomePage: React.FC = () => {
               to="/films"
               className="text-xs font-semibold text-lb-muted hover:text-lb-green flex items-center transition-colors"
             >
-              <span>More</span>
+              <span>{t('home_more')}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -131,6 +131,7 @@ export const HomePage: React.FC = () => {
         </section>
 
         {/* Second Row: Popular Lists */}
+        {lists.length > 0 && (
         <div className="grid grid-cols-1 gap-10">
           {/* Popular Lists Sidebar (1 Column) */}
           <section className="space-y-4">
@@ -139,7 +140,7 @@ export const HomePage: React.FC = () => {
                 {t('sec_popular_lists')}
               </h2>
               <Link to="/lists" className="text-xs font-semibold text-lb-muted hover:text-lb-green">
-                All
+                {t('home_all')}
               </Link>
             </div>
 
@@ -167,14 +168,15 @@ export const HomePage: React.FC = () => {
                     {list.title}
                   </h3>
                   <div className="flex items-center justify-between text-[11px] text-lb-muted mt-1">
-                    <span>{list.movies.length} films</span>
-                    <span>{list.likesCount} likes</span>
+                    <span>{list.movies.length} {t('home_films_word')}</span>
+                    <span>{list.likesCount} {t('home_likes_word')}</span>
                   </div>
                 </Link>
               ))}
             </div>
           </section>
         </div>
+        )}
 
         {/* Top Rated Showcase — desktop only (no mobile, "Highest rated" cobre) */}
         <section className="hidden md:block space-y-4">
@@ -186,7 +188,7 @@ export const HomePage: React.FC = () => {
               to="/films/decade/2020s?sort=vote_average.desc"
               className="text-xs font-semibold text-lb-muted hover:text-lb-green flex items-center transition-colors"
             >
-              <span>Browse Catalog</span>
+              <span>{t('home_browse_catalog')}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>

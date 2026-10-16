@@ -449,7 +449,7 @@ export function ActorPage() {
     return (
       <div className="min-h-screen bg-[#14181c]">
         <div className="md:hidden sticky top-0 z-40 h-14 px-4 bg-black flex items-center">
-          <button onClick={() => navigate(-1)} aria-label="Back" className="text-white">
+          <button onClick={() => navigate(-1)} aria-label={t('common_back')} className="text-white">
             <ArrowLeft className="w-5 h-5" />
           </button>
         </div>
@@ -464,7 +464,7 @@ export function ActorPage() {
     return (
       <div className="min-h-screen bg-[#14181c]">
         <div className="md:hidden sticky top-0 z-40 h-14 px-4 bg-black flex items-center">
-          <button onClick={() => navigate(-1)} aria-label="Back" className="text-white">
+          <button onClick={() => navigate(-1)} aria-label={t('common_back')} className="text-white">
             <ArrowLeft className="w-5 h-5" />
           </button>
         </div>
@@ -563,7 +563,7 @@ export function ActorPage() {
             <div className="flex items-center min-w-0">
               <button
                 onClick={() => navigate(-1)}
-                aria-label="Back"
+                aria-label={t('common_back')}
                 className="shrink-0 text-white active:scale-95 transition-transform"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -812,7 +812,7 @@ export function ActorPage() {
 
               {person.birthday && (
                 <div className="text-[11px] uppercase tracking-wider">
-                  <span className="text-lb-muted font-bold">Born: </span>
+                  <span className="text-lb-muted font-bold">{t('common_born')} </span>
                   <span className="text-lb-text">
                     {new Date(person.birthday).toLocaleDateString('en-US', {
                       year: 'numeric',

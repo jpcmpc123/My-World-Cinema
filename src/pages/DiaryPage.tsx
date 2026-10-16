@@ -4,8 +4,10 @@ import { Heart, Trash2, Calendar, MessageSquare, Plus } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useProfileByUsername } from '../lib/useProfileByUsername';
 import { tmdb } from '../services/tmdb';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const DiaryPage: React.FC = () => {
+  const { t, language } = useLanguage();
   const { username } = useParams<{ username: string }>();
   const { user, logs, deleteLog, openLogModal } = useApp();
   const remote = useProfileByUsername(username, user.username);
@@ -27,10 +29,10 @@ export const DiaryPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-lb-elevated pb-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Film Diary
+            {t('diary_title')}
           </h1>
           <p className="text-xs text-lb-text mt-1">
-            Your personal chronological record of every movie you’ve watched.
+            {t('diary_desc')}
           </p>
         </div>
 
@@ -41,7 +43,7 @@ export const DiaryPage: React.FC = () => {
             onChange={(e) => setSelectedYear(e.target.value)}
             className="bg-lb-surface border border-lb-elevated text-xs text-white rounded px-3 py-1.5 focus:outline-none focus:border-lb-green"
           >
-            <option value="all">All Years</option>
+            <option value="all">{t('diary_all_years')}</option>
             {years.map((y) => (
               <option key={y} value={y}>
                 {y}
@@ -54,7 +56,7 @@ export const DiaryPage: React.FC = () => {
             className="flex items-center gap-1.5 bg-lb-green hover:bg-lb-green-hover text-lb-bg font-black text-xs uppercase px-3.5 py-1.5 rounded-sm transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            <span>Add Entry</span>
+            <span>{t('diary_add_entry')}</span>
           </button>
         </div>
       </div>
@@ -66,21 +68,21 @@ export const DiaryPage: React.FC = () => {
             <table className="w-full text-xs text-left">
               <thead className="bg-lb-bg border-b border-lb-elevated text-[11px] uppercase font-bold text-lb-muted">
                 <tr>
-                  <th className="py-3 px-4 w-28">Date</th>
-                  <th className="py-3 px-3 w-14">Poster</th>
-                  <th className="py-3 px-4">Film Title</th>
-                  <th className="py-3 px-3 w-20">Released</th>
-                  <th className="py-3 px-4 w-28">Rating</th>
-                  <th className="py-3 px-3 text-center w-16">Like</th>
-                  <th className="py-3 px-3 text-center w-20">Rewatch</th>
-                  <th className="py-3 px-3 text-center w-16">Review</th>
-                  <th className="py-3 px-4 text-right w-16">Action</th>
+                  <th className="py-3 px-4 w-28">{t('diary_th_date')}</th>
+                  <th className="py-3 px-3 w-14">{t('diary_th_poster')}</th>
+                  <th className="py-3 px-4">{t('diary_th_title')}</th>
+                  <th className="py-3 px-3 w-20">{t('filter_released')}</th>
+                  <th className="py-3 px-4 w-28">{t('diary_th_rating')}</th>
+                  <th className="py-3 px-3 text-center w-16">{t('diary_th_like')}</th>
+                  <th className="py-3 px-3 text-center w-20">{t('diary_th_rewatch')}</th>
+                  <th className="py-3 px-3 text-center w-16">{t('diary_th_review')}</th>
+                  <th className="py-3 px-4 text-right w-16">{t('diary_th_action')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-lb-elevated/60">
                 {filteredLogs.map((entry) => {
                   const dateObj = new Date(entry.watchedDate + 'T00:00:00');
-                  const formattedDate = dateObj.toLocaleDateString('en-US', {
+                  const formattedDate = dateObj.toLocaleDateString(language, {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',
@@ -151,7 +153,7 @@ export const DiaryPage: React.FC = () => {
                       {/* Rewatch */}
                       <td className="py-3 px-3 text-center text-lb-text">
                         {entry.isRewatch ? (
-                          <span title="Rewatched" className="text-sm">🔄</span>
+                          <span title={t('diary_rewatched')} className="text-sm">🔄</span>
                         ) : (
                           <span className="text-lb-muted">—</span>
                         )}
@@ -173,7 +175,7 @@ export const DiaryPage: React.FC = () => {
                         {!remote.isRemote && (
                         <button
                           onClick={() => deleteLog(entry.id)}
-                          title="Delete entry"
+                          title={t('diary_delete')}
                           className="text-lb-muted hover:text-lb-red p-1 rounded transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -190,15 +192,15 @@ export const DiaryPage: React.FC = () => {
       ) : (
         <div className="bg-lb-surface border border-lb-elevated rounded-lg p-12 text-center space-y-3">
           <Calendar className="w-10 h-10 text-lb-muted mx-auto" />
-          <h3 className="text-base font-bold text-white">No diary entries found</h3>
+          <h3 className="text-base font-bold text-white">{t('diary_empty_title')}</h3>
           <p className="text-xs text-lb-text">
-            Start logging films to track your movie watch history over time.
+            {t('diary_empty_desc')}
           </p>
           <button
             onClick={() => openLogModal()}
             className="mt-2 bg-lb-green text-lb-bg font-black text-xs uppercase px-4 py-2 rounded-sm"
           >
-            + Log your first film
+            {t('diary_log_first')}
           </button>
         </div>
       )}

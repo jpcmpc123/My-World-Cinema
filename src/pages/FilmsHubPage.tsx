@@ -130,7 +130,7 @@ export const FilmsHubPage: React.FC = () => {
                   onClick={() => setOpenDropdown(null)}
                   className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  All
+                  {t('common_all')}
                 </Link>
                 {decades.map((dec) => (
                   <Link
@@ -167,14 +167,14 @@ export const FilmsHubPage: React.FC = () => {
                   onClick={() => setOpenDropdown(null)}
                   className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  Highest First
+                  {t('hub_highest_first')}
                 </Link>
                 <Link
                   to="/films/decade/2020s?sort=vote_average.asc"
                   onClick={() => setOpenDropdown(null)}
                   className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  Lowest First
+                  {t('hub_lowest_first')}
                 </Link>
               </div>
             )}
@@ -201,21 +201,21 @@ export const FilmsHubPage: React.FC = () => {
                   onClick={() => setOpenDropdown(null)}
                   className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  All-Time
+                  {t('hub_all_time')}
                 </Link>
                 <Link
                   to={`/films/year/${new Date().getFullYear()}`}
                   onClick={() => setOpenDropdown(null)}
                   className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  This Year
+                  {t('hub_this_year')}
                 </Link>
                 <Link
                   to="/films/decade/2020s?sort=popularity.desc"
                   onClick={() => setOpenDropdown(null)}
                   className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  This Week
+                  {t('hub_this_week')}
                 </Link>
               </div>
             )}
@@ -291,7 +291,7 @@ export const FilmsHubPage: React.FC = () => {
                   : 'text-[#9ab] hover:text-white'
               }`}
             >
-              <span>OTHER</span>
+              <span>{t('common_other')}</span>
               <ChevronDown className="w-3 h-3 text-lb-muted" />
             </button>
 
@@ -302,14 +302,14 @@ export const FilmsHubPage: React.FC = () => {
                   onClick={() => setOpenDropdown(null)}
                   className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  Documentary
+                  {t('hub_documentary')}
                 </Link>
                 <Link
                   to="/films/decade/2020s?genre=16"
                   onClick={() => setOpenDropdown(null)}
                   className="block px-3 py-1.5 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
-                  Animation
+                  {t('hub_animation')}
                 </Link>
               </div>
             )}
@@ -360,13 +360,13 @@ export const FilmsHubPage: React.FC = () => {
       <section className="space-y-3">
         <div className="flex items-center justify-between border-b border-lb-elevated pb-1.5">
           <h2 className="text-[11px] uppercase tracking-widest font-bold text-lb-muted">
-            Popular Films This Week
+            {t('hub_popular_films_week')}
           </h2>
           <Link
             to="/films/decade/2020s?sort=popularity.desc"
             className="text-[10px] uppercase font-bold tracking-wider text-lb-muted hover:text-white"
           >
-            More
+            {t('home_more')}
           </Link>
         </div>
 
@@ -376,8 +376,8 @@ export const FilmsHubPage: React.FC = () => {
             <button
               onClick={handlePrevCarousel}
               className="absolute left-0 sm:-left-5 top-1/2 -translate-y-1/2 z-20 text-lb-muted hover:text-white transition-colors cursor-pointer p-1"
-              title="Previous"
-              aria-label="Previous"
+              title={t('common_previous')}
+              aria-label={t('common_previous')}
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
@@ -400,19 +400,19 @@ export const FilmsHubPage: React.FC = () => {
                   {/* MyWorld Triple Stats (Watched, Rating, Liked) */}
                   <div className="flex items-center justify-between text-[11px] font-semibold pt-1 px-1">
                     {/* Watched (Green Eye) */}
-                    <span className="flex items-center gap-1 text-lb-green" title="Watched">
+                    <span className="flex items-center gap-1 text-lb-green" title={t('common_watched')}>
                       <Eye className="w-3.5 h-3.5 stroke-[2.5]" />
                       <span>{watchedCount}</span>
                     </span>
 
                     {/* Rated (Blue Stars) */}
-                    <span className="flex items-center gap-1 text-lb-blue" title="Rated">
+                    <span className="flex items-center gap-1 text-lb-blue" title={t('common_rated')}>
                       <Star className="w-3 h-3 fill-lb-blue" />
                       <span>{ratingCount}</span>
                     </span>
 
                     {/* Liked (Orange Heart) */}
-                    <span className="flex items-center gap-1 text-lb-orange" title="Liked">
+                    <span className="flex items-center gap-1 text-lb-orange" title={t('common_liked')}>
                       <Heart className="w-3 h-3 fill-lb-orange" />
                       <span>{likedCount}</span>
                     </span>
@@ -427,8 +427,8 @@ export const FilmsHubPage: React.FC = () => {
             <button
               onClick={handleNextCarousel}
               className="absolute right-0 sm:-right-5 top-1/2 -translate-y-1/2 z-20 text-lb-muted hover:text-white transition-colors cursor-pointer p-1"
-              title="Next"
-              aria-label="Next"
+              title={t('common_next')}
+              aria-label={t('common_next')}
             >
               <ChevronRight className="w-6 h-6" />
             </button>
@@ -440,10 +440,10 @@ export const FilmsHubPage: React.FC = () => {
       <section className="space-y-3">
         <div className="flex items-center justify-between border-b border-lb-elevated pb-1.5">
           <h2 className="text-[11px] uppercase tracking-widest font-bold text-lb-muted">
-            Just Reviewed...
+            {t('hub_just_reviewed')}
           </h2>
           <span className="text-[10px] text-lb-muted font-mono">
-            4.027.046.426 films watched
+            4.027.046.426 {t('hub_films_watched')}
           </span>
         </div>
 

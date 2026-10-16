@@ -3,8 +3,10 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Heart, Trash2, ArrowLeft } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { tmdb } from '../services/tmdb';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const ListDetailPage: React.FC = () => {
+  const { t } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { lists, deleteList, user } = useApp();
@@ -15,9 +17,9 @@ export const ListDetailPage: React.FC = () => {
   if (!list) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-        <h2 className="text-xl font-bold text-white mb-2">List not found</h2>
+        <h2 className="text-xl font-bold text-white mb-2">{t('lists_not_found')}</h2>
         <Link to="/lists" className="text-sm text-lb-green hover:underline">
-          Return to lists
+          {t('lists_return')}
         </Link>
       </div>
     );
@@ -26,7 +28,7 @@ export const ListDetailPage: React.FC = () => {
   const isAuthor = list.author.username === user.username;
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this list?')) {
+    if (confirm(t('lists_delete_confirm'))) {
       deleteList(list.id);
       navigate('/lists');
     }
@@ -39,7 +41,7 @@ export const ListDetailPage: React.FC = () => {
         className="inline-flex items-center gap-1.5 text-xs text-lb-text hover:text-white"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Back to lists</span>
+        <span>{t('lists_back')}</span>
       </Link>
 
       {/* List Header */}
@@ -52,7 +54,7 @@ export const ListDetailPage: React.FC = () => {
               </h1>
               {list.isRanked && (
                 <span className="text-[10px] bg-lb-elevated text-lb-green font-mono font-bold px-2 py-0.5 rounded">
-                  RANKED LIST
+                  {t('lists_ranked_list')}
                 </span>
               )}
             </div>
@@ -64,7 +66,7 @@ export const ListDetailPage: React.FC = () => {
                 className="w-5 h-5 rounded-full object-cover"
               />
               <span className="text-white font-semibold">{list.author.displayName}</span>
-              <span>• {list.movies.length} films</span>
+              <span>• {list.movies.length} {t('home_films_word')}</span>
             </div>
 
             <p className="text-xs sm:text-sm text-lb-white leading-relaxed pt-2">
@@ -83,14 +85,14 @@ export const ListDetailPage: React.FC = () => {
               }`}
             >
               <Heart className={`w-4 h-4 ${likedList ? 'fill-lb-orange text-lb-orange' : ''}`} />
-              <span>{list.likesCount + (likedList ? 1 : 0)} Likes</span>
+              <span>{list.likesCount + (likedList ? 1 : 0)} {t('lists_likes')}</span>
             </button>
 
             {isAuthor && (
               <button
                 onClick={handleDelete}
                 className="p-1.5 bg-lb-surface border border-lb-elevated hover:border-lb-red text-lb-muted hover:text-lb-red rounded transition-colors"
-                title="Delete list"
+                title={t('lists_delete_title')}
               >
                 <Trash2 className="w-4 h-4" />
               </button>

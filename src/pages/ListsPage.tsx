@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { Plus, Heart, MessageSquare } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { tmdb } from '../services/tmdb';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const ListsPage: React.FC = () => {
   const { lists } = useApp();
+  const { t } = useLanguage();
 
   return (
     <div className="max-w-[950px] mx-auto px-4 pt-4 pb-0 md:py-8 space-y-8">
@@ -13,10 +15,10 @@ export const ListsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-lb-elevated pb-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Film Lists
+            {t('lists_title')}
           </h1>
           <p className="text-xs text-lb-text mt-1">
-            Collect, curate, and share lists of films. From all-time favorites to obscure subgenres.
+            {t('lists_desc')}
           </p>
         </div>
 
@@ -25,7 +27,7 @@ export const ListsPage: React.FC = () => {
           className="flex items-center gap-1.5 bg-lb-green hover:bg-lb-green-hover text-lb-bg font-black text-xs uppercase px-4 py-2 rounded-sm transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
-          <span>Start Your Own List</span>
+          <span>{t('lists_start')}</span>
         </Link>
       </div>
 
@@ -57,13 +59,13 @@ export const ListsPage: React.FC = () => {
                 </h3>
                 {list.isRanked && (
                   <span className="text-[10px] bg-lb-elevated text-lb-text px-2 py-0.5 rounded font-mono font-semibold">
-                    RANKED
+                    {t('lists_ranked')}
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-2 text-xs text-lb-muted">
-                <span>by</span>
+                <span>{t('lists_by')}</span>
                 <span className="text-lb-text font-semibold">{list.author.displayName}</span>
               </div>
 
@@ -72,7 +74,7 @@ export const ListsPage: React.FC = () => {
               </p>
 
               <div className="flex items-center justify-between text-xs text-lb-muted pt-3 border-t border-lb-elevated">
-                <span>{list.movies.length} films</span>
+                <span>{list.movies.length} {t('home_films_word')}</span>
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1">
                     <Heart className="w-3.5 h-3.5 text-lb-orange" /> {list.likesCount}

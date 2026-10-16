@@ -5,6 +5,7 @@ import { tmdb, type TMDBMovie } from '../services/tmdb';
 import { PosterCard } from '../components/PosterCard';
 import { useApp } from '../context/AppContext';
 import { FiltersModal, type FiltersDraft } from '../components/mobile/FiltersModal';
+import { useLanguage } from '../i18n/LanguageContext';
 
 /**
  * BrowseResultsPage — filtered poster grid driven entirely by URL query params:
@@ -37,6 +38,7 @@ export const BrowseResultsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isMovieWatched, isMovieInWatchlist } = useApp();
+  const { t } = useLanguage();
 
   const title = searchParams.get('title') || 'Browse';
   const type = searchParams.get('type') || 'any';
@@ -232,7 +234,7 @@ export const BrowseResultsPage: React.FC = () => {
       <div className="max-w-[950px] mx-auto">
         <header className="bg-black sticky top-0 z-30 h-14 px-4 flex items-center justify-between">
           <div className="flex items-center gap-4 min-w-0">
-            <button onClick={() => navigate(-1)} aria-label="Back" className="text-white shrink-0">
+            <button onClick={() => navigate(-1)} aria-label={t('common_back')} className="text-white shrink-0">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="text-lg font-bold text-white truncate">{title}</h1>
@@ -240,7 +242,7 @@ export const BrowseResultsPage: React.FC = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setViewMode((m) => (m === 'grid' ? 'cards' : 'grid'))}
-              aria-label="Toggle view mode"
+              aria-label={t('common_toggle_view')}
               className="text-white"
             >
               {viewMode === 'grid' ? (
@@ -251,7 +253,7 @@ export const BrowseResultsPage: React.FC = () => {
             </button>
             <button
               onClick={() => setFiltersOpen(true)}
-              aria-label="Open filters"
+              aria-label={t('common_open_filters')}
               className="text-white"
             >
               <SlidersHorizontal className="w-5 h-5" />
@@ -260,7 +262,7 @@ export const BrowseResultsPage: React.FC = () => {
         </header>
 
         {visible.length === 0 && !loading ? (
-          <p className="text-center text-sm text-[#9ab] py-16">No results match these filters.</p>
+          <p className="text-center text-sm text-[#9ab] py-16">{t('common_no_results_filters')}</p>
         ) : (
           <div className="grid grid-cols-4 gap-1.5 px-2 py-2 bg-[#14181c]">
             {visible.map(({ movie, tv }, index) => {
@@ -288,7 +290,7 @@ export const BrowseResultsPage: React.FC = () => {
         {/* Scroll infinito: o sentinela carrega a próxima página ao aparecer na tela */}
         <div ref={sentinelRef} className="flex justify-center py-6 pb-24">
           {loading && hasMore ? (
-            <span className="text-xs text-[#9ab]">Loading...</span>
+            <span className="text-xs text-[#9ab]">{t('common_loading')}</span>
           ) : null}
           {!hasMore && items.length > 0 ? (
             <p className="text-xs text-[#9ab]">That’s all.</p>

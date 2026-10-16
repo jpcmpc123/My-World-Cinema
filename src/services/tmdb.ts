@@ -861,10 +861,25 @@ export const tmdb = {
         : await this.getTrending('week');
       // Sem piso de votos: a ordem do trending (popularidade da semana) é mantida.
       // Só removemos títulos com estreia futura.
-      const results = trending.results.filter((m) => {
+      const ordered = trending.results.filter((m) => {
         const d = itemDate(m);
         return !d || d <= TMDB_TODAY;
       });
+
+      // Filmes: os que estão em cartaz nos cinemas vêm primeiro (mantendo a ordem
+      // do trending). Séries não têm lista "em cartaz" no TMDB, seguem o trending.
+      if (type !== 'tv') {
+        const nowPlaying = await this.getNowPlaying(1);
+        const inTheaters = new Set(nowPlaying.results.map((m) => m.id));
+        // Critério 1: em cartaz primeiro. Critério 2: maior popularidade.
+        ordered.sort(
+          (a, b) =>
+            Number(inTheaters.has(b.id)) - Number(inTheaters.has(a.id)) ||
+            (b.popularity ?? 0) - (a.popularity ?? 0),
+        );
+      }
+
+      const results = ordered;
       return { results, total_pages: trending.total_pages, total_results: results.length };
     }
 
