@@ -133,12 +133,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             const parsed = new URL(url);
             const code = parsed.searchParams.get('code');
-            if (!code) {
-              resolve({ error: 'Google sign-in was cancelled or failed.' });
+            if (code) {
+              // Fluxo PKCE (code na query)
+              const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
+              resolve({ error: exchangeError ? exchangeError.message : null });
               return;
             }
-            const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
-            resolve({ error: exchangeError ? exchangeError.message : null });
+            // Fluxo implícito (padrão do supabase-js 2.x): os tokens voltam no
+            // FRAGMENTO (#access_token=...&refresh_token=...), não na query.
+            const hash = new URLSearchParams(parsed.hash.replace(/^#/, ''));
+            const accessToken = hash.get('access_token');
+            const refreshToken = hash.get('refresh_token');
+            if (accessToken && refreshToken) {
+              const { error: sessionError } = await client.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+              resolve({ error: sessionError ? sessionError.message : null });
+              return;
+            }
+            const errDesc = hash.get('error_description') || parsed.searchParams.get('error_description');
+            resolve({ error: errDesc ?? 'Google sign-in was cancelled or failed.' });
           } catch (e) {
             resolve({ error: e instanceof Error ? e.message : 'OAuth callback failed.' });
           }
