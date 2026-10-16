@@ -512,7 +512,7 @@ button, a, [role="button"] {
   /* Fonte fluida: nunca estoura a coluna de 25% em telas estreitas (320-390px) */
   font-family: var(--font-brand);
   font-size: clamp(0.8rem, 3.6vw, 1rem);
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -528,7 +528,7 @@ button, a, [role="button"] {
 
 .main-tab-btn.active {
   color: #ffffff !important;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 /* O foco de teclado continua visível pela cor, sem criar caixa nenhuma */

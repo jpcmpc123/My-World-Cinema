@@ -282,7 +282,7 @@ export const Header: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="md:hidden absolute left-1/2 -translate-x-1/2 text-white text-[26px] font-extrabold tracking-[-0.01em] cursor-pointer leading-none"
+            className="md:hidden absolute left-1/2 -translate-x-1/2 text-white text-[22px] font-bold tracking-[-0.01em] cursor-pointer leading-none"
             style={{ fontFamily: 'var(--font-brand)' }}
           >
             MyWorld
