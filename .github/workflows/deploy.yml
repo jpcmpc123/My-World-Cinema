@@ -30,7 +30,14 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+      # Chaves vêm dos Secrets do repositório (Settings → Secrets and variables → Actions).
+      # Sem elas o build sai sem dados: TMDb vazio e login Supabase desligado.
       - run: pnpm build
+        env:
+          VITE_TMDB_API_KEY: ${{ secrets.VITE_TMDB_API_KEY }}
+          VITE_TMDB_ACCESS_TOKEN: ${{ secrets.VITE_TMDB_ACCESS_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       # Fallback de SPA: 404.html = index.html (React Router funciona em qualquer rota)
       - run: cp dist/index.html dist/404.html
