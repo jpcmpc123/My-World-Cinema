@@ -70,8 +70,8 @@ export const ImagePickerModal: React.FC<ImagePickerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-[#1c2228] border border-[#303840] w-full max-w-3xl rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm mw-overlay-fade">
+      <div className="bg-[#1c2228] border border-[#303840] w-full max-w-3xl rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[85vh] mw-pop-in">
         {/* Header */}
         <div className="px-4 py-3 bg-[#14181c] border-b border-[#303840] flex items-center justify-between flex-shrink-0">
           <span className="text-xs font-bold text-white">

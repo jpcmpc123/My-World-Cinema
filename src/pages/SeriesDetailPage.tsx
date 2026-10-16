@@ -5,6 +5,7 @@ import { tmdb, type TMDBMovieDetails } from '../services/tmdb';
 import { WhereToWatch } from '../components/WhereToWatch';
 import { PosterCard } from '../components/PosterCard';
 import { Backdrop } from '../components/Backdrop';
+import { openPersonProfile } from '../utils/personNav';
 
 // Página de série (/tv/:id) — versão simplificada da FilmPage:
 // navegação/leitura apenas (sem log/diário/rating; o app registra FILMES).
@@ -102,14 +103,14 @@ export const SeriesDetailPage: React.FC = () => {
       {backdropUrl && <Backdrop src={backdropUrl} alt={show.title} />}
 
       <div
-        className={`relative z-10 max-w-[950px] mx-auto px-4 pb-16 ${
-          backdropUrl ? '-mt-14 md:-mt-[150px]' : 'pt-20'
+        className={`relative z-10 max-w-[950px] mx-auto px-4 md:px-0 pb-16 ${
+          backdropUrl ? 'pt-[210px] md:pt-[472px]' : 'pt-20'
         }`}
       >
-        <div className="flex flex-col md:flex-row gap-6 lg:gap-8 items-start">
+        <div className="flex flex-col md:flex-row gap-6 md:gap-[50px] items-start">
           {/* LEFT: poster + where to watch */}
           <div className="w-full md:w-[230px] flex-shrink-0 flex flex-col items-center md:items-start">
-            <div className="hidden md:block w-[230px] h-[345px] rounded-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.8)] border border-[#303840] bg-lb-surface flex-shrink-0">
+            <div className="hidden md:block letterboxd-poster-frame overflow-hidden flex-shrink-0">
               {posterUrl ? (
                 <img loading="lazy" decoding="async" src={posterUrl} alt={show.title} className="w-full h-full object-cover" />
               ) : (
@@ -142,52 +143,75 @@ export const SeriesDetailPage: React.FC = () => {
           <div className="flex-1 min-w-0 md:px-2 space-y-3">
             <div className="flex gap-4 items-start">
               <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                <h1 className="font-serif font-bold text-[26px] sm:text-[32px] text-white tracking-tight leading-tight">
-                  {show.title}
-                </h1>
-                <span className="text-[10px] uppercase tracking-wider font-bold text-lb-green border border-lb-green/50 rounded px-1.5 py-0.5 flex items-center gap-1">
-                  <Tv className="w-3 h-3" /> Series
-                </span>
-              </div>
-
-              {/* Ano + Criadores na linha de baixo (padrão Letterboxd) */}
-              <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 mt-1 text-xs text-lb-muted">
-                {releaseYear && (
-                  <Link
-                    to={`/series/year/${releaseYear}`}
-                    className="text-lb-muted hover:text-white underline underline-offset-2 decoration-lb-muted/40 hover:decoration-white transition-colors"
-                  >
-                    {releaseYear}
-                  </Link>
-                )}
-              {creators.length > 0 && (
-                <span>
-                  Created by{' '}
-                  {creators.map((c, i) => (
-                    <span key={c.id}>
-                      {i > 0 && ', '}
+                {/* DESKTOP Masthead */}
+                <div className="hidden md:block">
+                  <h1 className="letterboxd-title text-[32px] inline mr-2.5">
+                    {show.title}
+                  </h1>
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-lb-green border border-lb-green/50 rounded px-1.5 py-0.5 inline-flex items-center gap-1 shrink-0 mr-3 align-middle">
+                    <Tv className="w-3 h-3" /> Series
+                  </span>
+                  <div className="inline-block items-baseline">
+                    {releaseYear && (
                       <Link
-                        to={`/actor/${c.id}`}
-                        className="font-semibold text-lb-muted hover:text-white underline underline-offset-2 decoration-lb-muted/40 hover:decoration-white transition-colors"
+                        to={`/series/year/${releaseYear}`}
+                        className="letterboxd-releasedate hover:text-white underline underline-offset-2 decoration-[#99aabb]/40 hover:decoration-white transition-colors mr-3 inline"
                       >
-                        {c.name}
+                        {releaseYear}
                       </Link>
-                    </span>
-                  ))}
-                </span>
-              )}
-              </div>
+                    )}
+                    {creators.length > 0 && (
+                      <span className="letterboxd-credits whitespace-nowrap mr-3 inline">
+                        Created by{' '}
+                        {creators.map((c, i) => (
+                          <span key={c.id}>
+                            {i > 0 && ', '}
+                            <Link
+                              to={openPersonProfile(c.id, 'Writer')}
+                              className="letterboxd-credits-name hover:text-lb-blue underline underline-offset-2 decoration-white/40 hover:decoration-lb-blue transition-colors"
+                            >
+                              {c.name}
+                            </Link>
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-              {show.tagline && (
-                <p className="uppercase tracking-[0.14em] font-semibold text-[10px] text-lb-muted mt-2 leading-snug">
-                  {show.tagline.replace(/^"|"$/g, '')}
-                </p>
-              )}
+                {/* MOBILE Masthead */}
+                <div className="md:hidden">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h1 className="font-serif font-bold text-[22px] text-white tracking-tight leading-tight">
+                      {show.title}
+                    </h1>
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-lb-green border border-lb-green/50 rounded px-1.5 py-0.5 flex items-center gap-1 shrink-0">
+                      <Tv className="w-3 h-3" /> Series
+                    </span>
+                  </div>
+                  {(releaseYear || creators.length > 0) && (
+                    <p className="text-[11px] tracking-wider uppercase text-[#9ab] mt-1">
+                      {releaseYear}
+                      {releaseYear && creators.length > 0 ? ' \u2022 CREATED BY' : ''}
+                    </p>
+                  )}
+                  {creators.length > 0 && (
+                    <div className="text-sm font-semibold text-[#def] block mt-0.5">
+                      {creators.map((c, i) => (
+                        <span key={c.id}>
+                          {i > 0 && ', '}
+                          <Link to={openPersonProfile(c.id, 'Writer')}>
+                            {c.name}
+                          </Link>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Pôster compacto à direita — SOMENTE mobile (padrão app Letterboxd) */}
-              <div className="md:hidden w-[100px] sm:w-[115px] shrink-0">
+              <div className="md:hidden w-[92px] shrink-0">
                 <div className="w-full aspect-[2/3] rounded-[4px] overflow-hidden border border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.7)] bg-lb-surface">
                   {posterUrl && (
                     <img loading="lazy" decoding="async" src={posterUrl} alt={show.title} className="w-full h-full object-cover" />
@@ -196,9 +220,16 @@ export const SeriesDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Overview — mobile: 3 linhas com toque para expandir */}
+            {/* Tagline */}
+            {show.tagline && (
+              <h4 className="letterboxd-tagline mt-[-2px] mb-[10px]">
+                {show.tagline.replace(/^"|"$/g, '')}
+              </h4>
+            )}
+
+            {/* Overview / Synopsis */}
             <div
-              className="text-[13px] text-lb-text leading-[1.6] cursor-pointer md:cursor-default"
+              className="letterboxd-synopsis cursor-pointer md:cursor-default"
               onClick={() => setShowFullSynopsis((v) => !v)}
             >
               <p className={showFullSynopsis ? '' : 'max-md:line-clamp-3'}>
@@ -247,7 +278,7 @@ export const SeriesDetailPage: React.FC = () => {
                 <div className="flex flex-wrap gap-1.5">
                   {cast.map((actor) => (
                     <Link
-                      to={`/actor/${actor.id}`}
+                      to={openPersonProfile(actor.id, 'Actor')}
                       key={actor.id}
                       className="bg-[#202830] hover:bg-lb-elevated border border-lb-elevated hover:border-lb-border-light text-lb-white px-2.5 py-1 rounded text-xs inline-flex items-center gap-1.5 transition-colors"
                       title={actor.character ? `as ${actor.character}` : undefined}
@@ -279,7 +310,7 @@ export const SeriesDetailPage: React.FC = () => {
                           <span key={w.id}>
                             {i > 0 && ', '}
                             <Link
-                              to={`/actor/${w.id}`}
+                              to={openPersonProfile(w.id, 'Writer')}
                               className="hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
                             >
                               {w.name}
@@ -299,7 +330,7 @@ export const SeriesDetailPage: React.FC = () => {
                           <span key={p.id}>
                             {i > 0 && ', '}
                             <Link
-                              to={`/actor/${p.id}`}
+                              to={openPersonProfile(p.id, 'Producer')}
                               className="hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
                             >
                               {p.name}

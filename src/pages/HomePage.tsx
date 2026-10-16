@@ -5,9 +5,11 @@ import { tmdb, type TMDBMovie } from '../services/tmdb';
 import { PosterCard } from '../components/PosterCard';
 import { useApp } from '../context/AppContext';
 import { MobileCatalogSections } from '../components/mobile/MobileCatalogSections';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const HomePage: React.FC = () => {
   const { lists, openLogModal } = useApp();
+  const { t } = useLanguage();
 
   const [popularFilms, setPopularFilms] = useState<TMDBMovie[]>([]);
   const [topRatedFilms, setTopRatedFilms] = useState<TMDBMovie[]>([]);
@@ -102,7 +104,7 @@ export const HomePage: React.FC = () => {
         <section className="hidden md:block space-y-4">
           <div className="flex items-center justify-between border-b border-lb-elevated pb-2">
             <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text">
-              Popular Films This Week
+              {t('sec_popular_week')}
             </h2>
             <Link
               to="/films"
@@ -134,7 +136,7 @@ export const HomePage: React.FC = () => {
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b border-lb-elevated pb-2">
               <h2 className="text-xs uppercase tracking-widest font-bold text-lb-text">
-                Popular Lists
+                {t('sec_popular_lists')}
               </h2>
               <Link to="/lists" className="text-xs font-semibold text-lb-muted hover:text-lb-green">
                 All

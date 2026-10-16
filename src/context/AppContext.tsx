@@ -36,6 +36,10 @@ interface AppContextType {
   addReview: (newReview: Omit<Review, 'id' | 'createdAt' | 'author' | 'likesCount' | 'commentsCount'>) => void;
   movieOverrides: Record<number, { poster?: string; backdrop?: string }>;
   setMovieOverride: (movieId: number, override: { poster?: string; backdrop?: string }) => void;
+  // ActionBottomSheet (mobile long-press / actions)
+  actionSheetMovie: { id: number; title: string; release_date?: string } | null;
+  openActionSheet: (movie: { id: number; title: string; release_date?: string }) => void;
+  closeActionSheet: () => void;
   // Modal states
   isLogModalOpen: boolean;
   selectedMovieForLog: MovieShort | null;
@@ -310,6 +314,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedMovieForLog, setSelectedMovieForLog] = useState<MovieShort | null>(null);
   const [isTop4PickerOpen, setIsTop4PickerOpen] = useState(false);
   const [activeTop4Slot, setActiveTop4Slot] = useState<number | null>(null);
+  const [actionSheetMovie, setActionSheetMovie] = useState<{ id: number; title: string; release_date?: string } | null>(null);
 
   // Sync with LocalStorage
   useEffect(() => { localStorage.setItem('lb_user', JSON.stringify(user)); }, [user]);
@@ -772,6 +777,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveTop4Slot(null);
   }, []);
 
+  const openActionSheet = useCallback((movie: { id: number; title: string; release_date?: string }) => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) return;
+    setActionSheetMovie(movie);
+  }, []);
+
+  const closeActionSheet = useCallback(() => {
+    setActionSheetMovie(null);
+  }, []);
+
   const value = useMemo<AppContextType>(
     () => ({
       user,
@@ -807,6 +821,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeTop4Slot,
       openTop4Picker,
       closeTop4Picker,
+      actionSheetMovie,
+      openActionSheet,
+      closeActionSheet,
     }),
     [
       user, updateUser, logs, saveLog, deleteLog, watchlist, toggleWatchlist,
@@ -815,7 +832,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       top4MovieIds, setTop4Movie, lists, createList, deleteList, reviews,
       addReview, movieOverrides, setMovieOverride, isLogModalOpen,
       selectedMovieForLog, openLogModal, closeLogModal, isTop4PickerOpen,
-      activeTop4Slot, openTop4Picker, closeTop4Picker,
+      activeTop4Slot, openTop4Picker, closeTop4Picker, actionSheetMovie,
+      openActionSheet, closeActionSheet,
     ]
   );
 

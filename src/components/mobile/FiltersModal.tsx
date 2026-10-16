@@ -259,7 +259,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
   );
 
   const pickerHeader = (title: string, back: () => void) => (
-    <div className="bg-[#0a0c0f] h-14 px-4 flex items-center gap-4 border-b border-white/10 shrink-0">
+    <div className="bg-black h-14 px-4 flex items-center gap-4 border-b border-white/10 shrink-0">
       <button onClick={back} aria-label="Back" className="text-white">
         <ArrowLeft className="w-5 h-5" />
       </button>
@@ -432,19 +432,17 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({ open, initial, onClo
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex flex-col bg-[#14181c] animate-[filters-slide-up_0.25s_ease-out]"
+      className="fixed inset-0 z-[80] flex flex-col bg-[#14181c] mw-sheet-up"
       role="dialog"
       aria-modal="true"
-      style={{ animation: 'filters-slide-up 0.25s ease-out' }}
     >
-      <style>{`@keyframes filters-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
 
       {picker ? (
         renderPicker()
       ) : (
         <>
           {/* Header */}
-          <div className="bg-[#0a0c0f] h-14 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
+          <div className="bg-black h-14 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
             <button onClick={onClose} aria-label="Close filters" className="text-white">
               <X className="w-5 h-5" />
             </button>

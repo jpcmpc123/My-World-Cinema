@@ -28,3 +28,11 @@ dist-ssr
 *.sln
 *.sw?
 
+
+.npm-cache-tmp/
+page.html
+.preview-film.png
+
+.env
+.env.*
+!.env.example

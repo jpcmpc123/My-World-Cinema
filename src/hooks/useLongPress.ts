@@ -42,8 +42,9 @@ export function useLongPress(
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
-      // Only primary button / touch
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      // Long press is exclusive to touch on mobile screens (< 768px)
+      if (e.pointerType !== 'touch') return;
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) return;
       firedRef.current = false;
       activeRef.current = true;
       startXRef.current = e.clientX;

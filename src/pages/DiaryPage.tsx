@@ -22,7 +22,7 @@ export const DiaryPage: React.FC = () => {
   );
 
   return (
-    <div className="max-w-[950px] mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-[950px] mx-auto px-4 pt-4 pb-0 md:py-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-lb-elevated pb-4">
         <div>

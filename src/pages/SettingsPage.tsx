@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, useSearchParams, useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertTriangle, Film, Upload, Download, ImageIcon, X, Check, XCircle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Film, Upload, Download, ImageIcon, X, Check, XCircle, Globe } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
+import { useLanguage } from '../i18n/LanguageContext';
+import { LANGUAGES } from '../i18n/translations';
 import { supabase } from '../lib/supabase';
 import { tmdb } from '../services/tmdb';
 
@@ -44,6 +46,38 @@ const Notice: React.FC<{ kind: 'success' | 'error' | 'info'; message: string }> 
     <span>{message}</span>
   </div>
 );
+
+// Seletor de idioma — EXCLUSIVO das configurações para usuários logados
+// (visitantes usam o botão de globo no Header).
+const LanguageBlock: React.FC = () => {
+  const { language, setLanguage, t } = useLanguage();
+  return (
+    <div className="mb-6 rounded border border-lb-elevated bg-lb-surface p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Globe className="w-4 h-4 text-lb-green" />
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-lb-muted">
+          {t('filter_language')} / Language
+        </h2>
+      </div>
+      <div className="flex gap-2">
+        {LANGUAGES.map((l) => (
+          <button
+            key={l.id}
+            type="button"
+            onClick={() => setLanguage(l.id)}
+            className={`flex-1 px-3 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer border ${
+              language === l.id
+                ? 'bg-lb-green text-lb-bg border-lb-green'
+                : 'bg-lb-bg text-lb-text border-lb-elevated hover:border-lb-green hover:text-white'
+            }`}
+          >
+            {l.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const SettingsPage: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -89,6 +123,7 @@ export const SettingsPage: React.FC = () => {
 
       {activeTab === 'profile' && (
         <>
+          <LanguageBlock />
           {/* Mobile "Profile Settings" screen */}
           <div className="md:hidden">
             <MobileProfileSettings />

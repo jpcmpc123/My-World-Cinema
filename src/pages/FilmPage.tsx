@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Eye,
@@ -21,6 +21,7 @@ import {
 import { tmdb, type TMDBMovieDetails } from '../services/tmdb';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage, formatMoneyUSD, formatDatePt, regionNames, languageNames, type TranslationKey } from '../i18n/LanguageContext';
 import { StarRating } from '../components/StarRating';
 import { RatingHistogram } from '../components/RatingHistogram';
 import { WhereToWatch } from '../components/WhereToWatch';
@@ -28,6 +29,7 @@ import { PosterCard } from '../components/PosterCard';
 import { ImagePickerModal } from '../components/ImagePickerModal';
 import { Backdrop } from '../components/Backdrop';
 import { ActionBottomSheet } from '../components/ActionBottomSheet';
+import { openPersonProfile, type PersonRole } from '../utils/personNav';
 
 function formatNumber(num: number): string {
   if (num >= 1_000_000) {
@@ -61,6 +63,7 @@ export const FilmPage: React.FC = () => {
     setMovieOverride,
   } = useApp();
   const { isAuthenticated, profile } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [movie, setMovie] = useState<TMDBMovieDetails | null>(null);
@@ -130,25 +133,18 @@ export const FilmPage: React.FC = () => {
   const movieReviews = reviews.filter((r) => r.movieId === movie.id);
   const hasUserReviewed = userLogsForMovie.some((l) => l.reviewText && l.reviewText.trim().length > 0);
 
+  // Similar (mobile): carrossel horizontal com EXATAMENTE 20 títulos, só pôsteres.
+  // A lista já vem do /movie/{id}/similar ou /tv/{id}/similar (append no fetch
+  // único de getMovieDetails/getShowDetails) — nenhuma chamada extra aqui.
+  const displaySimilar = (movie.similar?.results || []).filter((item) => item.poster_path).slice(0, 20);
+
   const watched = isMovieWatched(movie.id) || userLogsForMovie.length > 0;
   const liked = isMovieLiked(movie.id) || userLogsForMovie.some((l) => l.liked);
   const inWatchlist = isMovieInWatchlist(movie.id);
   const userRating = ratingsMap[movie.id] || (userLogsForMovie[0]?.rating ? userLogsForMovie[0].rating : 0);
 
-  // Key Crew Members
+  // Key Crew: diretor usado no cabeçalho
   const director = movie.credits?.crew.find((c) => c.job === 'Director' || c.job === 'Creator');
-  const writers = movie.credits?.crew.filter((c) =>
-    ['Screenplay', 'Writer', 'Author', 'Novel'].includes(c.job)
-  ).slice(0, 3);
-  const producers = movie.credits?.crew.filter((c) =>
-    ['Producer', 'Executive Producer'].includes(c.job)
-  ).slice(0, 3);
-  const dop = movie.credits?.crew.find((c) =>
-    ['Director of Photography', 'Cinematography'].includes(c.job)
-  );
-  const composer = movie.credits?.crew.find((c) =>
-    ['Original Music Composer', 'Composer', 'Music'].includes(c.job)
-  );
 
   // Trailer finding
   const trailerVideo =
@@ -158,6 +154,26 @@ export const FilmPage: React.FC = () => {
 
   // Format release year
   const releaseYear = movie.release_date ? movie.release_date.slice(0, 4) : '';
+
+  // Classificação indicativa principal: prioriza BR, fallback US
+  // (filmes → release_dates; séries → content_ratings)
+  const certification = (() => {
+    if (isTv) {
+      const ratings = movie.content_ratings?.results ?? [];
+      return (
+        ratings.find((r) => r.iso_3166_1 === 'BR')?.rating ||
+        ratings.find((r) => r.iso_3166_1 === 'US')?.rating ||
+        ratings[0]?.rating ||
+        ''
+      );
+    }
+    const rel = movie.release_dates?.results ?? [];
+    const pick = (iso: string) =>
+      rel
+        .find((r) => r.iso_3166_1 === iso)
+        ?.release_dates?.find((d) => d.certification)?.certification || '';
+    return pick('BR') || pick('US') || '';
+  })();
 
   // Mobile header extras: N seasons (TV) and trailer link (videos already fetched in details)
   const numberOfSeasons = (movie as unknown as { number_of_seasons?: number }).number_of_seasons;
@@ -226,22 +242,23 @@ export const FilmPage: React.FC = () => {
         </button>
       </div>
 
-      {/* 2. Main Content Container: 3-column myworld layout */}
+      {/* 2. Main Content Container: 3-column Letterboxd layout (950px total)
+          O backdrop é posicionado de forma absoluta (.backdrop-container).
+          O topo do conteúdo inicia em pt-[210px] (mobile) e md:pt-[472px] (desktop, padrão Letterboxd). */}
       <div
-        className={`relative z-10 max-w-[950px] mx-auto px-4 pb-16 ${
-          backdropUrl ? '-mt-10 md:-mt-[150px]' : 'pt-20'
+        className={`relative z-10 max-w-[950px] mx-auto px-4 md:px-0 pb-16 ${
+          backdropUrl ? 'pt-[210px] md:pt-[472px]' : 'pt-20'
         }`}
       >
-        <div className="flex flex-col md:grid md:grid-cols-[230px_minmax(0,1fr)_230px] gap-8 items-start">
+        <div className="flex flex-col md:grid md:grid-cols-[230px_390px_230px] md:gap-x-[50px] md:gap-y-[30px] items-start">
 
           {/* ========================================================
               LEFT COLUMN (w-[230px]): Poster, Stats Bar, Where to Watch
               (ocupa as 2 linhas do grid em telas md+)
               ======================================================== */}
           <div className="w-full md:w-[230px] md:row-span-2 flex-shrink-0 flex flex-col items-center md:items-start">
-            {/* Film Poster (230x345px standard) */}
-            {/* No mobile o pÃ´ster aparece compacto ao lado do tÃ­tulo (acima) */}
-            <div className="hidden md:block w-[230px] h-[345px] rounded-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.8)] border border-[#303840] bg-lb-surface flex-shrink-0">
+            {/* Film Poster (230x345px standard Letterboxd frame) */}
+            <div className="hidden md:block letterboxd-poster-frame overflow-hidden flex-shrink-0">
               <img loading="lazy" decoding="async"
                 src={posterUrl}
                 alt={movie.title}
@@ -249,27 +266,27 @@ export const FilmPage: React.FC = () => {
               />
             </div>
 
-            {/* MyWorld 4-metric Badge Row — desktop only (no mobile ficam os 3 cartões coloridos) */}
-            <div className="hidden md:flex w-[230px] max-w-full border-b border-lb-elevated py-2 px-1 items-center justify-between text-xs select-none">
-              <div className="flex items-center gap-1.5" title={`${watchedStat.toLocaleString()} watched`}>
+            {/* Production Statistics List — 10px below poster, 12px font, #667788 */}
+            <div className="hidden md:flex w-[230px] items-center justify-between mt-2.5 py-1 letterboxd-stats-list select-none">
+              <div className="flex items-center gap-1.5 hover:text-white transition-colors" title={`${watchedStat.toLocaleString()} watched`}>
                 <Eye className="w-4 h-4 text-lb-green" />
-                <span className="text-lb-muted font-medium text-[11px]">{formatNumber(watchedStat)}</span>
+                <span className="font-normal">{formatNumber(watchedStat)}</span>
               </div>
-              <div className="flex items-center gap-1.5" title={`${ratingsStat.toLocaleString()} ratings`}>
+              <div className="flex items-center gap-1.5 hover:text-white transition-colors" title={`${ratingsStat.toLocaleString()} ratings`}>
                 <BarChart2 className="w-4 h-4 text-lb-blue" />
-                <span className="text-lb-muted font-medium text-[11px]">{formatNumber(ratingsStat)}</span>
+                <span className="font-normal">{formatNumber(ratingsStat)}</span>
               </div>
-              <div className="flex items-center gap-1.5" title={`${likesStat.toLocaleString()} likes`}>
+              <div className="flex items-center gap-1.5 hover:text-white transition-colors" title={`${likesStat.toLocaleString()} likes`}>
                 <Heart className="w-4 h-4 text-lb-orange fill-lb-orange" />
-                <span className="text-lb-muted font-medium text-[11px]">{formatNumber(likesStat)}</span>
+                <span className="font-normal">{formatNumber(likesStat)}</span>
               </div>
-              <div className="flex items-center gap-1.5" title={`${listsStat.toLocaleString()} lists`}>
+              <div className="flex items-center gap-1.5 hover:text-white transition-colors" title={`${listsStat.toLocaleString()} lists`}>
                 <Layers className="w-4 h-4 text-[#e5a00d]" />
-                <span className="text-lb-muted font-medium text-[11px]">{formatNumber(listsStat)}</span>
+                <span className="font-normal">{formatNumber(listsStat)}</span>
               </div>
             </div>
 
-            {/* Where to Watch — desktop only (oculto no mobile para o cabeçalho colar no backdrop) */}
+            {/* Where to Watch — desktop only */}
             <div className="hidden md:block w-[230px] max-w-full mt-4 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold tracking-wider uppercase text-lb-muted">
@@ -292,95 +309,92 @@ export const FilmPage: React.FC = () => {
           </div>
 
           {/* ========================================================
-              HEADER: Title + Year + Director + Tagline
-              (ocupa as colunas do centro E da direita â€” como no Letterboxd,
-              permitindo tÃ­tulos longos em uma Ãºnica linha)
+              MASTHEAD: Title + Year + Director
+              (ocupa 670px: colunas do centro e da direita — padrão Letterboxd)
               ======================================================== */}
-          <div className="w-full md:col-span-2 min-w-0 md:px-2 flex max-md:items-start md:items-end justify-between gap-4">
-            {/* Bloco de texto: título + ano/diretor + tagline */}
-            <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                <h1 className="font-sans md:font-serif font-bold text-2xl sm:text-[32px] text-white tracking-tight leading-tight">
-                  {movie.title}
-                </h1>
-              </div>
-
-              {/* DESKTOP: ano + diretor + duração na mesma linha */}
-              <div className="hidden md:flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 mt-1 text-xs text-lb-muted">
+          <div className="w-full md:col-span-2 min-w-0 md:mt-[-3px] flex max-md:items-start md:items-baseline justify-between gap-4">
+            {/* DESKTOP Masthead: Title (32px serif bold) + Year (17px 300) + Director (17px bold) */}
+            <div className="hidden md:block flex-1 min-w-0">
+              <h1 className="letterboxd-title text-[32px] inline mr-2.5">
+                {movie.title}
+              </h1>
+              <div className="inline-block items-baseline">
                 {releaseYear && (
                   <Link
                     to={isTv ? `/series/year/${releaseYear}` : `/films/year/${releaseYear}`}
-                    className="text-lb-muted hover:text-white underline underline-offset-2 decoration-lb-muted/40 hover:decoration-white transition-colors"
+                    className="letterboxd-releasedate hover:text-white underline underline-offset-2 decoration-[#99aabb]/40 hover:decoration-white transition-colors mr-3 inline"
                   >
                     {releaseYear}
                   </Link>
                 )}
                 {director && (
-                  <span className="whitespace-nowrap">
-                    {isTv ? 'Created by' : 'Directed by'}{' '}
+                  <span className="letterboxd-credits whitespace-nowrap mr-3 inline">
+                    {t(isTv ? 'created_by' : 'directed_by')}{' '}
                     <Link
-                      to={`/actor/${director.id}`}
-                      className="font-semibold text-lb-muted hover:text-white underline underline-offset-2 decoration-lb-muted/40 hover:decoration-white transition-colors"
+                      to={openPersonProfile(director.id, 'Director')}
+                      className="letterboxd-credits-name hover:text-lb-blue underline underline-offset-2 decoration-white/40 hover:decoration-lb-blue transition-colors"
                     >
                       {director.name}
                     </Link>
                   </span>
                 )}
                 {!isTv && movie.runtime ? (
-                  <span>&bull; {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+                  <span className="letterboxd-releasedate whitespace-nowrap mr-3 inline">
+                    &bull; {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m
+                  </span>
                 ) : null}
+                {certification && <CertBadge cert={certification} />}
                 {isTv && numberOfSeasons ? (
-                  <span>&bull; {numberOfSeasons} season{numberOfSeasons === 1 ? '' : 's'}</span>
+                  <span className="letterboxd-releasedate whitespace-nowrap mr-3 inline">
+                    &bull; {numberOfSeasons} season{numberOfSeasons === 1 ? '' : 's'}
+                  </span>
                 ) : null}
               </div>
-
-              {/* MOBILE (app): "2026 • DIRECTED BY" pequeno cinza + nome do diretor em destaque */}
-              <div className="md:hidden">
-                <p className="text-[11px] tracking-wider uppercase text-[#9ab] mt-1">
-                  {releaseYear}
-                  {releaseYear && director ? ' \u2022 ' : ''}
-                  {director ? (isTv ? 'Created by' : 'Directed by') : ''}
-                </p>
-                {director && (
-                  <Link
-                    to={`/actor/${director.id}`}
-                    className="text-sm font-semibold text-[#def] block mt-0.5"
-                  >
-                    {director.name}
-                  </Link>
-                )}
-
-                {/* Trailer pill + minutos/temporadas */}
-                <div className="flex items-center gap-3 mt-2.5">
-                  <a
-                    href={trailerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 bg-[#2c3440] text-[11px] font-semibold tracking-wider uppercase px-3 py-1 rounded-full text-[#def]"
-                  >
-                    <Play className="w-2.5 h-2.5 fill-[#def] text-[#def]" />
-                    Trailer
-                  </a>
-                  {!isTv && movie.runtime ? (
-                    <span className="text-xs text-[#9ab]">{movie.runtime} mins</span>
-                  ) : null}
-                  {isTv && numberOfSeasons ? (
-                    <span className="text-xs text-[#9ab]">
-                      {numberOfSeasons} season{numberOfSeasons === 1 ? '' : 's'}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-
-            {/* Tagline (MyWorld uppercase tracking) */}
-            {movie.tagline && (
-              <p className="uppercase tracking-[0.14em] font-semibold text-[10px] text-lb-muted mt-2 leading-snug">
-                {movie.tagline.replace(/^"|"$/g, '')}
-              </p>
-            )}
             </div>
 
-            {/* PÃ´ster compacto Ã  direita â€” SOMENTE mobile (padrÃ£o app Letterboxd) */}
+            {/* MOBILE Header: Title + Director + compact poster (padrão app Letterboxd) */}
+            <div className="md:hidden flex-1 min-w-0">
+              <h1 className="font-serif font-bold text-[22px] text-white leading-[1.25] tracking-tight">
+                {movie.title}
+              </h1>
+              <p className="text-[11px] tracking-wider uppercase text-[#9ab] mt-1">
+                {releaseYear}
+                {releaseYear && director ? ' \u2022 ' : ''}
+                {director ? t(isTv ? 'created_by' : 'directed_by') : ''}
+              </p>
+              {director && (
+                <Link
+                  to={openPersonProfile(director.id, isTv ? 'Writer' : 'Director')}
+                  className="text-sm font-semibold text-[#def] block mt-0.5"
+                >
+                  {director.name}
+                </Link>
+              )}
+
+              {/* Trailer pill + minutos/temporadas */}
+              <div className="flex items-center gap-3 mt-2.5">
+                <a
+                  href={trailerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 bg-[#2c3440] text-[11px] font-semibold tracking-wider uppercase px-3 py-1 rounded-full text-[#def]"
+                >
+                  <Play className="w-2.5 h-2.5 fill-[#def] text-[#def]" />
+                  Trailer
+                </a>
+                {!isTv && movie.runtime ? (
+                  <span className="text-xs text-[#9ab]">{movie.runtime} {t('mins')}</span>
+                ) : null}
+                {certification && <CertBadge cert={certification} small />}
+                {isTv && numberOfSeasons ? (
+                  <span className="text-xs text-[#9ab]">
+                    {numberOfSeasons} season{numberOfSeasons === 1 ? '' : 's'}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Pôster compacto à direita — SOMENTE mobile (padrão app Letterboxd) */}
             <div className="md:hidden w-[92px] shrink-0">
               <div className="w-full aspect-[2/3] rounded-[4px] overflow-hidden ring-1 ring-white/15 shadow-xl bg-lb-surface">
                 <img loading="lazy" decoding="async" src={posterUrl} alt={movie.title} className="w-full h-full object-cover" />
@@ -389,12 +403,19 @@ export const FilmPage: React.FC = () => {
           </div>
 
           {/* ========================================================
-              CENTER COLUMN: Synopsis, Tabs, Reviews
+              CENTER COLUMN (w-[390px] no desktop): Synopsis, Tabs, Reviews
               ======================================================== */}
-          <div className="w-full min-w-0 md:px-2 space-y-3">
-            {/* Overview / Synopsis â€” mobile: 3 linhas com toque para expandir */}
+          <div className="w-full md:w-[390px] min-w-0 space-y-3">
+            {/* Tagline — Letterboxd: 13px uppercase tracking-[0.075em] #778899 */}
+            {movie.tagline && (
+              <h4 className="letterboxd-tagline mt-[-2px] mb-[10px]">
+                {movie.tagline.replace(/^"|"$/g, '')}
+              </h4>
+            )}
+
+            {/* Overview / Synopsis — Letterboxd: 15px serif leading-[1.67] #99aabb */}
             <div
-              className="text-[13px] text-lb-text leading-[1.6] font-normal cursor-pointer md:cursor-default"
+              className="letterboxd-synopsis cursor-pointer md:cursor-default"
               onClick={() => setShowFullSynopsis((v) => !v)}
             >
               <p className={showFullSynopsis ? '' : 'max-md:line-clamp-3'}>
@@ -467,222 +488,35 @@ export const FilmPage: React.FC = () => {
               </div>
             </div>
 
-            {/* MyWorld Tabs Bar: Cast, Crew, Details, Genres (DESKTOP ONLY — mobile uses app-style tabs below) */}
+            {/* MyWorld Tabs Bar: Cast, Crew, Details, Genres, Releases (DESKTOP ONLY) */}
             <div className="hidden md:block pt-2">
               <div className="flex items-center gap-6 border-b border-lb-elevated text-[11px] uppercase font-bold tracking-wider pb-1">
-                <button
-                  onClick={() => setActiveTab('cast')}
-                  className={`pb-2 -mb-[1px] transition-colors cursor-pointer ${
-                    activeTab === 'cast'
-                      ? 'text-white border-b-2 border-lb-green'
-                      : 'text-lb-muted hover:text-white'
-                  }`}
-                >
-                  Cast
-                </button>
-                <button
-                  onClick={() => setActiveTab('crew')}
-                  className={`pb-2 -mb-[1px] transition-colors cursor-pointer ${
-                    activeTab === 'crew'
-                      ? 'text-white border-b-2 border-lb-green'
-                      : 'text-lb-muted hover:text-white'
-                  }`}
-                >
-                  Crew
-                </button>
-                <button
-                  onClick={() => setActiveTab('details')}
-                  className={`pb-2 -mb-[1px] transition-colors cursor-pointer ${
-                    activeTab === 'details'
-                      ? 'text-white border-b-2 border-lb-green'
-                      : 'text-lb-muted hover:text-white'
-                  }`}
-                >
-                  Details
-                </button>
-                <button
-                  onClick={() => setActiveTab('genres')}
-                  className={`pb-2 -mb-[1px] transition-colors cursor-pointer ${
-                    activeTab === 'genres'
-                      ? 'text-white border-b-2 border-lb-green'
-                      : 'text-lb-muted hover:text-white'
-                  }`}
-                >
-                  Genres
-                </button>
+                {(
+                  [
+                    ['cast', t('tab_cast')],
+                    ['crew', t('tab_crew')],
+                    ['details', t('tab_details')],
+                    ['genres', t('tab_genres')],
+                    ['releases', t('tab_releases')],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveTab(key)}
+                    className={`pb-2 -mb-[1px] transition-colors cursor-pointer ${
+                      activeTab === key
+                        ? 'text-white border-b-2 border-lb-green'
+                        : 'text-lb-muted hover:text-white'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
 
-              {/* Tab Contents */}
+              {/* Tab Contents (componentes compartilhados com o mobile) */}
               <div className="py-4">
-                {/* 1. Cast Tab */}
-                {activeTab === 'cast' && (
-                  movie.credits?.cast && movie.credits.cast.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {movie.credits?.cast?.slice(0, 18).map((actor) => (
-                      <Link
-                        to={`/actor/${actor.id}`}
-                        key={actor.id}
-                        className="bg-[#202830] hover:bg-lb-elevated border border-lb-elevated hover:border-lb-border-light text-lb-white px-2.5 py-1 rounded text-xs inline-flex items-center gap-1.5 transition-colors"
-                        title={actor.character ? `as ${actor.character}` : undefined}
-                      >
-                        <span className="font-medium">{actor.name}</span>
-                        {actor.character && (
-                          <span className="text-[10px] text-lb-muted">
-                            ({actor.character})
-                          </span>
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                  ) : (
-                    <div className="py-12 text-center space-y-2">
-                      <p className="text-sm text-white font-semibold">Nothing here yet</p>
-                      <p className="text-xs text-lb-muted">Cast information is not available for this film.</p>
-                    </div>
-                  )
-                )}
-
-                {/* 2. Crew Tab */}
-                {activeTab === 'crew' && (
-                  <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
-                    {director && (
-                      <div>
-                        <span className="text-lb-muted uppercase block text-[10px] font-bold">
-                          Director
-                        </span>
-                        <Link
-                          to={`/actor/${director.id}`}
-                          className="text-white font-medium hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
-                        >
-                          {director.name}
-                        </Link>
-                      </div>
-                    )}
-                    {writers && writers.length > 0 && (
-                      <div>
-                        <span className="text-lb-muted uppercase block text-[10px] font-bold">
-                          Writers
-                        </span>
-                        <span className="text-white font-medium">
-                          {writers.map((w, i) => (
-                            <span key={w.id}>
-                              {i > 0 && ', '}
-                              <Link
-                                to={`/actor/${w.id}`}
-                                className="hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
-                              >
-                                {w.name}
-                              </Link>
-                            </span>
-                          ))}
-                        </span>
-                      </div>
-                    )}
-                    {producers && producers.length > 0 && (
-                      <div>
-                        <span className="text-lb-muted uppercase block text-[10px] font-bold">
-                          Producers
-                        </span>
-                        <span className="text-white font-medium">
-                          {producers.map((p, i) => (
-                            <span key={p.id}>
-                              {i > 0 && ', '}
-                              <Link
-                                to={`/actor/${p.id}`}
-                                className="hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
-                              >
-                                {p.name}
-                              </Link>
-                            </span>
-                          ))}
-                        </span>
-                      </div>
-                    )}
-                    {dop && (
-                      <div>
-                        <span className="text-lb-muted uppercase block text-[10px] font-bold">
-                          Cinematography
-                        </span>
-                        <Link
-                          to={`/actor/${dop.id}`}
-                          className="text-white font-medium hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
-                        >
-                          {dop.name}
-                        </Link>
-                      </div>
-                    )}
-                    {composer && (
-                      <div>
-                        <span className="text-lb-muted uppercase block text-[10px] font-bold">
-                          Original Score
-                        </span>
-                        <Link
-                          to={`/actor/${composer.id}`}
-                          className="text-white font-medium hover:text-lb-green underline underline-offset-2 decoration-white/30 hover:decoration-lb-green transition-colors"
-                        >
-                          {composer.name}
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* 3. Details Tab */}
-                {activeTab === 'details' && (
-                  <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
-                    <div>
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Original Title
-                      </span>
-                      <span className="text-white font-medium">{movie.original_title}</span>
-                    </div>
-                    <div>
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Release Date
-                      </span>
-                      <span className="text-white font-medium">{movie.release_date || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Runtime
-                      </span>
-                      <span className="text-white font-medium">
-                        {movie.runtime ? `${movie.runtime} mins` : 'N/A'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Country
-                      </span>
-                      <span className="text-white font-medium">
-                        {movie.production_countries?.map((c) => c.name).join(', ') || 'N/A'}
-                      </span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Studios
-                      </span>
-                      <span className="text-white font-medium">
-                        {movie.production_companies?.map((c) => c.name).join(', ') || 'N/A'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* 4. Genres Tab */}
-                {activeTab === 'genres' && (
-                  <div className="flex flex-wrap gap-2">
-                    {movie.genres?.map((g) => (
-                      <Link
-                        key={g.id}
-                        to={isTv ? `/series/decade/2020s?genre=${g.id}` : `/films/decade/2020s?genre=${g.id}`}
-                        className="bg-[#202830] border border-lb-elevated hover:border-lb-green text-lb-white hover:text-lb-green px-3 py-1 rounded text-xs transition-colors"
-                      >
-                        {g.name}
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                <FilmTabContent activeTab={activeTab} movie={movie} isTv={isTv} numberOfSeasons={numberOfSeasons} />
               </div>
             </div>
 
@@ -691,11 +525,11 @@ export const FilmPage: React.FC = () => {
               <div className="flex items-center gap-5 border-b border-lb-elevated text-[11px] uppercase font-bold tracking-wider overflow-x-auto">
                 {(
                   [
-                    ['cast', 'Cast'],
-                    ['crew', 'Crew'],
-                    ['details', 'Details'],
-                    ['genres', 'Genre'],
-                    ['releases', 'Releases'],
+                    ['cast', t('tab_cast')],
+                    ['crew', t('tab_crew')],
+                    ['details', t('tab_details')],
+                    ['genres', t('tab_genres')],
+                    ['releases', t('tab_releases')],
                   ] as const
                 ).map(([key, label]) => (
                   <button
@@ -713,180 +547,7 @@ export const FilmPage: React.FC = () => {
               </div>
 
               <div className="py-3">
-                {activeTab === 'cast' && (
-                  movie.credits?.cast && movie.credits.cast.length > 0 ? (
-                    <div className="divide-y divide-lb-elevated">
-                      {movie.credits.cast.slice(0, 18).map((actor) => (
-                        <Link
-                          to={`/actor/${actor.id}`}
-                          key={actor.id}
-                          className="flex items-center gap-3 py-2.5"
-                        >
-                          {actor.profile_path ? (
-                            <img
-                              loading="lazy"
-                              decoding="async"
-                              src={tmdb.getProfileUrl(actor.profile_path, 'w185')}
-                              alt={actor.name}
-                              className="w-10 h-10 rounded-full object-cover ring-1 ring-white/10 shrink-0"
-                            />
-                          ) : (
-                            <span className="w-10 h-10 rounded-full bg-lb-surface ring-1 ring-white/10 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                              {actor.name.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white font-medium truncate">{actor.name}</p>
-                            {actor.character && (
-                              <p className="text-xs text-lb-muted truncate">{actor.character}</p>
-                            )}
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-lb-muted shrink-0" />
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="py-8 text-center text-xs text-lb-muted">
-                      Cast information is not available.
-                    </p>
-                  )
-                )}
-
-                {activeTab === 'crew' && (
-                  <div className="divide-y divide-lb-elevated">
-                    {(movie.credits?.crew ?? [])
-                      .filter((c) =>
-                        [
-                          'Director',
-                          'Creator',
-                          'Screenplay',
-                          'Writer',
-                          'Author',
-                          'Novel',
-                          'Producer',
-                          'Executive Producer',
-                          'Director of Photography',
-                          'Cinematography',
-                          'Original Music Composer',
-                          'Composer',
-                          'Music',
-                        ].includes(c.job),
-                      )
-                      .slice(0, 20)
-                      .map((c, idx) => (
-                        <Link
-                          to={`/actor/${c.id}`}
-                          key={`${c.id}-${idx}`}
-                          className="flex items-center gap-3 py-2.5"
-                        >
-                          {c.profile_path ? (
-                            <img
-                              loading="lazy"
-                              decoding="async"
-                              src={tmdb.getProfileUrl(c.profile_path, 'w185')}
-                              alt={c.name}
-                              className="w-10 h-10 rounded-full object-cover ring-1 ring-white/10 shrink-0"
-                            />
-                          ) : (
-                            <span className="w-10 h-10 rounded-full bg-lb-surface ring-1 ring-white/10 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                              {c.name.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white font-medium truncate">{c.name}</p>
-                            <p className="text-xs text-lb-muted truncate">{c.job}</p>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-lb-muted shrink-0" />
-                        </Link>
-                      ))}
-                  </div>
-                )}
-
-                {activeTab === 'details' && (
-                  <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
-                    <div>
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Original Title
-                      </span>
-                      <span className="text-white font-medium">{movie.original_title}</span>
-                    </div>
-                    <div>
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Release Date
-                      </span>
-                      <span className="text-white font-medium">{movie.release_date || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Runtime
-                      </span>
-                      <span className="text-white font-medium">
-                        {isTv
-                          ? numberOfSeasons
-                            ? `${numberOfSeasons} season${numberOfSeasons === 1 ? '' : 's'}`
-                            : 'N/A'
-                          : movie.runtime
-                            ? `${movie.runtime} mins`
-                            : 'N/A'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Language
-                      </span>
-                      <span className="text-white font-medium">
-                        {(movie as unknown as { original_language?: string }).original_language?.toUpperCase() ||
-                          'N/A'}
-                      </span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Country
-                      </span>
-                      <span className="text-white font-medium">
-                        {movie.production_countries?.map((c) => c.name).join(', ') || 'N/A'}
-                      </span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-lb-muted block text-[10px] uppercase font-bold">
-                        Studios
-                      </span>
-                      <span className="text-white font-medium">
-                        {movie.production_companies?.map((c) => c.name).join(', ') || 'N/A'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'genres' && (
-                  <div className="flex flex-wrap gap-2">
-                    {movie.genres?.map((g) => (
-                      <Link
-                        key={g.id}
-                        to={isTv ? `/series/decade/2020s?genre=${g.id}` : `/films/decade/2020s?genre=${g.id}`}
-                        className="bg-[#202830] border border-lb-elevated hover:border-lb-green text-lb-white hover:text-lb-green px-3 py-1 rounded text-xs transition-colors"
-                      >
-                        {g.name}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-
-                {activeTab === 'releases' && (
-                  <div className="divide-y divide-lb-elevated text-sm">
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="text-white font-medium">Theatrical release</span>
-                      <span className="text-lb-muted text-xs">{movie.release_date || 'N/A'}</span>
-                    </div>
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="text-white font-medium">Original language</span>
-                      <span className="text-lb-muted text-xs">
-                        {(movie as unknown as { original_language?: string }).original_language?.toUpperCase() ||
-                          'N/A'}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                <FilmTabContent activeTab={activeTab} movie={movie} isTv={isTv} numberOfSeasons={numberOfSeasons} mobile />
               </div>
             </div>
 
@@ -1105,7 +766,7 @@ export const FilmPage: React.FC = () => {
               <div className="border-t border-[#384654] bg-lb-border-light">
                 <button
                   onClick={() => setShowSharePanel(!showSharePanel)}
-                  className="w-full py-2 px-3 text-center text-lb-muted hover:text-white hover:bg-[#4e6275] text-xs font-medium transition-colors cursor-pointer"
+                  className="w-full py-2 px-3 text-lb-white hover:text-white hover:bg-[#4e6275] transition-colors cursor-pointer block text-xs"
                 >
                   Share
                 </button>
@@ -1163,9 +824,36 @@ export const FilmPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Similar Movies Carousel */}
+        {/* Similar — MOBILE: carrossel horizontal de 20 pôsteres (sem títulos
+            nem estrelas embaixo, igual ao app); DESKTOP: grade de 6 (inalterada) */}
+        {displaySimilar.length > 0 && (
+          <section className="similar-section md:hidden">
+            <div className="similar-header">
+              <span>{isTv ? 'SIMILAR SERIES' : 'SIMILAR FILMS'}</span>
+              <span aria-hidden="true">›</span>
+            </div>
+            <div className="similar-carousel">
+              {displaySimilar.map((item) => (
+                <Link
+                  key={item.id}
+                  to={`${isTv ? '/tv' : '/film'}/${item.id}`}
+                  className="similar-card"
+                  aria-label={item.title}
+                >
+                  <img
+                    src={tmdb.getImageUrl(item.poster_path, 'w342')}
+                    alt={item.title}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {movie.similar?.results && movie.similar.results.length > 0 && (
-          <section className="mt-16 pt-8 border-t border-lb-elevated space-y-4">
+          <section className="hidden md:block mt-16 pt-8 border-t border-lb-elevated space-y-4">
             <h2 className="text-xs uppercase tracking-widest font-bold text-lb-muted">
               {isTv ? 'Similar Series' : 'Similar Films'}
             </h2>
@@ -1232,4 +920,513 @@ export const FilmPage: React.FC = () => {
       )}
     </div>
   );
+};
+
+// ===========================================================================
+// COMPONENTES COMPARTILHADOS DAS 5 ABAS (desktop + mobile)
+// Cast / Crew / Details (TMDB + IMDb) / Genres+Themes / Releases
+// ===========================================================================
+
+type TabKey = 'cast' | 'crew' | 'details' | 'genres' | 'releases';
+
+// ---- Badge de classificação indicativa -------------------------------------
+// Cores oficiais brasileiras: L verde, 10 azul, 12 amarelo, 14 laranja,
+// 16 vermelho, 18 preto. Países estrangeiros: cinza neutro.
+const BR_CERT_COLORS: Record<string, string> = {
+  L: 'bg-[#16a34a] text-white',
+  '10': 'bg-[#0284c7] text-white',
+  '12': 'bg-[#facc15] text-black',
+  '14': 'bg-[#f97316] text-white',
+  '16': 'bg-[#dc2626] text-white',
+  '18': 'bg-black text-white border border-white/40',
+};
+const CertBadge: React.FC<{ cert: string; small?: boolean }> = ({ cert, small }) => {
+  const key = cert.replace(/\s/g, '').toUpperCase();
+  const colors = BR_CERT_COLORS[key] ?? 'bg-[#556677] text-white';
+  return (
+    <span
+      title={cert}
+      className={`inline-flex items-center justify-center rounded-[3px] font-black leading-none shrink-0 ${colors} ${
+        small ? 'text-[9px] min-w-[18px] h-[18px] px-1' : 'text-[10px] min-w-[20px] h-[20px] px-1'
+      }`}
+    >
+      {cert}
+    </span>
+  );
+};
+
+// Bandeira emoji a partir do ISO 3166-1 (ex.: 'BR' → 🇧🇷)
+const flagEmoji = (iso: string): string =>
+  /^[A-Za-z]{2}$/.test(iso)
+    ? iso.toUpperCase().replace(/./g, (c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
+    : '';
+
+// ---- 1. CAST ---------------------------------------------------------------
+const CastTab: React.FC<{ movie: TMDBMovieDetails; mobile?: boolean }> = ({ movie }) => {
+  const { t } = useLanguage();
+  const [showAll, setShowAll] = useState(false);
+  const cast = movie.credits?.cast ?? [];
+  if (cast.length === 0) {
+    return (
+      <div className="py-12 text-center space-y-2">
+        <p className="text-sm text-white font-semibold">—</p>
+        <p className="text-xs text-lb-muted">{t('cast_empty')}</p>
+      </div>
+    );
+  }
+  const LIMIT = 10;
+  const shown = showAll ? cast : cast.slice(0, LIMIT);
+  const hiddenCount = cast.length - LIMIT;
+  return (
+    <div className="-mx-4 md:mx-0">
+      <ul className="divide-y divide-lb-elevated">
+        {shown.map((actor) => (
+          <li key={`${actor.id}-${actor.character ?? ''}`}>
+            <Link
+              to={openPersonProfile(actor.id, 'Actor')}
+              className="flex items-center gap-3 px-4 md:px-2 py-2.5 hover:bg-lb-surface/60 transition-colors"
+            >
+              {actor.profile_path ? (
+                <img
+                  loading="lazy"
+                  decoding="async"
+                  src={tmdb.getProfileUrl(actor.profile_path, 'w185')}
+                  alt=""
+                  className="w-[53px] h-[53px] rounded-[4px] object-cover shrink-0 bg-lb-elevated"
+                />
+              ) : (
+                <div className="w-[53px] h-[53px] rounded-[4px] shrink-0 bg-lb-elevated flex items-center justify-center text-lb-muted">
+                  <Users className="w-5 h-5" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-[15px] text-white truncate leading-tight">{actor.name}</p>
+                {actor.character && (
+                  <p className="text-[13px] text-lb-muted truncate leading-snug mt-0.5">{actor.character}</p>
+                )}
+              </div>
+              <ChevronRight className="w-5 h-5 text-lb-muted shrink-0" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {cast.length > LIMIT && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="w-full mt-2 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-white hover:text-lb-green transition-colors cursor-pointer"
+        >
+          {showAll ? '−' : `${t('show_more')} ${hiddenCount}`}
+        </button>
+      )}
+    </div>
+  );
+};
+
+// ---- 2. CREW (agrupado por cargo, layout Letterboxd com linha pontilhada) --
+
+const CREW_GROUPS: { key: TranslationKey; jobs: string[]; role?: PersonRole }[] = [
+  { key: 'crew_director', jobs: ['Director', 'Creator'], role: 'Director' },
+  { key: 'crew_writers', jobs: ['Screenplay', 'Writer', 'Author', 'Novel', 'Story'], role: 'Writer' },
+  { key: 'crew_producers', jobs: ['Producer', 'Co-Producer', 'Associate Producer'], role: 'Producer' },
+  { key: 'crew_exec_producers', jobs: ['Executive Producer'], role: 'Executive Producer' },
+  { key: 'crew_composer', jobs: ['Original Music Composer', 'Composer', 'Music'], role: 'Composer' },
+  { key: 'crew_cinematography', jobs: ['Director of Photography', 'Cinematography'], role: 'Cinematography' },
+  { key: 'crew_editor', jobs: ['Editor', 'Film Editor'], role: 'Editor' },
+  { key: 'crew_production_design', jobs: ['Production Design'] },
+  { key: 'crew_art_direction', jobs: ['Art Direction'] },
+  { key: 'crew_set_decoration', jobs: ['Set Decoration'] },
+  { key: 'crew_costume', jobs: ['Costume Design', 'Costume Designer'] },
+  { key: 'crew_makeup', jobs: ['Makeup Artist', 'Makeup Department Head', 'Hairstylist', 'Hair Department Head', 'Makeup & Hair'] },
+  { key: 'crew_vfx', jobs: ['Visual Effects Supervisor', 'Visual Effects', 'VFX Supervisor', 'Special Effects'] },
+  { key: 'crew_stunts', jobs: ['Stunt Coordinator', 'Stunts', 'Stunt Double'] },
+  { key: 'crew_sound', jobs: ['Sound', 'Sound Mixer', 'Sound Designer', 'Supervising Sound Editor', 'Sound Re-Recording Mixer'] },
+];
+
+const CrewTab: React.FC<{ movie: TMDBMovieDetails }> = ({ movie }) => {
+  const { t } = useLanguage();
+  const crew = movie.credits?.crew ?? [];
+  const [showAll, setShowAll] = useState(false);
+  const LIMIT = 10;
+
+  // Lista única (como no Elenco): cada pessoa aparece uma vez por cargo,
+  // na ordem dos grupos (Direção, Roteiro, Produção...)
+  const rows = CREW_GROUPS.flatMap((g) =>
+    crew
+      .filter((c) => g.jobs.includes(c.job))
+      .map((c, i) => ({
+        key: `${g.key}-${c.id}-${i}`,
+        id: c.id,
+        name: c.name,
+        job: c.job,
+        profile_path: c.profile_path,
+        role: g.role,
+      })),
+  );
+
+  if (rows.length === 0) {
+    return <p className="py-8 text-center text-xs text-lb-muted">{t('cast_empty')}</p>;
+  }
+
+  const shown = showAll ? rows : rows.slice(0, LIMIT);
+  const hiddenCount = rows.length - LIMIT;
+  return (
+    <div className="-mx-4 md:mx-0">
+      <ul className="divide-y divide-lb-elevated">
+        {shown.map((p) => (
+          <li key={p.key}>
+            <Link
+              to={openPersonProfile(p.id, p.role ?? 'Actor')}
+              className="flex items-center gap-3 px-4 md:px-2 py-2.5 hover:bg-lb-surface/60 transition-colors"
+            >
+              {p.profile_path ? (
+                <img
+                  loading="lazy"
+                  decoding="async"
+                  src={tmdb.getProfileUrl(p.profile_path, 'w185')}
+                  alt=""
+                  className="w-[53px] h-[53px] rounded-[4px] object-cover shrink-0 bg-lb-elevated"
+                />
+              ) : (
+                <div className="w-[53px] h-[53px] rounded-[4px] shrink-0 bg-lb-elevated flex items-center justify-center text-lb-muted">
+                  <Users className="w-5 h-5" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-[15px] text-white truncate leading-tight">{p.name}</p>
+                <p className="text-[13px] text-lb-muted truncate leading-snug mt-0.5">{p.job}</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-lb-muted shrink-0" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {rows.length > LIMIT && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="w-full mt-2 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-white hover:text-lb-green transition-colors cursor-pointer"
+        >
+          {showAll ? '−' : `${t('show_more')} ${hiddenCount}`}
+        </button>
+      )}
+    </div>
+  );
+};
+
+// ---- 3. DETAILS (Ficha TMDB + Box Office + Tech Specs/Trivia IMDb) ---------
+interface ImdbSpec { label: string; value: string }
+interface ImdbTrivia { text: string; spoiler: boolean }
+interface ImdbData { specs: ImdbSpec[]; trivia: ImdbTrivia[] }
+
+/** Hook com cache em localStorage (chave imdb_<id>) */
+function useImdbData(imdbId: string | null | undefined): ImdbData | null {
+  const [data, setData] = useState<ImdbData | null>(null);
+  useEffect(() => {
+    if (!imdbId) return;
+    let cancelled = false;
+    const key = `imdb_${imdbId}`;
+    try {
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        setData(JSON.parse(cached));
+        return;
+      }
+    } catch { /* cache ilegível */ }
+    fetch(`/api/imdb?imdbId=${imdbId}`)
+      .then((r) => (r.ok ? r.json() : { specs: [], trivia: [] }))
+      .then((d: ImdbData) => {
+        if (cancelled) return;
+        setData(d);
+        try { localStorage.setItem(key, JSON.stringify(d)); } catch { /* quota */ }
+      })
+      .catch(() => { if (!cancelled) setData({ specs: [], trivia: [] }); });
+    return () => { cancelled = true; };
+  }, [imdbId]);
+  return data;
+}
+
+// Mapeia rótulos do IMDb (em inglês) para as chaves traduzidas da aba
+const SPEC_LABEL_MAP: Record<string, TranslationKey> = {
+  'runtime': 'tech_runtime',
+  'aspect ratio': 'tech_aspect_ratio',
+  'camera': 'tech_camera',
+  'laboratory': 'tech_laboratory',
+  'negative format': 'tech_negative_format',
+  'cinematographic process': 'tech_cine_process',
+  'printed film format': 'tech_printed_format',
+  'color': 'tech_color',
+  'sound mix': 'tech_sound_mix',
+};
+
+const DetailRow: React.FC<{ label: string; children?: React.ReactNode }> = ({ label, children }) =>
+  children ? (
+    <div className="flex items-baseline gap-2">
+      <span className="text-[10px] uppercase font-bold text-lb-muted whitespace-nowrap shrink-0">
+        {label}
+      </span>
+      <span className="border-b border-dotted border-white/15 flex-1 mx-2 -translate-y-1" aria-hidden="true" />
+      <span className="text-white text-right max-w-[70%]">{children}</span>
+    </div>
+  ) : null;
+
+const DetailsTab: React.FC<{ movie: TMDBMovieDetails; isTv: boolean }> = ({ movie, isTv }) => {
+  const { language, t } = useLanguage();
+  const regions = useMemo(() => regionNames(language), [language]);
+  const langs = useMemo(() => languageNames(language), [language]);
+  const imdb = useImdbData(isTv ? null : movie.external_ids?.imdb_id);
+  const [showAllTrivia, setShowAllTrivia] = useState(false);
+  const [revealed, setRevealed] = useState<Set<number>>(new Set());
+
+  const altTitles = movie.alternative_titles?.titles ?? movie.alternative_titles?.results ?? [];
+  const spoken = movie.spoken_languages?.map((l) => l.english_name || l.name).filter(Boolean) ?? [];
+  const triviaShown = imdb?.trivia ? (showAllTrivia ? imdb.trivia : imdb.trivia.slice(0, 5)) : [];
+
+  return (
+    <div className="space-y-5 text-xs">
+      {/* Seção 1 — Ficha de Produção (TMDB) */}
+      <section className="space-y-2.5">
+        <h4 className="text-[10px] uppercase font-bold tracking-wider text-white border-b border-lb-elevated pb-1">
+          {t('det_production_info')}
+        </h4>
+        <DetailRow label={t('det_studios')}>
+          {movie.production_companies?.length
+            ? movie.production_companies.map((c) => c.name).join(', ')
+            : undefined}
+        </DetailRow>
+        <DetailRow label={t('det_countries')}>
+          {movie.production_countries?.length
+            ? movie.production_countries
+                .map((c) => regions.of(c.iso_3166_1) ?? c.name)
+                .join(', ')
+            : undefined}
+        </DetailRow>
+        <DetailRow label={t('det_primary_language')}>
+          {movie.original_language
+            ? langs.of(movie.original_language) ?? movie.original_language.toUpperCase()
+            : undefined}
+        </DetailRow>
+        {spoken.length > 0 && (
+          <DetailRow label={t('det_spoken_languages')}>{spoken.join(', ')}</DetailRow>
+        )}
+        {altTitles.length > 0 && (
+          <DetailRow label={t('det_alt_titles')}>
+            {altTitles.slice(0, 5).map((a) => `${a.title} (${a.iso_3166_1})`).join(' · ')}
+          </DetailRow>
+        )}
+        {movie.status && <DetailRow label={t('det_status')}>{movie.status}</DetailRow>}
+      </section>
+
+      {/* Seção 2 — Box Office (TMDB) */}
+      {(movie.budget > 0 || movie.revenue > 0) && !isTv && (
+        <section className="space-y-2.5">
+          <h4 className="text-[10px] uppercase font-bold tracking-wider text-white border-b border-lb-elevated pb-1">
+            {t('det_box_office')}
+          </h4>
+          {movie.budget > 0 && (
+            <DetailRow label={t('det_budget')}>{formatMoneyUSD(language, movie.budget)}</DetailRow>
+          )}
+          {movie.revenue > 0 && (
+            <DetailRow label={t('det_revenue')}>{formatMoneyUSD(language, movie.revenue)}</DetailRow>
+          )}
+        </section>
+      )}
+
+      {/* Seção 3 — Technical Specifications (IMDb) */}
+      {!isTv && imdb && imdb.specs.length > 0 && (
+        <section className="space-y-2.5">
+          <h4 className="text-[10px] uppercase font-bold tracking-wider text-white border-b border-lb-elevated pb-1">
+            {t('tech_specs')}
+          </h4>
+          {imdb.specs.map((s, i) => {
+            const mapped = SPEC_LABEL_MAP[s.label.toLowerCase()];
+            return (
+              <DetailRow key={`${s.label}-${i}`} label={mapped ? t(mapped) : s.label}>
+                {s.value}
+              </DetailRow>
+            );
+          })}
+        </section>
+      )}
+
+      {/* Seção 4 — Trivia / Curiosidades (IMDb) */}
+      {!isTv && imdb && imdb.trivia.length > 0 && (
+        <section className="space-y-2.5">
+          <h4 className="text-[10px] uppercase font-bold tracking-wider text-white border-b border-lb-elevated pb-1">
+            {t('trivia')}
+          </h4>
+          <div className="space-y-2">
+            {triviaShown.map((item, i) => {
+              const hidden = item.spoiler && !revealed.has(i);
+              return (
+                <div key={i} className="relative bg-lb-surface border border-lb-elevated rounded p-3">
+                  <p className={`text-lb-text leading-relaxed transition-all ${hidden ? 'blur-sm select-none' : ''}`}>
+                    {item.text}
+                  </p>
+                  {hidden && (
+                    <button
+                      onClick={() => setRevealed((prev) => new Set(prev).add(i))}
+                      className="absolute inset-0 flex items-center justify-center text-[11px] font-bold uppercase tracking-wider text-white bg-black/40 hover:bg-black/50 rounded cursor-pointer"
+                    >
+                      {t('reveal_spoiler')}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {imdb.trivia.length > 5 && (
+            <button
+              onClick={() => setShowAllTrivia((v) => !v)}
+              className="text-xs font-bold text-lb-green hover:underline cursor-pointer"
+            >
+              {showAllTrivia ? '−' : t('show_all')}
+            </button>
+          )}
+        </section>
+      )}
+    </div>
+  );
+};
+
+// ---- 4. GENRES + THEMES ----------------------------------------------------
+const GenresTab: React.FC<{ movie: TMDBMovieDetails; isTv: boolean }> = ({ movie, isTv }) => {
+  const { t } = useLanguage();
+  const themes = movie.keywords?.keywords ?? movie.keywords?.results ?? [];
+  return (
+    <div className="space-y-5">
+      <div>
+        <h4 className="text-[10px] uppercase font-bold tracking-wider text-white border-b border-lb-elevated pb-1 mb-2.5">
+          {t('genres_label')}
+        </h4>
+        <div className="flex flex-wrap gap-2">
+          {movie.genres?.map((g) => (
+            <Link
+              key={g.id}
+              to={isTv ? `/series/decade/2020s?genre=${g.id}` : `/films/decade/2020s?genre=${g.id}`}
+              className="bg-[#202830] border border-lb-elevated hover:border-lb-green text-lb-white hover:text-lb-green px-3 py-1 rounded text-xs transition-colors"
+            >
+              {g.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+      {themes.length > 0 && (
+        <div>
+          <h4 className="text-[10px] uppercase font-bold tracking-wider text-white border-b border-lb-elevated pb-1 mb-2.5">
+            {t('themes_label')}
+          </h4>
+          <div className="flex flex-wrap gap-1.5">
+            {themes.slice(0, 30).map((k) => (
+              <span
+                key={k.id}
+                className="bg-lb-bg border border-lb-elevated text-lb-text px-2.5 py-1 rounded text-[11px]"
+              >
+                {k.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ---- 5. RELEASES (agrupado por tipo, ordenado cronologicamente) ------------
+const RELEASE_TYPE_LABELS: Record<number, TranslationKey> = {
+  1: 'rel_premiere',
+  2: 'rel_theatrical_limited',
+  3: 'rel_theatrical',
+  4: 'rel_digital',
+  5: 'rel_physical',
+  6: 'rel_tv',
+};
+
+const ReleasesTab: React.FC<{ movie: TMDBMovieDetails }> = ({ movie }) => {
+  const { language, t } = useLanguage();
+  const regions = useMemo(() => regionNames(language), [language]);
+
+  const entries = useMemo(() => {
+    const list: { iso: string; type: number; date: string; cert: string; note: string }[] = [];
+    for (const r of movie.release_dates?.results ?? []) {
+      for (const d of r.release_dates) {
+        list.push({
+          iso: r.iso_3166_1,
+          type: d.type,
+          date: d.release_date || '',
+          cert: d.certification || '',
+          note: d.note || '',
+        });
+      }
+    }
+    return list;
+  }, [movie]);
+
+  if (entries.length === 0) {
+    return (
+      <div className="divide-y divide-lb-elevated text-sm">
+        <div className="flex items-center justify-between py-2.5">
+          <span className="text-white font-medium">{t('rel_theatrical')}</span>
+          <span className="text-lb-muted text-xs">
+            {movie.release_date ? formatDatePt(language, movie.release_date) : 'N/A'}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  const groups = [1, 2, 3, 4, 5, 6]
+    .map((type) => ({
+      type,
+      items: entries
+        .filter((e) => e.type === type)
+        .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999')),
+    }))
+    .filter((g) => g.items.length > 0);
+
+  return (
+    <div className="space-y-5">
+      {groups.map((g) => (
+        <div key={g.type}>
+          <h4 className="text-[10px] uppercase font-bold tracking-wider text-white border-b border-lb-elevated pb-1 mb-2">
+            {t(RELEASE_TYPE_LABELS[g.type])}
+          </h4>
+          <div className="divide-y divide-lb-elevated/50 text-xs">
+            {g.items.map((e, i) => (
+              <div key={i} className="flex items-center gap-2.5 py-2">
+                <span className="text-base leading-none" aria-hidden="true">{flagEmoji(e.iso)}</span>
+                <span className="text-white font-medium">{regions.of(e.iso) ?? e.iso}</span>
+                {e.cert && <CertBadge cert={e.cert} small />}
+                <span className="flex-1" />
+                <span className="text-lb-muted">{e.date ? formatDatePt(language, e.date.slice(0, 10)) : '—'}</span>
+                {e.note && <span className="text-lb-muted/70 italic truncate max-w-[30%]">{e.note}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ---- Dispatcher compartilhado desktop/mobile -------------------------------
+const FilmTabContent: React.FC<{
+  activeTab: TabKey;
+  movie: TMDBMovieDetails;
+  isTv: boolean;
+  numberOfSeasons?: number;
+  mobile?: boolean;
+}> = ({ activeTab, movie, isTv, mobile }) => {
+  switch (activeTab) {
+    case 'cast':
+      return <CastTab movie={movie} mobile={mobile} />;
+    case 'crew':
+      return <CrewTab movie={movie} />;
+    case 'details':
+      return <DetailsTab movie={movie} isTv={isTv} />;
+    case 'genres':
+      return <GenresTab movie={movie} isTv={isTv} />;
+    case 'releases':
+      return <ReleasesTab movie={movie} />;
+    default:
+      return null;
+  }
 };

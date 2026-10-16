@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, Eye } from 'lucide-react';
 import type { TMDBMovie } from '../../services/tmdb';
 import { PosterCard } from '../PosterCard';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 // ---------------------------------------------------------------------------
 // MobileCatalogSections — SOMENTE mobile (md:hidden).
@@ -12,6 +13,14 @@ import { PosterCard } from '../PosterCard';
 //   3. Most watched         (4 pôsteres + olho verde + contagem)
 //   4. Most anticipated     (4 pôsteres limpos — "Just reviewed" em séries)
 // Cada cabeçalho navega para a grade completa de 4 colunas já filtrada.
+//
+// ESPAÇAMENTO VERTICAL COMPARTILHADO (as 4 abas usam este mesmo componente, logo
+// as medidas abaixo são idênticas em FILMES, SÉRIES, CRÍTICAS e LISTAS):
+//   • grade de pôsteres → divisória ......... 32px  (space-y-8 no root)
+//   • divisória → título da próxima seção ... 25px  (1px border-t + pt-6 = 24px)
+//   • total grade → título seguinte ......... 57px
+//   • título da seção → carrossel ........... 16px  (space-y-3)
+//   • respiro superior (aba → 1º título) .... 16px  (pt-4 no wrapper de cada página)
 // ---------------------------------------------------------------------------
 
 interface MobileCatalogSectionsProps {
@@ -25,15 +34,18 @@ interface MobileCatalogSectionsProps {
   loading: boolean;
 }
 
-const SectionShell: React.FC<{ title: string; to: string; divider?: boolean; children: React.ReactNode }> = ({
-  title,
-  to,
-  divider = true,
-  children,
-}) => (
-  <section className={`space-y-3 ${divider ? 'border-t border-white/10 pt-6' : ''}`}>
-    {/* Título + seta navegam para a grade completa filtrada */}
-    <Link to={to} className="flex items-center justify-between group">
+const SectionShell: React.FC<{
+  title: string;
+  to: string;
+  /** Itens já carregados — navegação com state p/ ordem idêntica à Home */
+  state?: { initialItems: TMDBMovie[] };
+  divider?: boolean;
+  children: React.ReactNode;
+}> = ({ title, to, state, divider = true, children }) => (
+  <section className={`space-y-3 ${divider ? 'border-t border-[#1f2937] pt-6' : ''}`}>
+    {/* Título + seta abrem a tela de resultados (/browse/results) com a
+        lista já carregada via state — ordem 100% idêntica ao carrossel */}
+    <Link to={to} state={state} className="flex items-center justify-between group">
       <h2 className="text-lg font-bold text-white group-active:text-lb-green">{title}</h2>
       <ChevronRight className="w-5 h-5 text-lb-muted group-active:text-lb-green" />
     </Link>
@@ -79,9 +91,12 @@ const PosterRail: React.FC<{ movies: TMDBMovie[]; isSeries: boolean; children?: 
   </div>
 );
 
-/** "★★★★☆ 4.6" — texto cinza-claro abaixo do pôster (seção Highest rated) */
+/** "★★★★☆ 4.6" — texto cinza-claro abaixo do pôster (seção Highest rated)
+ *  Sem nota (vote_average ausente/0) não renderiza nada: nada de 5 estrelas
+ *  vazias reservando altura no carrossel. */
 const RatingLine: React.FC<{ movie: TMDBMovie }> = ({ movie }) => {
-  const rating5 = movie.vote_average ? movie.vote_average / 2 : 0;
+  if (!movie.vote_average) return null;
+  const rating5 = movie.vote_average / 2;
   const full = Math.round(rating5);
   return (
     <div className="flex items-center gap-1 px-0.5 pt-1">
@@ -111,6 +126,7 @@ export const MobileCatalogSections: React.FC<MobileCatalogSectionsProps> = ({
   loading,
 }) => {
   const isSeries = basePath === '/series';
+  const { t } = useLanguage();
 
   // "Most watched": usa a lista curada do serviço quando disponível;
   // senão deriva dos populares ordenados por votos (proxy de visualizações)
@@ -119,23 +135,28 @@ export const MobileCatalogSections: React.FC<MobileCatalogSectionsProps> = ({
     : [...popular].sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
   ).slice(0, 18);
 
-  // Rotas da grade completa filtrada por categoria
+  // Rotas: abrem /browse/results (app) com preset + sort + título traduzido.
+  // Desktop (telas md+) não usa este componente; /films e /series seguem intactas.
+  const mediaType = isSeries ? 'tv' : 'movie';
+  const browse = (preset: string, sort: string, title: string) =>
+    `/browse/results?type=${mediaType}&preset=${preset}&sort=${sort}&title=${encodeURIComponent(title)}`;
+
   const routes = {
-    popular: `${basePath}/decade/2020s?sort=popularity.desc`,
-    rated: `${basePath}/decade/2020s?sort=vote_average.desc`,
-    watched: `${basePath}/decade/2020s?sort=vote_count.desc`,
-    anticipated: isSeries ? '/series/popular' : `${basePath}/decade/2020s?sort=release_date.desc`,
+    popular: browse('popular_week', 'popularity.desc', t('sec_popular_week')),
+    rated: browse('highest_rated', 'vote_average.desc', t('sec_highest_rated')),
+    watched: browse('most_watched', 'vote_count.desc', t('sec_most_watched')),
+    anticipated: browse('most_anticipated', 'popularity.desc', isSeries ? t('sec_just_reviewed') : t('sec_most_anticipated')),
   };
 
   return (
     <div className="md:hidden space-y-8">
       {/* 1. Popular this week — 4 pôsteres limpos (sem divisória: primeira seção) */}
-      <SectionShell title="Popular this week" to={routes.popular} divider={false}>
+      <SectionShell title={t('sec_popular_week')} to={routes.popular} state={{ initialItems: popular.slice(0, 18) }} divider={false}>
         {loading ? <SkeletonRow /> : <PosterRail movies={popular} isSeries={isSeries} />}
       </SectionShell>
 
       {/* 2. Highest rated — pôsteres + nota em estrelas abaixo */}
-      <SectionShell title="Highest rated" to={routes.rated}>
+      <SectionShell title={t('sec_highest_rated')} to={routes.rated} state={{ initialItems: topRated.slice(0, 18) }}>
         {loading ? (
           <SkeletonRow />
         ) : (
@@ -146,7 +167,7 @@ export const MobileCatalogSections: React.FC<MobileCatalogSectionsProps> = ({
       </SectionShell>
 
       {/* 3. Most watched — pôsteres + olho verde + contagem */}
-      <SectionShell title="Most watched" to={routes.watched}>
+      <SectionShell title={t('sec_most_watched')} to={routes.watched} state={{ initialItems: mostWatched.slice(0, 18) }}>
         {loading ? (
           <SkeletonRow />
         ) : (
@@ -165,7 +186,7 @@ export const MobileCatalogSections: React.FC<MobileCatalogSectionsProps> = ({
       </SectionShell>
 
       {/* 4. Most anticipated (films) / Just reviewed (series) — pôsteres limpos */}
-      <SectionShell title={isSeries ? 'Just reviewed' : 'Most anticipated'} to={routes.anticipated}>
+      <SectionShell title={isSeries ? t('sec_just_reviewed') : t('sec_most_anticipated')} to={routes.anticipated} state={{ initialItems: anticipated.slice(0, 18) }}>
         {loading ? <SkeletonRow /> : <PosterRail movies={anticipated} isSeries={isSeries} />}
       </SectionShell>
     </div>

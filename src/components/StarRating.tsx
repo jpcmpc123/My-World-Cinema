@@ -15,6 +15,8 @@ export const StarRating: React.FC<StarRatingProps> = ({
   readonly = false,
 }) => {
   const [hoverValue, setHoverValue] = useState<number | null>(null);
+  // Pop/pulse (scale 1->1.25->1, 250ms) ao confirmar uma nota
+  const [bumpKey, setBumpKey] = useState(0);
 
   const displayValue = hoverValue !== null ? hoverValue : value;
 
@@ -39,6 +41,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
     const isHalf = x < rect.width / 2;
     const selected = index + (isHalf ? 0.5 : 1);
     // If clicking exact same value, toggle off/clear
+    setBumpKey((k) => k + 1);
     onChange(selected === value ? 0 : selected);
   };
 
@@ -54,8 +57,10 @@ export const StarRating: React.FC<StarRatingProps> = ({
 
         return (
           <div
-            key={starIndex}
-            className={`relative ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110 transition-transform'}`}
+            key={`${starIndex}-${bumpKey}`}
+            className={`relative ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110 transition-transform'} ${
+              !readonly && bumpKey > 0 && starIndex === Math.ceil(displayValue) - 1 ? 'mw-icon-pop' : ''
+            }`}
             onMouseMove={(e) => handleMouseMove(starIndex, e)}
             onClick={(e) => handleClick(starIndex, e)}
             title={readonly ? `${value} stars` : `Rate ${(starIndex + 1).toFixed(1)}`}

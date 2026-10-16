@@ -112,8 +112,8 @@ export const LogModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-lb-surface border border-lb-elevated w-full max-w-lg rounded-lg shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs overflow-y-auto mw-overlay-fade">
+      <div className="bg-lb-surface border border-lb-elevated w-full max-w-lg rounded-lg shadow-2xl overflow-hidden my-8 mw-pop-in">
         {/* Header */}
         <div className="px-5 py-3.5 bg-lb-bg border-b border-lb-elevated flex items-center justify-between">
           <span className="text-xs uppercase font-bold tracking-wider text-lb-text">

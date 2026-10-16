@@ -14,7 +14,68 @@ páginas de filme/série), replicando o visual do Letterboxd
 | `src/pages/SeriesDetailPage.tsx` | Mesmo padrão da FilmPage |
 | `src/index.css` | Fundo do body unificado em `#14181C` (crucial, ver abaixo) |
 
-## Princípio central
+## Duas variantes
+
+| Breakpoint | Faixa | Como a fusão é feita |
+| --- | --- | --- |
+| **Desktop (≥ 768px)** | 1200 × **675** px centralizados | `.backdropmask` — receita copiada do Letterboxd |
+| **Mobile (< 768px)** | 100% × 230 px | `mask-image` na própria `<img>` + 2 gradientes |
+
+### Desktop: a receita do próprio Letterboxd (extraída do HTML original)
+
+Fontes (página salva de `/film/spider-man-brand-new-day/`):
+
+```css
+.backdrop-wrapper { z-index:0; width:1200px; height:675px; position:absolute; top:0; left:50%; transform:translate(-50%) }
+.backdrop-wrapper > .backdropimage { background-repeat:no-repeat; background-size:100% 100%; width:100%; height:99.95%; position:absolute }
+.backdrop-wrapper > .backdropmask { padding-top:500px; position:relative }
+.backdrop-wrapper > .backdropmask:before {
+  content:""; z-index:0; pointer-events:none; background-repeat:no-repeat;
+  width:1200px; height:675px; display:block; position:absolute; top:0; left:50%; transform:translate(-50%);
+  background-image: linear-gradient(90deg, #14181d 0%, … , #14181d 100%),   /* laterais */
+                    linear-gradient(#14181d00 41.4815%, … , #14181d 78.5185% 100%); /* base */
+}
+```
+
+Pontos que fazem diferença:
+
+1. **Não é `mask-image`**: são DUAS camadas de gradiente da cor sólida do fundo
+   (`#14181d`) com alfa variável. A rampa usa dezenas de stops (0.97%, 2.07%,
+   3.29%…) — é essa rampa longa que dá o degradê perceptualmente suave.
+2. **Base**: transparente até **41,48%** (a imagem aparece inteira no topo) e
+   opaca a partir de **78,52%** — ou seja, a partir de ~530px o fundo já é
+   sólido.
+3. **Laterais**: opacas até ~16,67% de cada lado, transparentes no meio.
+4. **Sem escurecimento no topo**: o contraste da navbar vem de outra camada
+   (ver abaixo).
+
+### Contraste da navbar (`.site-header-bg`)
+
+```css
+.site-header .site-header-bg {
+  pointer-events:none; height:95px; opacity:var(--bg-alpha,.85);
+  background-image:linear-gradient(#14181c 0%, #14181cf1 16.56%, #14181ccc 30.85%, #14181c9b 43.77%, #14181c64 56.23%, #14181c33 69.15%, #14181c0e 83.44%, #14181c00 100%);
+  background-repeat:repeat-x; position:absolute; top:0; left:0; right:0;
+}
+.site-header:not(:hover):not(:focus-within):not(:has(:active)) { --bg-alpha:calc(2/3) }
+```
+
+No Header.tsx ela é renderizada só quando o header fica transparente por cima do
+backdrop (`/film/:id` e `/tv/:id`).
+
+### Régua vertical (igual ao original)
+
+O original começa o conteúdo em **472px** (`.site-body` em y=72 + `padding-top:
+400px`) com o título em y=469. Aqui a faixa é 675 e a margem negativa é
+`md:-mt-[203px]` → 675 − 203 = **472** ✅ (o mobile continua `-mt-10` →
+230 − 40 = 190).
+
+### Mobile (inalterado)
+
+Continua com `mask-image` na `<img>` (some só na base) + os dois gradientes de
+fusão da camada `md:hidden`.
+
+## Princípio central (histórico)
 
 O "efeito de blur" do Letterboxd **não é blur**. É a fusão da imagem com a cor
 de fundo da página (`#14181c`) por meio de gradientes. A imagem permanece

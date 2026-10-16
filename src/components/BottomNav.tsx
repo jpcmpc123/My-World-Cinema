@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Layers, Search, Plus, Zap, User } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../i18n/LanguageContext';
 
 /**
  * Bottom Navigation — visível apenas no mobile (< 768px, md:hidden).
@@ -12,6 +13,7 @@ import { useAuth } from '../context/AuthContext';
 export const BottomNav: React.FC = () => {
   const { user, openLogModal } = useApp();
   const { isAuthenticated, profile } = useAuth();
+  const { t } = useLanguage();
   const { pathname } = useLocation();
   // Se a foto falhar (rede/URL inválida) ou não existir, cai no ícone de usuário
   const [avatarError, setAvatarError] = useState(false);
@@ -31,42 +33,38 @@ export const BottomNav: React.FC = () => {
   const isSearchActive = pathname.startsWith('/search');
   const isActivityActive = pathname.startsWith('/activity');
 
-  // Ícone ativo ganha uma "pill" oval escura atrás
-  const pill = (active: boolean) =>
-    `flex items-center justify-center transition-colors ${
-      active
-        ? 'w-14 h-8 rounded-full bg-[#14181c]/80 text-[#40bcf4]'
-        : 'w-14 h-8 text-lb-muted'
-    }`;
+  // Item ativo ganha a pílula azul-acinzentada com ícone azul-claro
+  // (cores/dimensões no CSS .bottom-nav-item / .bottom-nav-item.active)
+  const item = (active: boolean) => `bottom-nav-item${active ? ' active' : ''}`;
 
   return (
     <nav
       aria-label="Navegação principal"
-      className="fixed bottom-0 inset-x-0 z-50 md:hidden h-14 bg-[#1c242c] border-t border-white/10 pb-[env(safe-area-inset-bottom)] flex items-center justify-around"
+      className="bottom-nav fixed bottom-0 inset-x-0 z-50 md:hidden"
     >
       {/* 1. Home / Catálogo */}
-      <Link to="/" aria-label="Home" className={pill(isHomeActive)}>
+      <Link to="/" aria-label="Home" className={item(isHomeActive)}>
         <Layers className={iconCls} />
       </Link>
 
       {/* 2. Search / Browse */}
-      <Link to="/search" aria-label="Search" className={pill(isSearchActive)}>
+      <Link to="/search" aria-label="Search" className={item(isSearchActive)}>
         <Search className={iconCls} />
       </Link>
 
       {/* 3. Botão central de Log: círculo vazado com borda verde, alinhado na barra */}
       <button
         onClick={() => openLogModal()}
-        aria-label="Log"
-        className="flex items-center justify-center w-14 h-8 cursor-pointer"
+        aria-label={t('nav_log')}
+        className="bottom-nav-add"
       >
-        <span className="w-6 h-6 rounded-full border-2 border-[#00e054] text-[#00e054] flex items-center justify-center">
+        <span className="bottom-nav-add-btn">
           <Plus className="w-4 h-4 stroke-[3]" />
         </span>
       </button>
 
       {/* 4. Activity */}
-      <Link to="/activity" aria-label="Activity" className={pill(isActivityActive)}>
+      <Link to="/activity" aria-label="Activity" className={item(isActivityActive)}>
         <Zap className={iconCls} />
       </Link>
 
@@ -74,8 +72,8 @@ export const BottomNav: React.FC = () => {
           Sem conta logada, o clique leva para /signin (tela de login), como no app Letterboxd */}
       <Link
         to={isAuthenticated ? `/${displayUsername}` : '/signin'}
-        aria-label={isAuthenticated ? 'Profile' : 'Sign in'}
-        className={pill(profileActive)}
+        aria-label={isAuthenticated ? t('nav_profile') : t('nav_sign_in')}
+        className={item(profileActive)}
       >
         {displayAvatar && !avatarError ? (
           <img

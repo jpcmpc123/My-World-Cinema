@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, LayoutGrid, List as ListIcon, SlidersHorizontal } from 'lucide-react';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
 import { PosterCard } from '../components/PosterCard';
@@ -55,6 +55,20 @@ export const BrowseResultsPage: React.FC = () => {
   const watchedFilter = searchParams.get('watched') || 'any';
   const watchlistFilter = searchParams.get('watchlist') || 'any';
   const backdropFilter = searchParams.get('backdrop') || 'any';
+  // Preset de vitrine vindo das seções da Home (Popular/Highest rated/…)
+  const preset = searchParams.get('preset') as
+    | 'popular_week'
+    | 'highest_rated'
+    | 'most_watched'
+    | 'most_anticipated'
+    | null;
+
+  // Itens passados via router state pela Home: mesma ordem do carrossel
+  const location = useLocation();
+  const locationState = location.state as { initialItems?: TMDBMovie[] } | null;
+  const initialItemsRef = useRef<TMDBMovie[] | null>(locationState?.initialItems ?? null);
+  // Só usamos os initialItems enquanto os filtros ainda forem os da navegação original
+  const initialParamsKeyRef = useRef<string>(searchParams.toString());
 
   const [viewMode, setViewMode] = useState<'grid' | 'cards'>('grid');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -84,6 +98,46 @@ export const BrowseResultsPage: React.FC = () => {
         };
         let next: GridItem[] = [];
 
+        // ---- Vitrines (preset) vindas das seções da Home: fonte única
+        // getSectionMedia garante ordem idêntica à Home; type=movie|tv NUNCA
+        // mistura filmes e séries (cada um bate apenas no seu /discover).
+        if (preset) {
+          const mediaType: 'movie' | 'tv' = type === 'tv' ? 'tv' : 'movie';
+          const res = await tmdb.getSectionMedia(mediaType, preset, pageNum, {
+            genreId: genre,
+            year,
+            decade,
+            providerId: service,
+            country,
+          });
+          next = res.results.map((m) => ({ movie: normTitle(m), tv: mediaType === 'tv' }));
+
+          // Seed inicial: se a Home passou os itens via router state e os
+          // filtros não mudaram, a grade começa com EXATAMENTE os mesmos
+          // pôsteres e ordem do carrossel, continuando a paginação sem dups.
+          if (
+            pageNum === 1 &&
+            initialItemsRef.current?.length &&
+            searchParams.toString() === initialParamsKeyRef.current
+          ) {
+            const seeded = initialItemsRef.current.map((m) => ({
+              movie: normTitle(m),
+              tv: mediaType === 'tv',
+            }));
+            const seededIds = new Set(seeded.map((s) => s.movie.id));
+            next = [...seeded, ...next.filter((i) => !seededIds.has(i.movie.id))];
+          }
+
+          setItems((prev) => {
+            const merged = pageNum === 1 ? next : [...prev, ...next];
+            const seen = new Set<number>();
+            return merged.filter((i) => (seen.has(i.movie.id) ? false : (seen.add(i.movie.id), true)));
+          });
+          setHasMore(next.length > 0 && pageNum < Math.min(res.total_pages || 1, 25));
+          return;
+        }
+
+        // ---- Resultados genéricos com filtros da URL
         if (type === 'tv') {
           const res = await tmdb.discoverTVBatch({ ...base, page: pageNum, pagesToFetch: 2 });
           next = res.results.map((m) => ({ movie: normTitle(m), tv: true }));
@@ -117,7 +171,7 @@ export const BrowseResultsPage: React.FC = () => {
         setLoading(false);
       }
     },
-    [genre, year, decade, service, language, country, sort, type, released],
+    [genre, year, decade, service, language, country, sort, type, released, preset, searchParams],
   );
 
   // Reload from scratch when the discovery params change
@@ -161,7 +215,7 @@ export const BrowseResultsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#14181c]">
       <div className="max-w-[950px] mx-auto">
-        <header className="bg-[#0a0c0f] sticky top-0 z-30 h-14 px-4 flex items-center justify-between">
+        <header className="bg-black sticky top-0 z-30 h-14 px-4 flex items-center justify-between">
           <div className="flex items-center gap-4 min-w-0">
             <button onClick={() => navigate(-1)} aria-label="Back" className="text-white shrink-0">
               <ArrowLeft className="w-5 h-5" />
@@ -194,12 +248,15 @@ export const BrowseResultsPage: React.FC = () => {
           <p className="text-center text-sm text-[#9ab] py-16">No results match these filters.</p>
         ) : (
           <div className="grid grid-cols-4 gap-1.5 px-2 py-2 bg-[#14181c]">
-            {visible.map(({ movie, tv }) => {
+            {visible.map(({ movie, tv }, index) => {
               const faded = fade && isMovieWatched(movie.id);
+              // Stagger sutil limitado aos 24 primeiros itens (não anima "faded")
+              const stagger = !faded && index < 24 ? { animationDelay: `${index * 28}ms` } : undefined;
               return (
                 <div
                   key={`${tv ? 'tv' : 'm'}-${movie.id}`}
-                  className={faded ? 'opacity-25' : undefined}
+                  className={faded ? 'opacity-25' : 'mw-page-in'}
+                  style={stagger}
                 >
                   <PosterCard
                     movie={movie}

@@ -4,15 +4,17 @@ import { ChevronLeft, ChevronRight, Eye, Star, Heart, ChevronDown } from 'lucide
 import { tmdb, type TMDBMovie } from '../services/tmdb';
 import { PosterCard } from '../components/PosterCard';
 import { MobileCatalogSections } from '../components/mobile/MobileCatalogSections';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const SeriesHubPage: React.FC = () => {
+  const { t } = useLanguage();
   const [popularSeries, setPopularSeries] = useState<TMDBMovie[]>([]);
   const [topRatedSeries, setTopRatedSeries] = useState<TMDBMovie[]>([]);
   const [justReviewedSeries, setJustReviewedSeries] = useState<TMDBMovie[]>([]);
   const [mostWatchedSeries, setMostWatchedSeries] = useState<TMDBMovie[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Search input in "FIND A SERIES"
+  // Search input in "{t('find_a_series').toUpperCase()}"
   const [findQuery, setFindQuery] = useState('');
   const [findResults, setFindResults] = useState<TMDBMovie[]>([]);
   const [, setIsSearching] = useState(false);
@@ -101,7 +103,7 @@ export const SeriesHubPage: React.FC = () => {
   const currentPopularBatch = popularSeries.slice(carouselIndex, carouselIndex + 4);
 
   return (
-    <div className="max-w-[950px] mx-auto px-4 py-6 space-y-8 select-none pb-20">
+    <div className="max-w-[950px] mx-auto px-4 pt-4 pb-0 md:pt-6 md:pb-20 space-y-8 select-none">
       {/* 0. 4 SEÇÕES MOBILE (estrutura idêntica à aba Films) */}
       <MobileCatalogSections
         basePath="/series"
@@ -112,11 +114,11 @@ export const SeriesHubPage: React.FC = () => {
         loading={loading}
       />
 
-      {/* 1. TOP BROWSE BAR (BROWSE BY, YEAR v, RATING v, POPULAR v, GENRE v, SERVICE v, FIND A SERIES) — desktop only */}
+      {/* 1. TOP BROWSE BAR (BROWSE BY, YEAR v, RATING v, POPULAR v, GENRE v, SERVICE v, {t('find_a_series').toUpperCase()}) — desktop only */}
       <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-lb-elevated pb-2.5 text-xs">
         {/* Left: BROWSE BY + Dropdowns */}
         <div ref={browseBarRef} className="flex flex-wrap items-center gap-3 font-semibold uppercase tracking-wider text-[11px] text-lb-muted">
-          <span className="text-lb-muted font-bold shrink-0">BROWSE BY</span>
+          <span className="text-lb-muted font-bold shrink-0">{t('browse_by').toUpperCase()}</span>
 
           {/* Grouped dropdown container, Letterboxd style */}
           <div className="inline-flex items-center border border-[#2c3440] rounded-[3px] divide-x divide-[#2c3440] bg-[#14181c]">
@@ -131,12 +133,12 @@ export const SeriesHubPage: React.FC = () => {
                   : 'text-[#9ab] hover:text-white'
               }`}
             >
-              <span>YEAR</span>
+              <span>{t('filter_year').toUpperCase()}</span>
               <ChevronDown className="w-3 h-3 text-lb-muted" />
             </button>
 
             {openDropdown === 'year' && (
-              <div className="absolute left-0 top-7 w-36 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 max-h-80 overflow-y-auto normal-case font-normal text-xs divide-y divide-lb-elevated/40">
+                <div className="absolute left-0 top-7 w-36 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 max-h-80 overflow-y-auto normal-case font-normal text-xs divide-y divide-lb-elevated/40 mw-pop-in">
                 <Link
                   to="/series"
                   onClick={() => setOpenDropdown(null)}
@@ -168,12 +170,12 @@ export const SeriesHubPage: React.FC = () => {
                   : 'text-[#9ab] hover:text-white'
               }`}
             >
-              <span>RATING</span>
+              <span>{t('filter_rating').toUpperCase()}</span>
               <ChevronDown className="w-3 h-3 text-lb-muted" />
             </button>
 
             {openDropdown === 'rating' && (
-              <div className="absolute left-0 top-7 w-44 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs">
+                <div className="absolute left-0 top-7 w-44 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs mw-pop-in">
                 <Link
                   to="/series/decade/2020s?sort=vote_average.desc"
                   onClick={() => setOpenDropdown(null)}
@@ -202,12 +204,12 @@ export const SeriesHubPage: React.FC = () => {
                   : 'text-[#9ab] hover:text-white'
               }`}
             >
-              <span>POPULAR</span>
+              <span>{t('filter_popular').toUpperCase()}</span>
               <ChevronDown className="w-3 h-3 text-lb-muted" />
             </button>
 
             {openDropdown === 'popular' && (
-              <div className="absolute left-0 top-7 w-36 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs">
+                <div className="absolute left-0 top-7 w-36 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs mw-pop-in">
                 <Link
                   to="/series/decade/2020s?sort=vote_count.desc"
                   onClick={() => setOpenDropdown(null)}
@@ -243,12 +245,12 @@ export const SeriesHubPage: React.FC = () => {
                   : 'text-[#9ab] hover:text-white'
               }`}
             >
-              <span>GENRE</span>
+              <span>{t('filter_genre').toUpperCase()}</span>
               <ChevronDown className="w-3 h-3 text-lb-muted" />
             </button>
 
             {openDropdown === 'genre' && (
-              <div className="absolute left-0 top-7 w-40 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 max-h-80 overflow-y-auto normal-case font-normal text-xs">
+                <div className="absolute left-0 top-7 w-40 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 max-h-80 overflow-y-auto normal-case font-normal text-xs mw-pop-in">
                 {tmdb.tvGenres.map((g) => (
                   <Link
                     key={g.id}
@@ -273,12 +275,12 @@ export const SeriesHubPage: React.FC = () => {
                   : 'text-[#9ab] hover:text-white'
               }`}
             >
-              <span>SERVICE</span>
+              <span>{t('filter_service').toUpperCase()}</span>
               <ChevronDown className="w-3 h-3 text-lb-muted" />
             </button>
 
             {openDropdown === 'service' && (
-              <div className="absolute left-0 top-7 w-44 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs">
+                <div className="absolute left-0 top-7 w-44 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs mw-pop-in">
                 {tmdb.streamingServices.map((s) => (
                   <Link
                     key={s.id}
@@ -308,7 +310,7 @@ export const SeriesHubPage: React.FC = () => {
             </button>
 
             {openDropdown === 'other' && (
-              <div className="absolute left-0 top-7 w-36 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs">
+                <div className="absolute left-0 top-7 w-36 bg-[#202830] border border-[#334150] rounded-xs shadow-2xl py-1 z-50 normal-case font-normal text-xs mw-pop-in">
                 <Link
                   to="/series/decade/2020s?genre=99"
                   onClick={() => setOpenDropdown(null)}
@@ -329,10 +331,10 @@ export const SeriesHubPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: FIND A SERIES search box */}
+        {/* Right: {t('find_a_series').toUpperCase()} search box */}
         <div ref={findRef} className="relative flex items-center gap-2">
           <span className="text-[11px] font-bold text-lb-muted uppercase tracking-wider shrink-0">
-            FIND A SERIES
+            {t('find_a_series').toUpperCase()}
           </span>
           <div className="relative">
             <input
@@ -344,7 +346,7 @@ export const SeriesHubPage: React.FC = () => {
             />
 
             {findResults.length > 0 && (
-              <div className="absolute right-0 top-8 w-64 bg-lb-surface border border-lb-elevated rounded shadow-2xl overflow-hidden z-50">
+                <div className="absolute right-0 top-8 w-64 bg-lb-surface border border-lb-elevated rounded shadow-2xl overflow-hidden z-50 mw-pop-in">
                 {findResults.map((m) => (
                   <Link
                     key={m.id}

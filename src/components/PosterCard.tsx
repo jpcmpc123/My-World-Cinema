@@ -1,10 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Heart, Star, MoreHorizontal } from 'lucide-react';
+import { Eye, Heart, Star } from 'lucide-react';
 import { tmdb } from '../services/tmdb';
 import { useApp } from '../context/AppContext';
 import { useLongPress } from '../hooks/useLongPress';
-import { ActionBottomSheet } from './ActionBottomSheet';
 
 interface PosterCardProps {
   movie: {
@@ -31,12 +30,10 @@ const PosterCardBase: React.FC<PosterCardProps> = ({
 }) => {
   const {
     isMovieWatched,
-    toggleWatched,
     isMovieLiked,
-    toggleLikeMovie,
     ratingsMap,
-    openLogModal,
     movieOverrides,
+    openActionSheet,
   } = useApp();
 
   // Custom poster override (Set film poster) applies site-wide
@@ -56,25 +53,22 @@ const PosterCardBase: React.FC<PosterCardProps> = ({
 
   const year = movie.release_date ? movie.release_date.slice(0, 4) : '';
 
-  const [actionsOpen, setActionsOpen] = React.useState(false);
+  // Fade-in do pôster: shimmer escuro enquanto carrega, imagem surge suave
+  const [isLoaded, setIsLoaded] = React.useState(false);
   const longPressHandlers = useLongPress(
     () => {
-      if (enableLongPressActions) setActionsOpen(true);
+      if (enableLongPressActions) {
+        openActionSheet({ id: movie.id, title: movie.title, release_date: movie.release_date });
+      }
     },
     { threshold: 500 }
   );
 
-  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
-    e.preventDefault();
-    e.stopPropagation();
-    action();
-  };
-
   return (
-    <div className={`group flex flex-col ${posterSizes[size]}`}>
+    <div className={`group flex flex-col ${posterSizes[size]} transition-all duration-200 md:hover:-translate-y-0.5 active:scale-[0.96] active:duration-150`}>
       {/* Poster Image Container */}
       <div
-        className="relative aspect-[2/3] rounded-[4px] bg-lb-surface overflow-hidden border border-white/15 ring-0 group-hover:ring-1 group-hover:ring-lb-green transition-all duration-200 shadow-md group-hover:shadow-[0_4px_20px_rgba(0,224,84,0.2)]"
+        className="relative aspect-[2/3] rounded-[4px] bg-lb-surface overflow-hidden border border-white/12 ring-0 hover:ring-2 hover:ring-[#00e054] group-hover:ring-2 group-hover:ring-[#00e054] transition-all duration-200 shadow-md"
         {...(enableLongPressActions ? longPressHandlers : {})}
         style={enableLongPressActions ? { touchAction: 'manipulation' } : undefined}
       >
@@ -86,15 +80,22 @@ const PosterCardBase: React.FC<PosterCardProps> = ({
 
         <Link to={`${tv ? "/tv" : "/film"}/${movie.id}`} className="block w-full h-full">
           {displayPosterPath ? (
-            <img
-              src={tmdb.getImageUrl(displayPosterPath, 'w342')}
-              srcSet={`${tmdb.getImageUrl(displayPosterPath, 'w185')} 185w, ${tmdb.getImageUrl(displayPosterPath, 'w342')} 342w, ${tmdb.getImageUrl(displayPosterPath, 'w500')} 500w`}
-              sizes="(max-width: 640px) 25vw, (max-width: 1024px) 16vw, 160px"
-              alt={movie.title}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
-              decoding="async"
-            />
+            <>
+              {/* Skeleton shimmer escuro atrás do pôster enquanto carrega */}
+              {!isLoaded && <div className="absolute inset-0 mw-shimmer" aria-hidden="true" />}
+              <img
+                src={tmdb.getImageUrl(displayPosterPath, 'w342')}
+                srcSet={`${tmdb.getImageUrl(displayPosterPath, 'w185')} 185w, ${tmdb.getImageUrl(displayPosterPath, 'w342')} 342w, ${tmdb.getImageUrl(displayPosterPath, 'w500')} 500w`}
+                sizes="(max-width: 640px) 25vw, (max-width: 1024px) 16vw, 160px"
+                alt={movie.title}
+                onLoad={() => setIsLoaded(true)}
+                className={`w-full h-full object-cover transition-opacity duration-300 ${
+                  isLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                loading="lazy"
+                decoding="async"
+              />
+            </>
           ) : (
             <div className="w-full h-full flex items-center justify-center p-2 text-center text-[11px] text-lb-muted bg-lb-surface">
               <span className="line-clamp-3">{movie.title}</span>
@@ -102,57 +103,8 @@ const PosterCardBase: React.FC<PosterCardProps> = ({
           )}
         </Link>
 
-        {/* Hover Overlay estilo MyWorld — wrapper sem eventos; apenas a pill do rodapé é clicável */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-end justify-center">
-          {/* Fundo escurecido (puro pointer-events-none, o link do pôster continua clicável) */}
-          <div className="absolute inset-0 bg-black/50" />
-
-          {/* Pill do rodapé com 3 ações — compacta por padrão, maior quando o pôster é grande */}
-          <div className="relative z-10 mb-1.5 lg:mb-2 flex items-center gap-0.5 lg:gap-1 bg-black/70 backdrop-blur-xs rounded-full px-1 py-0.5 lg:px-1.5 lg:py-1 pointer-events-auto">
-            <button
-              onClick={(e) => handleActionClick(e, () => toggleWatched(movie.id))}
-              title={watched ? 'Watched' : 'Mark as watched'}
-              aria-label={watched ? `Marked ${movie.title} as watched` : `Mark ${movie.title} as watched`}
-              className={`p-0.5 lg:p-1.5 rounded-full transition-colors ${
-                watched ? 'text-lb-green' : 'text-lb-text hover:text-white'
-              }`}
-            >
-              <Eye className="w-3 h-3 lg:w-3.5 lg:h-3.5" />
-            </button>
-
-            <button
-              onClick={(e) => handleActionClick(e, () => toggleLikeMovie(movie.id))}
-              title={liked ? 'Liked' : 'Like this film'}
-              aria-label={liked ? `Unlike ${movie.title}` : `Like ${movie.title}`}
-              className={`p-0.5 lg:p-1.5 rounded-full transition-colors ${
-                liked ? 'text-lb-orange' : 'text-lb-text hover:text-lb-orange'
-              }`}
-            >
-              <Heart className={`w-3 h-3 lg:w-3.5 lg:h-3.5 ${liked ? 'fill-lb-orange' : ''}`} />
-            </button>
-
-            <button
-              onClick={(e) =>
-                handleActionClick(e, () =>
-                  openLogModal({
-                    id: movie.id,
-                    title: movie.title,
-                    poster_path: movie.poster_path,
-                    release_date: movie.release_date || '',
-                  })
-                )
-              }
-              title="Log this film"
-              aria-label={`Log ${movie.title}`}
-              className="p-0.5 lg:p-1.5 rounded-full text-lb-text hover:text-white transition-colors"
-            >
-              <MoreHorizontal className="w-3 h-3 lg:w-3.5 lg:h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* User Status Indicators (Corner badges when not hovered) */}
-        <div className="absolute bottom-1 right-1 flex items-center gap-1 pointer-events-none group-hover:opacity-0 transition-opacity">
+        {/* User Status Indicators (Corner badges) */}
+        <div className="absolute bottom-1 right-1 flex items-center gap-1 pointer-events-none transition-opacity">
           {watched && (
             <div className="bg-lb-green text-lb-bg p-0.5 rounded-full shadow">
               <Eye className="w-2.5 h-2.5" />
@@ -191,14 +143,6 @@ const PosterCardBase: React.FC<PosterCardProps> = ({
             ) : null}
           </div>
         </div>
-      )}
-
-      {enableLongPressActions && (
-        <ActionBottomSheet
-          open={actionsOpen}
-          onClose={() => setActionsOpen(false)}
-          movie={{ id: movie.id, title: movie.title, release_date: movie.release_date }}
-        />
       )}
     </div>
   );

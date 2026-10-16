@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Heart, Clock, Minus, Star, PenLine, ListPlus, Image as ImageIcon, Share2, ImagePlus } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import { tmdb } from '../services/tmdb';
 
 export interface ActionBottomSheetTarget {
@@ -36,6 +38,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
   onPickImage,
 }) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const {
     isMovieWatched,
     toggleWatched,
@@ -59,6 +62,8 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
   const draggingRef = useRef(false);
   const lastTapRef = useRef(0);
   const [posterPath, setPosterPath] = useState<string | null>(posterCache[movie.id] ?? null);
+  // Contador de "pop" para os ícones Watch/Like/Watchlist
+  const [bump, setBump] = useState(0);
 
   // Lazily resolve the film's poster for the "View poster" row (skip row if unavailable)
   useEffect(() => {
@@ -181,25 +186,26 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     'w-full text-left px-4 py-3 text-sm text-white flex items-center gap-3 hover:bg-white/5 transition-colors';
   const rowIconClass = 'w-4 h-4 text-lb-muted shrink-0';
 
-  return (
+  return createPortal(
     <div
-      className={`fixed inset-0 z-[70] ${open ? '' : 'pointer-events-none'}`}
+      className={`fixed inset-0 z-50 md:hidden ${open ? '' : 'pointer-events-none'}`}
       aria-hidden={!open}
     >
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/70 backdrop-blur-xs transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-black/70 backdrop-blur-xs transition-opacity duration-250 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={onClose}
       />
 
-      {/* Sheet */}
+      {/* Sheet — a folga inferior (65px + safe-area) mantém a última linha acima
+          da BottomNav fixa de 60px; max-height evita estourar telas baixas. */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label={movie.title}
-        className={`absolute bottom-0 left-0 right-0 bg-[#2c3440] rounded-t-2xl shadow-2xl transform transition-transform duration-300 ease-out pb-[env(safe-area-inset-bottom)] ${
+        className={`absolute bottom-0 left-0 right-0 bg-[#2c3440] rounded-t-2xl shadow-2xl transform transition-transform duration-[250ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] max-h-[85vh] overflow-y-auto pb-[calc(65px+env(safe-area-inset-bottom,0px))] ${
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
@@ -214,44 +220,54 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
           {year && <p className="text-lb-muted text-xs mt-0.5">{year}</p>}
         </div>
 
-        {/* Three big status buttons */}
+        {/* Three big status buttons (ícone faz "pop" sutil ao alternar) */}
         <div className="flex items-stretch px-4 py-2 border-y border-white/5">
           <button
-            onClick={() => toggleWatched(movie.id)}
+            onClick={() => {
+              setBump((k) => k + 1);
+              toggleWatched(movie.id);
+            }}
             aria-label={watched ? 'Marked as watched' : 'Mark as watched'}
             className={`flex-1 flex flex-col items-center gap-1 py-2 transition-colors ${
               watched ? 'text-[#00e054]' : 'text-lb-text hover:text-white'
             }`}
           >
-            <Eye className="w-7 h-7" />
+            <Eye key={`w${bump}`} className={`w-7 h-7 ${watched && bump > 0 ? 'mw-icon-pop' : ''}`} />
             <span className="text-[10px] uppercase tracking-wide text-lb-text">Watch</span>
           </button>
           <button
-            onClick={() => toggleLikeMovie(movie.id)}
+            onClick={() => {
+              setBump((k) => k + 1);
+              toggleLikeMovie(movie.id);
+            }}
             aria-label={liked ? 'Unlike' : 'Like'}
             className={`flex-1 flex flex-col items-center gap-1 py-2 transition-colors ${
               liked ? 'text-orange-500' : 'text-lb-text hover:text-white'
             }`}
           >
-            <Heart className={`w-7 h-7 ${liked ? 'fill-orange-500' : ''}`} />
+            <Heart
+              key={`l${bump}`}
+              className={`w-7 h-7 ${liked ? 'fill-orange-500' : ''} ${liked && bump > 0 ? 'mw-icon-pop' : ''}`}
+            />
             <span className="text-[10px] uppercase tracking-wide text-lb-text">Like</span>
           </button>
           <button
-            onClick={() =>
+            onClick={() => {
+              setBump((k) => k + 1);
               toggleWatchlist({
                 id: movie.id,
                 title: movie.title,
                 poster_path: posterPath,
                 release_date: movie.release_date ?? '',
-              })
-            }
+              });
+            }}
             aria-label={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
             className={`flex-1 flex flex-col items-center gap-1 py-2 transition-colors ${
               inWatchlist ? 'text-[#40bcf4]' : 'text-lb-text hover:text-white'
             }`}
           >
             <span className="relative">
-              <Clock className="w-7 h-7" />
+              <Clock key={`wl${bump}`} className={`w-7 h-7 ${inWatchlist && bump > 0 ? 'mw-icon-pop' : ''}`} />
               {inWatchlist && (
                 <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 rounded-full bg-[#40bcf4] flex items-center justify-center">
                   <Minus className="w-2.5 h-2.5 text-[#2c3440]" strokeWidth={3} />
@@ -311,7 +327,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
             }}
           >
             <PenLine className={rowIconClass} />
-            Review or log…
+            {t('review_or_log')}
           </button>
           <button
             className={`${rowClass} border-t border-white/5`}
@@ -321,12 +337,12 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
             }}
           >
             <ListPlus className={rowIconClass} />
-            Add to lists
+            {t('add_to_lists')}
           </button>
           {posterPath && (
             <button className={`${rowClass} border-t border-white/5`} onClick={handleViewPoster}>
               <ImageIcon className={rowIconClass} />
-              View poster
+              {t('view_poster')}
             </button>
           )}
           {onPickImage && (
@@ -339,7 +355,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
                 }}
               >
                 <ImagePlus className={rowIconClass} />
-                Set film poster
+                {t('set_poster')}
               </button>
               <button
                 className={`${rowClass} border-t border-white/5`}
@@ -349,16 +365,17 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
                 }}
               >
                 <ImagePlus className={rowIconClass} />
-                Set film backdrop
+                {t('set_backdrop')}
               </button>
             </>
           )}
           <button className={`${rowClass} border-t border-white/5`} onClick={handleShare}>
             <Share2 className={rowIconClass} />
-            Share…
+            {t('share')}…
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

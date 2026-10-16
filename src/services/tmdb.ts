@@ -11,6 +11,19 @@ if (!TMDB_API_KEY || !TMDB_ACCESS_TOKEN) {
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
+// ---------------------------------------------------------------------------
+// Idioma global da API (pt-BR / en-US) — controlado pelo seletor de idioma.
+// Todas as chamadas usam esse idioma por padrão; textos vazios (overview,
+// tagline) fazem fallback para en-US no detalhe do filme/série.
+// ---------------------------------------------------------------------------
+let tmdbLanguage = 'en-US';
+export function setTmdbLanguage(lang: string) {
+  tmdbLanguage = lang === 'pt-BR' ? 'pt-BR' : 'en-US';
+}
+export function getTmdbLanguage() {
+  return tmdbLanguage;
+}
+
 export interface TMDBMovie {
   id: number;
   title: string;
@@ -90,6 +103,36 @@ export interface TMDBMovieDetails extends TMDBMovie {
       type: string;
     }[];
   };
+  // Datas de lançamento por país (filmes) — aba "Releases"
+  release_dates?: {
+    results: {
+      iso_3166_1: string;
+      release_dates: {
+        certification: string;
+        iso_639_1: string;
+        note: string;
+        release_date: string;
+        type: number; // 1=Premiere 2=TheatricalLtd 3=Theatrical 4=Digital 5=Physical 6=TV
+      }[];
+    }[];
+  };
+  // Classificação indicativa por país (séries)
+  content_ratings?: {
+    results: { iso_3166_1: string; rating: string }[];
+  };
+  external_ids?: {
+    imdb_id?: string | null;
+  };
+  // Filmes usam `keywords`; séries usam `results`
+  keywords?: {
+    keywords?: { id: number; name: string }[];
+    results?: { id: number; name: string }[];
+  };
+  alternative_titles?: {
+    titles?: { iso_3166_1: string; title: string; type: string }[];
+    results?: { iso_3166_1: string; title: string; type: string }[];
+  };
+  original_language?: string;
 }
 
 export interface TMDBImage {
@@ -139,11 +182,120 @@ export interface TMDBPersonMovieCredits {
   crew: TMDBPersonMovieCredit[];
 }
 
+/**
+ * Pessoa + filmografia numa única chamada
+ * (`/person/{id}?append_to_response=movie_credits`) — usada pela página de
+ * perfil (abas Bio / Ator / cargos de equipe).
+ */
+export interface TMDBPersonDetails extends TMDBPerson {
+  movie_credits?: TMDBPersonMovieCredits;
+}
+
 export interface TMDBResponse<T> {
   page: number;
   results: T[];
   total_pages: number;
   total_results: number;
+}
+
+// ---------------------------------------------------------------------------
+// BUSCA (página /search) — o /search/movie e /search/tv NÃO devolvem diretores
+// nem títulos alternativos. Estes tipos carregam o resultado já enriquecido.
+// ---------------------------------------------------------------------------
+export interface TMDBSearchResult {
+  id: number;
+  /** 'movie' | 'tv' — nunca misturamos os dois numa mesma lista. */
+  media_type: 'movie' | 'tv';
+  title: string;
+  original_title: string;
+  release_date: string;
+  poster_path: string | null;
+  overview: string;
+  vote_average: number;
+  popularity: number;
+  directors: string[];
+  alternativeTitles: string[];
+}
+
+export interface TMDBSearchPerson {
+  id: number;
+  name: string;
+  profile_path: string | null;
+  known_for_department?: string;
+  popularity?: number;
+  known_for?: { id: number; title?: string; name?: string; media_type?: string }[];
+}
+
+/** Resposta mínima de /movie|tv/{id}?append_to_response=credits,alternative_titles */
+interface TMDBEnrichmentPayload {
+  created_by?: { id: number; name: string }[];
+  credits?: { crew?: { id: number; name: string; job?: string }[] };
+  alternative_titles?: { titles?: { title: string }[] };
+}
+
+/** Quantos itens da 1ª página recebem diretores/títulos alternativos. */
+const SEARCH_ENRICH_LIMIT = 15;
+
+/**
+ * Diretores + títulos alternativos de UM título.
+ * Em séries, "Directed by" usa os criadores (created_by) + diretores de episódios.
+ * Qualquer falha degrada para arrays vazios — a lista nunca quebra por isso.
+ */
+async function fetchSearchEnrichment(
+  id: number,
+  mediaType: 'movie' | 'tv'
+): Promise<{ directors: string[]; alternativeTitles: string[] }> {
+  try {
+    const details = await fetchFromTMDB<TMDBEnrichmentPayload>(`/${mediaType}/${id}`, {
+      append_to_response: 'credits,alternative_titles',
+    });
+    const crewDirectors = (details.credits?.crew ?? [])
+      .filter((c) => c.job === 'Director')
+      .map((c) => c.name);
+    const created = (details.created_by ?? []).map((c) => c.name);
+    const directors = Array.from(
+      new Set(mediaType === 'tv' ? [...created, ...crewDirectors] : crewDirectors)
+    );
+    const alternativeTitles = Array.from(
+      new Set(
+        (details.alternative_titles?.titles ?? [])
+          .map((t) => t.title)
+          .filter((t): t is string => Boolean(t && t.trim()))
+      )
+    );
+    return { directors: directors.slice(0, 4), alternativeTitles };
+  } catch {
+    return { directors: [], alternativeTitles: [] };
+  }
+}
+
+/** Normaliza filme OU série para o formato da lista de resultados. */
+function normalizeSearchItem(m: TMDBMovie, mediaType: 'movie' | 'tv'): TMDBSearchResult {
+  const raw = m as unknown as Record<string, unknown>;
+  return {
+    id: m.id,
+    media_type: mediaType,
+    title: m.title || (raw.name as string) || '',
+    original_title: m.original_title || (raw.original_name as string) || '',
+    release_date: m.release_date || (raw.first_air_date as string) || '',
+    poster_path: m.poster_path,
+    overview: m.overview ?? '',
+    vote_average: m.vote_average ?? 0,
+    popularity: m.popularity ?? 0,
+    directors: [],
+    alternativeTitles: [],
+  };
+}
+
+/** Enriquece (em paralelo) apenas os primeiros SEARCH_ENRICH_LIMIT itens. */
+async function enrichSearchItems(items: TMDBSearchResult[]): Promise<TMDBSearchResult[]> {
+  return Promise.all(
+    items.map(async (item, index) => {
+      if (index >= SEARCH_ENRICH_LIMIT) return item;
+      const extra = await fetchSearchEnrichment(item.id, item.media_type);
+      return { ...item, ...extra };
+    })
+  );
 }
 
 // Cache em memória com TTL: evita refazer chamadas idênticas do TMDb ao
@@ -164,6 +316,11 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string 
   const url = new URL(`${BASE_URL}${endpoint}`);
   // Add API Key as fallback alongside Bearer token
   url.searchParams.append('api_key', TMDB_API_KEY);
+
+  // Idioma global por padrão (pt-BR / en-US), salvo override explícito
+  if (params.language === undefined) {
+    url.searchParams.append('language', tmdbLanguage);
+  }
 
   Object.entries(params).forEach(([key, val]) => {
     if (val !== undefined && val !== null && val !== '') {
@@ -224,6 +381,8 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string 
 // pelo filtro de nacionalidade (with_origin_country).
 // ---------------------------------------------------------------------------
 export const TMDB_TODAY = new Date().toISOString().split('T')[0];
+/** Ano corrente: anos/décadas acima dele são "futuros" (sem votos ainda) */
+const CURRENT_YEAR = new Date().getFullYear();
 export const TMDB_TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
 // Gêneros de TV banidos das vitrines e filtros: Talk (Jimmy Fallon, Seth
@@ -285,26 +444,39 @@ export const tmdb = {
   },
 
   async getPopular(page = 1): Promise<TMDBResponse<TMDBMovie>> {
-    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/movie/popular', { page, language: 'en-US' });
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/movie/popular', { page });
   },
 
   async getTopRated(page = 1): Promise<TMDBResponse<TMDBMovie>> {
-    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/movie/top_rated', { page, language: 'en-US' });
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/movie/top_rated', { page });
   },
 
   async getNowPlaying(page = 1): Promise<TMDBResponse<TMDBMovie>> {
-    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/movie/now_playing', { page, language: 'en-US' });
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/movie/now_playing', { page });
   },
 
   async getTrending(timeWindow: 'day' | 'week' = 'week'): Promise<TMDBResponse<TMDBMovie>> {
-    return fetchFromTMDB<TMDBResponse<TMDBMovie>>(`/trending/movie/${timeWindow}`, { language: 'en-US' });
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>(`/trending/movie/${timeWindow}`);
   },
 
   async getMovieDetails(id: number): Promise<TMDBMovieDetails> {
-    return fetchFromTMDB<TMDBMovieDetails>(`/movie/${id}`, {
-      append_to_response: 'credits,similar,recommendations,watch/providers,videos',
-      language: 'en-US',
+    const movie = await fetchFromTMDB<TMDBMovieDetails>(`/movie/${id}`, {
+      append_to_response: 'credits,similar,recommendations,watch/providers,videos,release_dates,external_ids,keywords,alternative_titles',
     });
+    // Fallback pt-BR → en-US quando sinopse/tagline vêm vazias (filmes inéditos)
+    if (tmdbLanguage !== 'en-US' && (!movie.overview || !movie.tagline)) {
+      try {
+        const en = await fetchFromTMDB<TMDBMovieDetails>(`/movie/${id}`, {
+          language: 'en-US',
+          append_to_response: 'credits',
+        });
+        if (!movie.overview) movie.overview = en.overview;
+        if (!movie.tagline) movie.tagline = en.tagline;
+      } catch {
+        /* mantém vazio */
+      }
+    }
+    return movie;
   },
 
   async getMovieImages(id: number): Promise<TMDBMovieImages> {
@@ -317,7 +489,6 @@ export const tmdb = {
     return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/search/tv', {
       query,
       page,
-      language: 'en-US',
       include_adult: 'false',
     });
   },
@@ -326,17 +497,86 @@ export const tmdb = {
     return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/search/movie', {
       query,
       page,
-      language: 'en-US',
       include_adult: 'false',
     });
   },
 
+  // -------------------------------------------------------------------------
+  // Página de RESULTADOS DE BUSCA (/search) — dados completos estilo Letterboxd
+  // -------------------------------------------------------------------------
+
+  /** Pessoas (aba "Cast, Crew or Studios"). */
+  async searchPeople(query: string, page = 1): Promise<TMDBResponse<TMDBSearchPerson>> {
+    return fetchFromTMDB<TMDBResponse<TMDBSearchPerson>>('/search/person', {
+      query,
+      page,
+      include_adult: 'false',
+    });
+  },
+
+  /** Um único tipo (aba Films ou Series), enriquecido com diretores/títulos alternativos. */
+  async searchEnriched(
+    query: string,
+    mediaType: 'movie' | 'tv',
+    page = 1
+  ): Promise<TMDBSearchResult[]> {
+    const res = await fetchFromTMDB<TMDBResponse<TMDBMovie>>(
+      mediaType === 'movie' ? '/search/movie' : '/search/tv',
+      { query, page, include_adult: 'false' }
+    );
+    const normalized = res.results.map((m) => normalizeSearchItem(m, mediaType));
+    return enrichSearchItems(normalized);
+  },
+
+  /** Aba "All": filmes (ordem de relevância) seguidos das séries — nunca misturados. */
+  async searchMultiEnriched(query: string, page = 1): Promise<TMDBSearchResult[]> {
+    const [moviesRes, tvRes] = await Promise.all([
+      fetchFromTMDB<TMDBResponse<TMDBMovie>>('/search/movie', {
+        query,
+        page,
+        include_adult: 'false',
+      }).catch(() => null),
+      fetchFromTMDB<TMDBResponse<TMDBMovie>>('/search/tv', {
+        query,
+        page,
+        include_adult: 'false',
+      }).catch(() => null),
+    ]);
+    const movies = (moviesRes?.results ?? []).map((m) => normalizeSearchItem(m, 'movie'));
+    const series = (tvRes?.results ?? []).map((m) => normalizeSearchItem(m, 'tv'));
+    return enrichSearchItems([...movies, ...series]);
+  },
+
   async getPerson(id: number): Promise<TMDBPerson> {
-    return fetchFromTMDB<TMDBPerson>(`/person/${id}`, { language: 'en-US' });
+    return fetchFromTMDB<TMDBPerson>(`/person/${id}`);
   },
 
   async getPersonMovieCredits(id: number): Promise<TMDBPersonMovieCredits> {
-    return fetchFromTMDB<TMDBPersonMovieCredits>(`/person/${id}/movie_credits`, { language: 'en-US' });
+    return fetchFromTMDB<TMDBPersonMovieCredits>(`/person/${id}/movie_credits`);
+  },
+
+  /**
+   * Perfil completo da pessoa em UMA requisição (perfil + filmografia).
+   * Se a biografia em pt-BR vier vazia (comum em nomes menos conhecidos),
+   * refaz a chamada em en-US — a aba Bio nunca fica sem texto.
+   */
+  async getPersonDetails(id: number): Promise<TMDBPersonDetails> {
+    const person = await fetchFromTMDB<TMDBPersonDetails>(`/person/${id}`, {
+      append_to_response: 'movie_credits',
+    });
+    if (tmdbLanguage !== 'en-US' && !person.biography) {
+      try {
+        const en = await fetchFromTMDB<TMDBPersonDetails>(`/person/${id}`, {
+          language: 'en-US',
+          append_to_response: 'movie_credits',
+        });
+        if (!person.biography) person.biography = en.biography;
+        if (!person.movie_credits && en.movie_credits) person.movie_credits = en.movie_credits;
+      } catch {
+        /* mantém vazio — a Bio mostra aviso de indisponível */
+      }
+    }
+    return person;
   },
 
   streamingServices: [
@@ -376,21 +616,27 @@ export const tmdb = {
     /** Gêneros excluídos no servidor (ex.: '99,10402' p/ docs/musicais) */
     withoutGenres?: string;
   }): Promise<TMDBResponse<TMDBMovie>> {
+    // Ano/década futuros (ex.: 2028) ainda não têm votos: com o piso de votos
+    // o TMDb retorna 0 resultados. Nesses casos o piso é omitido.
+    const futureYear =
+      (params.year && params.year > CURRENT_YEAR) ||
+      (params.decade && params.decade + 9 > CURRENT_YEAR);
+
     const apiParams: Record<string, string | number | undefined> = {
       page: params.page || 1,
       sort_by: params.sortBy || 'popularity.desc',
       // TMDB bug: vote_count.gte + lançamentos futuros (upcoming) = 0 resultados.
       // Quando há limite de data futura, omitimos o piso de votos.
-      'vote_count.gte': params.releaseDateGte
-        ? undefined
-        : params.minVotes ??
-          (params.sortBy?.includes('vote_average')
-            ? 200
-            : params.sortBy?.includes('vote_count')
-              ? 100
-              : 30),
+      'vote_count.gte':
+        params.releaseDateGte || futureYear
+          ? undefined
+          : params.minVotes ??
+            (params.sortBy?.includes('vote_average')
+              ? 200
+              : params.sortBy?.includes('vote_count')
+                ? 100
+                : 30),
       include_adult: 'false',
-      language: 'en-US',
     };
 
     if (params.withoutGenres) {
@@ -475,15 +721,15 @@ export const tmdb = {
   // ===================== TV / SERIES =====================
 
   async getPopularTV(page = 1): Promise<TMDBResponse<TMDBMovie>> {
-    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/tv/popular', { page, language: 'en-US' });
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/tv/popular', { page });
   },
 
   async getTopRatedTV(page = 1): Promise<TMDBResponse<TMDBMovie>> {
-    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/tv/top_rated', { page, language: 'en-US' });
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>('/tv/top_rated', { page });
   },
 
   async getTrendingTV(timeWindow: 'day' | 'week' = 'week'): Promise<TMDBResponse<TMDBMovie>> {
-    return fetchFromTMDB<TMDBResponse<TMDBMovie>>(`/trending/tv/${timeWindow}`, { language: 'en-US' });
+    return fetchFromTMDB<TMDBResponse<TMDBMovie>>(`/trending/tv/${timeWindow}`);
   },
 
   async discoverTV(params: {
@@ -511,15 +757,20 @@ export const tmdb = {
         ? params.withoutGenres
         : [TV_EXCLUDED_GENRES, params.withoutGenres].filter(Boolean).join(',');
 
+    // Ano/década futuros: sem votos ainda → omite o piso (senão retorna 0).
+    const futureYear =
+      (params.year && params.year > CURRENT_YEAR) ||
+      (params.decade && params.decade + 9 > CURRENT_YEAR);
+
     const apiParams: Record<string, string | number | undefined> = {
       page: params.page || 1,
       sort_by: params.sortBy || 'popularity.desc',
       // TMDB bug: vote_count.gte + estreias futuras (upcoming) = 0 resultados.
-      'vote_count.gte': params.releaseDateGte
-        ? undefined
-        : params.minVotes ?? (params.sortBy?.includes('vote_average') ? 100 : 20),
+      'vote_count.gte':
+        params.releaseDateGte || futureYear
+          ? undefined
+          : params.minVotes ?? (params.sortBy?.includes('vote_average') ? 100 : 20),
       include_adult: 'false',
-      language: 'en-US',
       without_genres: antiGenres,
     };
 
@@ -587,12 +838,79 @@ export const tmdb = {
   },
 
   // ---------------------------------------------------------------------
+  // FONTE ÚNICA DE DADOS DAS VITRINES — usada pelos carrosséis da Home E
+  // pela página /browse/results (ordem 100% idêntica + paginação contínua).
+  // ---------------------------------------------------------------------
+  async getSectionMedia(
+    type: 'movie' | 'tv',
+    preset: 'popular_week' | 'highest_rated' | 'most_watched' | 'most_anticipated',
+    page = 1,
+    extraFilters: {
+      genreId?: number;
+      year?: number;
+      decade?: number;
+      providerId?: number;
+      country?: string;
+      language?: string;
+    } = {},
+  ): Promise<{ results: TMDBMovie[]; total_pages: number; total_results: number }> {
+    const discover = type === 'tv' ? this.discoverTVBatch : this.discoverMoviesBatch;
+    const minVotesPopular = type === 'tv' ? 30 : 50;
+
+    const presetParams = {
+      popular_week: {
+        sortBy: 'popularity.desc',
+        releaseDateLte: TMDB_TODAY,
+        minVotes: minVotesPopular,
+      },
+      highest_rated: {
+        sortBy: 'vote_average.desc',
+        releaseDateLte: TMDB_TODAY,
+        minVotes: type === 'tv' ? 500 : 1500,
+        // filmes: sem documentário/musical de nota inflada;
+        // séries já banem talk/news/reality por padrão
+        withoutGenres: type === 'movie' ? ('99,10402' as string | undefined) : undefined,
+      },
+      most_watched: {
+        sortBy: 'vote_count.desc',
+        releaseDateLte: TMDB_TODAY,
+        minVotes: type === 'tv' ? 100 : 500,
+      },
+      most_anticipated: {
+        sortBy: 'popularity.desc',
+        // somente estreias futuras (a partir de amanhã) — servidor
+        releaseDateGte: TMDB_TOMORROW,
+      },
+    }[preset];
+
+    const res = await discover.call(this, {
+      ...extraFilters,
+      ...presetParams,
+      page,
+      pagesToFetch: 1,
+    });
+
+    // Pós-filtro JS obrigatório por preset
+    const gate: (m: TMDBMovie) => boolean =
+      preset === 'most_anticipated'
+        ? isFuture
+        : preset === 'highest_rated'
+          ? (m) => isReleasedWithVotes(m, type === 'tv' ? 500 : 1500)
+          : (m) => isReleasedWithVotes(m, preset === 'most_watched' ? 1 : minVotesPopular);
+
+    return { ...res, results: res.results.filter(gate) };
+  },
+
+  // ---------------------------------------------------------------------
   // Seções curadas das abas Films/Series (padrão app Letterboxd).
   // Regras OBRIGATÓRIAS (validadas no servidor E novamente em JS):
   //  - Popular/Highest rated/Most watched: APENAS títulos já lançados
   //    (data <= TODAY) com o piso de votos da seção.
   //  - Most anticipated: APENAS inéditos (estreia > TODAY), dupla checagem
   //    em JS e NUNCA compartilhando itens com Popular/Most watched.
+  //
+  // As 4 seções passam por getSectionMedia para que /browse/results exiba
+  // exatamente a mesma ordem da Home ao abrir a partir de uma vitrine.
   // ---------------------------------------------------------------------
 
   /** Aba Films: Popular / Highest rated / Most watched / Most anticipated */
@@ -602,38 +920,20 @@ export const tmdb = {
     mostWatched: TMDBMovie[];
     mostAnticipated: TMDBMovie[];
   }> {
-    const [trendingRes, ratedRes, watchedRes, anticipatedRes] = await Promise.all([
-      fetchFromTMDB<TMDBResponse<TMDBMovie>>('/trending/movie/week', { language: 'en-US' }),
-      this.discoverMoviesBatch({
-        sortBy: 'vote_average.desc',
-        minVotes: 1500,
-        // sem documentários/musicais de nota inflada; só lançados
-        withoutGenres: '99,10402',
-        releaseDateLte: TMDB_TODAY,
-        pagesToFetch: 2,
-      }),
-      this.discoverMoviesBatch({
-        sortBy: 'vote_count.desc',
-        releaseDateLte: TMDB_TODAY,
-        minVotes: 500,
-        pagesToFetch: 1,
-      }),
-      this.discoverMoviesBatch({
-        sortBy: 'popularity.desc',
-        // somente estreias futuras (a partir de amanhã) — servidor
-        releaseDateGte: TMDB_TOMORROW,
-        pagesToFetch: 1,
-      }),
+    const [popRes, ratedRes, watchedRes, anticipatedRes] = await Promise.all([
+      this.getSectionMedia('movie', 'popular_week', 1),
+      this.getSectionMedia('movie', 'highest_rated', 1),
+      this.getSectionMedia('movie', 'most_watched', 1),
+      this.getSectionMedia('movie', 'most_anticipated', 1),
     ]);
 
-    // Pós-filtros JS obrigatórios: nada sem estrear entra; inéditos não vazam
-    const popular = trendingRes.results.filter((m) => isReleasedWithVotes(m, 50));
-    const highestRated = ratedRes.results.filter((m) => isReleasedWithVotes(m, 1500));
-    const mostWatched = watchedRes.results.filter((m) => isReleasedWithVotes(m, 1));
+    const popular = popRes.results;
+    const highestRated = ratedRes.results;
+    const mostWatched = watchedRes.results;
 
     // Desduplicação: Most anticipated nunca compartilha itens das outras vitrines
     const seenIds = new Set([...popular, ...highestRated, ...mostWatched].map((m) => m.id));
-    const mostAnticipated = anticipatedRes.results.filter((m) => isFuture(m) && !seenIds.has(m.id));
+    const mostAnticipated = anticipatedRes.results.filter((m) => !seenIds.has(m.id));
 
     return { popular, highestRated, mostWatched, mostAnticipated };
   },
@@ -645,33 +945,19 @@ export const tmdb = {
     mostWatched: TMDBMovie[];
     mostAnticipated: TMDBMovie[];
   }> {
-    const [trendingRes, ratedRes, watchedRes, anticipatedRes] = await Promise.all([
-      fetchFromTMDB<TMDBResponse<TMDBMovie>>('/trending/tv/week', { language: 'en-US' }),
-      this.discoverTVBatch({
-        sortBy: 'vote_average.desc',
-        minVotes: 500,
-        releaseDateLte: TMDB_TODAY,
-        pagesToFetch: 2,
-      }),
-      this.discoverTVBatch({
-        sortBy: 'vote_count.desc',
-        releaseDateLte: TMDB_TODAY,
-        minVotes: 100,
-        pagesToFetch: 1,
-      }),
-      this.discoverTVBatch({
-        sortBy: 'popularity.desc',
-        releaseDateGte: TMDB_TOMORROW,
-        pagesToFetch: 1,
-      }),
+    const [popRes, ratedRes, watchedRes, anticipatedRes] = await Promise.all([
+      this.getSectionMedia('tv', 'popular_week', 1),
+      this.getSectionMedia('tv', 'highest_rated', 1),
+      this.getSectionMedia('tv', 'most_watched', 1),
+      this.getSectionMedia('tv', 'most_anticipated', 1),
     ]);
 
-    const popular = trendingRes.results.filter((m) => isReleasedWithVotes(m, 30));
-    const highestRated = ratedRes.results.filter((m) => isReleasedWithVotes(m, 500));
-    const mostWatched = watchedRes.results.filter((m) => isReleasedWithVotes(m, 1));
+    const popular = popRes.results;
+    const highestRated = ratedRes.results;
+    const mostWatched = watchedRes.results;
 
     const seenIds = new Set([...popular, ...highestRated, ...mostWatched].map((m) => m.id));
-    const mostAnticipated = anticipatedRes.results.filter((m) => isFuture(m) && !seenIds.has(m.id));
+    const mostAnticipated = anticipatedRes.results.filter((m) => !seenIds.has(m.id));
 
     return { popular, highestRated, mostWatched, mostAnticipated };
   },
@@ -679,9 +965,21 @@ export const tmdb = {
   // Detalhes de serie normalizados para o formato de filme (title/name etc.)
   async getTVDetails(id: number): Promise<TMDBMovieDetails> {
     const show = await fetchFromTMDB<TMDBMovieDetails>(`/tv/${id}`, {
-      append_to_response: 'credits,similar,recommendations,watch/providers,videos',
-      language: 'en-US',
+      append_to_response: 'credits,similar,recommendations,watch/providers,videos,content_ratings,external_ids,keywords,alternative_titles',
     });
+    // Fallback pt-BR → en-US quando sinopse/tagline vêm vazias
+    if (tmdbLanguage !== 'en-US' && (!show.overview || !show.tagline)) {
+      try {
+        const en = await fetchFromTMDB<TMDBMovieDetails>(`/tv/${id}`, {
+          language: 'en-US',
+          append_to_response: 'credits',
+        });
+        if (!show.overview) show.overview = en.overview;
+        if (!show.tagline) show.tagline = en.tagline;
+      } catch {
+        /* mantém vazio */
+      }
+    }
     const showAny = show as unknown as Record<string, unknown>;
     show.title = (showAny.name as string) || '';
     show.original_title = (showAny.original_name as string) || show.title;

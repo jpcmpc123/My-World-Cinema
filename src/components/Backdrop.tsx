@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface BackdropProps {
   /** URL da imagem de destaque (TMDB ou override do usuário) */
@@ -8,64 +8,63 @@ interface BackdropProps {
 }
 
 /**
- * Backdrop estilo Letterboxd: imagem nítida centralizada no topo
- * (máx. 1200px) que se funde à cor de fundo #14181c nos 4 lados
- * apenas nas extremidades, via gradientes lineares sobrepostos —
- * sem overlay escuro uniforme, sem blur e sem máscaras.
+ * Backdrop oficial extraído fielmente do Letterboxd:
  *
- * O componente fixa-se no topo da página (top: 0), passando por baixo
- * da navbar transparente, e o conteúdo da página sobrepõe sua base
- * com margem negativa (ex.: -mt-[200px]).
+ * Estrutura DOM original do Letterboxd:
+ * <div class="backdrop-container">
+ *   <div id="backdrop" class="backdrop-wrapper backdrop-fade-in -loaded" data-backdrop="...">
+ *     <div class="backdropimage js-backdrop-image" style="background-position: center 0px; background-image: url(...)"></div>
+ *     <div class="backdropmask js-backdrop-fade"></div>
+ *   </div>
+ * </div>
+ *
+ * Funcionamento:
+ * 1. O `.backdrop-container` posiciona-se de forma absoluta no topo (top: 0), com
+ *    altura de 675px no desktop (16:9 de 1200px) e proporção 16:9 (padding-top: 56.25%) no mobile.
+ * 2. O `.backdrop-wrapper` centraliza uma tela fixa de 1200px x 675px via `left: 50%; transform: translate(-50%)`.
+ * 3. A `.backdropimage` renderiza a imagem com nitidez e saturação originais.
+ * 4. A `.backdropmask:before` projeta as duas camadas de gradiente Letterboxd:
+ *    - Gradiente horizontal 90deg com 28 stops que dissolve as bordas laterais no fundo #14181c.
+ *    - Gradiente vertical que deixa os 41.48% superiores intactos e gradua suavemente até
+ *      78.52% para fundir totalmente com o #14181c.
+ * 5. A classe `backdrop-fade-in -loaded` executa a transição suave de 0.75s com curva cúbica
+ *    `cubic-bezier(.165,.84,.44,1)` quando a imagem termina de carregar.
  */
 export const Backdrop: React.FC<BackdropProps> = ({ src, alt = '' }) => {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!src) return;
+    setLoaded(false);
+
+    const img = new Image();
+    img.src = src;
+
+    if (img.complete && img.naturalWidth > 0) {
+      setLoaded(true);
+    } else {
+      img.onload = () => setLoaded(true);
+      img.onerror = () => setLoaded(false);
+    }
+  }, [src]);
+
+  if (!src) return null;
+
   return (
-    <div
-      className="relative w-full h-[230px] md:h-[560px] overflow-hidden pointer-events-none select-none"
-      aria-hidden={alt === ''}
-    >
-      {/* Mobile (<md): imagem em 100% da largura, fades só no topo/base.
-          Desktop (md+): container de 1200px com fades nos 4 lados (inalterado). */}
-      <div className="relative w-full md:max-w-[1200px] h-full mx-auto">
-        {/* Imagem nítida, brilho/contraste originais.
-            mask-image faz os pixels ficarem 100% transparentes antes das
-            bordas laterais e da base: transparência real, sem linha de corte.
-            No mobile a máscara horizontal é desligada (w-full). */}
-        <img
-          loading="eager"
-          decoding="async"
-          src={src}
-          alt={alt}
-          className={
-            'absolute inset-0 w-full h-full object-cover max-md:object-[center_25%] md:object-[center_20%] ' +
-            /* Mobile: máscara só na base (imagem vai de ponta a ponta) */
-            'max-md:[mask-image:linear-gradient(to_top,transparent_0%,transparent_8%,black_55%,black_100%)] ' +
-            'max-md:[-webkit-mask-image:linear-gradient(to_top,transparent_0%,transparent_8%,black_55%,black_100%)] ' +
-            /* Desktop: máscara composta horizontal+vertical (inalterada) */
-            'md:[mask-image:linear-gradient(to_right,transparent_0%,transparent_2%,black_22%,black_78%,transparent_98%,transparent_100%),linear-gradient(to_top,transparent_0%,transparent_8%,black_55%,black_100%)] ' +
-            'md:[-webkit-mask-image:linear-gradient(to_right,transparent_0%,transparent_2%,black_22%,black_78%,transparent_98%,transparent_100%),linear-gradient(to_top,transparent_0%,transparent_8%,black_55%,black_100%)] ' +
-            'md:[mask-composite:intersect] md:[-webkit-mask-composite:source-in]'
-          }
-        />
-        {/* Fusão com o fundo SOMENTE nas extremidades (cor idêntica ao body: #14181c) */}
+    <div className="backdrop-container" aria-hidden="true" role="presentation">
+      <div
+        id="backdrop"
+        className={`backdrop-wrapper backdrop-fade-in ${loaded ? '-loaded' : ''}`}
+        data-backdrop={src}
+      >
         <div
-          className="absolute inset-0"
+          className="backdropimage js-backdrop-image"
           style={{
-            background:
-              /* Base: densa o bastante para a área do texto já ser #14181c */
-              'linear-gradient(to top, #14181c 0%, #14181c 10%, rgba(20, 24, 28, 0.85) 30%, transparent 60%),' +
-              /* Topo: reforçado para contraste da navbar/botões flutuantes */
-              'linear-gradient(to bottom, rgba(20, 24, 28, 0.75) 0%, rgba(20, 24, 28, 0.3) 12%, transparent 25%)',
+            backgroundImage: `url("${src}")`,
           }}
+          title={alt}
         />
-        {/* Fades laterais — SOMENTE desktop (onde há o container de 1200px) */}
-        <div
-          className="absolute inset-0 hidden md:block"
-          style={{
-            background:
-              'linear-gradient(to right, #14181c 0%, #14181c 3%, rgba(20, 24, 28, 0.7) 10%, transparent 25%),' +
-              'linear-gradient(to left, #14181c 0%, #14181c 3%, rgba(20, 24, 28, 0.7) 10%, transparent 25%)',
-          }}
-        />
+        <div className="backdropmask js-backdrop-fade" />
       </div>
     </div>
   );

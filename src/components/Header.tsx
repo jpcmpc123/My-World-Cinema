@@ -1,13 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Search, Plus, User, BookOpen, Clock, List, X, ChevronDown, Zap, Menu, LogOut, Settings, ArrowLeft, MoreVertical } from 'lucide-react';
+import { Search, Plus, User, BookOpen, Clock, List, X, ChevronDown, Zap, Menu, LogOut, Settings, ArrowLeft, MoreVertical, Globe } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
+import {
+  animateElasticIndicator,
+  type IndicatorPos,
+} from '../utils/tabIndicator';
+import { isMainTabRoute } from '../utils/tabRoutes';
 
 export const Header: React.FC = () => {
   const { user, openLogModal } = useApp();
   const { isAuthenticated, profile, signOut } = useAuth();
+  const { language, toggleLanguage, t } = useLanguage();
 
   // Authenticated profile takes precedence over the local/fake user
   const displayUsername = isAuthenticated && profile ? profile.username : user.username;
@@ -27,6 +34,11 @@ export const Header: React.FC = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Barra de abas principal (FILMES / SÉRIES / CRÍTICAS / LISTAS): container +
+  // elemento da barra verde deslizante (mesma anatomia do perfil de pessoa).
+  const tabsContainerRef = useRef<HTMLElement | null>(null);
+  const indicatorRef = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -83,17 +95,38 @@ export const Header: React.FC = () => {
     navigate(`/film/${id}`);
   };
 
+  /**
+   * Submissão da busca (Enter no input, clique na lupa ou "Ver todos os
+   * resultados"): fecha o dropdown rápido e abre a PÁGINA de resultados
+   * (/search?q=…) — sem sair do tema nem quebrar o header.
+   */
+  const submitSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = searchQuery.trim() || searchParam.trim();
+    setIsSearchOpen(false);
+    setIsSearching(false);
+    setSearchResults([]);
+    if (!q) {
+      navigate('/search');
+      return;
+    }
+    navigate(`/search?q=${encodeURIComponent(q)}`);
+  };
+
   // Páginas de detalhe (filme/série): navbar flutua transparente por cima do backdrop
   const overBackdrop = /^\/(film|tv)\/\d+/.test(location.pathname);
 
   // Mobile (<768px): páginas principais exibem título centrado + faixa de 4 abas
   const path = location.pathname;
-  const isMainPage = !overBackdrop && /^\/(films|series|tv|lists?|reviews)?\/?$/.test(path);
+  const isMainPage = !overBackdrop && isMainTabRoute(path);
   // Tela de busca: no mobile o campo ocupa a faixa preta do topo (em vez do título/sign in)
   const isSearchRoute = path === '/search';
   // Telas do BROWSE BY (cascata/resultados): no mobile têm header próprio
   // (preto, com ← voltar) — esconde a barra global "MyWorld" para não duplicar.
   const isBrowseRoute = path.startsWith('/browse');
+  // Perfil de PESSOA (/actor/:id): no mobile tem Top App Bar própria
+  // (← + nome + abas de função) — a barra global some só no mobile.
+  const isActorRoute = /^\/actor\/\d+/.test(path);
 
   // Área de perfil (mobile): barra própria com ⚙ + usuário + abas
   const segs = path.split('/').filter(Boolean);
@@ -125,11 +158,58 @@ export const Header: React.FC = () => {
           ? 'reviews'
           : 'lists';
   const tabs: { key: typeof activeTab; label: string; to: string }[] = [
-    { key: 'films', label: 'Films', to: '/' },
-    { key: 'series', label: 'Series', to: '/series' },
-    { key: 'reviews', label: 'Reviews', to: '/reviews' },
-    { key: 'lists', label: 'Lists', to: '/lists' },
+    { key: 'films', label: t('nav_films'), to: '/' },
+    { key: 'series', label: t('nav_series'), to: '/series' },
+    { key: 'reviews', label: t('nav_reviews'), to: '/reviews' },
+    { key: 'lists', label: t('nav_lists'), to: '/lists' },
   ];
+
+  // ---------------------------------------------------------------------------
+  // Barra verde elástica (Elastic Indicator) embaixo da aba ativa
+  // FILMES / SÉRIES / CRÍTICAS / LISTAS.
+  // Ao clicar, a barra ESTICA na direção da nova aba e depois a cauda alcança o
+  // destino encolhendo (ver src/utils/tabIndicator.ts — mesma mecânica da barra
+  // de abas do perfil de pessoa, na ActorPage).
+  // ---------------------------------------------------------------------------
+  const prevPosRef = useRef<IndicatorPos>({ left: 0, width: 0 });
+
+  // Chave estável com os rótulos: trocar o idioma (PT/EN) muda a largura dos
+  // botões e exige uma nova medição.
+  const tabsLabelKey = tabs.map((tab) => tab.label).join('|');
+
+  const activeTabButton = () =>
+    tabsContainerRef.current?.querySelector<HTMLElement>('.main-tab-btn.active') ?? null;
+
+  // Troca de aba (clique/rota): efeito elástico de 2 fases.
+  // useLayoutEffect: mede o DOM já comitado ANTES do primeiro paint (o 1º
+  // posicionamento é sem animação, então a barra já nasce alinhada).
+  useLayoutEffect(() => {
+    const indicator = indicatorRef.current;
+    const btn = activeTabButton();
+    if (indicator && btn) animateElasticIndicator(btn, indicator, prevPosRef.current);
+  }, [activeTab]);
+
+  // Mudanças de MEDIDA (idioma, entrada/saída da faixa mobile): reposiciona sem animar.
+  useLayoutEffect(() => {
+    const indicator = indicatorRef.current;
+    const btn = activeTabButton();
+    if (indicator && btn) animateElasticIndicator(btn, indicator, prevPosRef.current, true);
+  }, [tabsLabelKey, isMainPage]);
+
+  // Girar a tela / redimensionar muda a largura dos botões: remede sem animar.
+  useEffect(() => {
+    const remeasure = () => {
+      const indicator = indicatorRef.current;
+      const btn = activeTabButton();
+      if (indicator && btn) animateElasticIndicator(btn, indicator, prevPosRef.current, true);
+    };
+    window.addEventListener('resize', remeasure);
+    window.addEventListener('orientationchange', remeasure);
+    return () => {
+      window.removeEventListener('resize', remeasure);
+      window.removeEventListener('orientationchange', remeasure);
+    };
+  }, []);
 
   // Mobile-only: botão de opções nas páginas de detalhe (compartilhar)
   const handleShare = async () => {
@@ -153,12 +233,17 @@ export const Header: React.FC = () => {
     <header
       className={
         overBackdrop
-          ? 'absolute inset-x-0 top-0 z-50 bg-transparent select-none'
-          : isBrowseRoute
-            ? 'hidden md:block sticky top-0 z-50 bg-black md:bg-lb-bg border-b border-lb-elevated shadow-md select-none'
-            : 'sticky top-0 z-50 bg-black md:bg-lb-bg border-b border-lb-elevated shadow-md select-none'
+          ? 'hidden md:block absolute inset-x-0 top-0 z-50 bg-transparent select-none'
+          : isBrowseRoute || isActorRoute
+            ? 'hidden md:block sticky top-0 z-50 bg-black border-b border-lb-elevated shadow-md select-none'
+            : 'sticky top-0 z-50 bg-black border-b border-lb-elevated shadow-md select-none'
       }
     >
+      {/* Camada de contraste da navbar sobre o backdrop — MESMA receita do
+          Letterboxd (.site-header .site-header-bg): 95px, gradiente de
+          #14181c (sólido no topo) até transparente, opacidade 2/3 parada e
+          0.85 no hover. Só existe nas rotas com backdrop (filme/série). */}
+      {overBackdrop && <div className="site-header-bg hidden md:block" aria-hidden="true" />}
       <div className={`relative max-w-[950px] mx-auto px-4 h-14 flex items-center justify-between gap-4 ${
         overBackdrop ? '[text-shadow:0_1px_3px_rgba(0,0,0,0.8)] [&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : ''
       }`}>
@@ -215,10 +300,16 @@ export const Header: React.FC = () => {
           </div>
         )}
 
-        {/* Mobile-only (/search): campo de busca ocupa a faixa preta do topo */}
+        {/* Mobile-only (/search): campo de busca ocupa a faixa preta do topo
+            — Enter confirma a busca, X limpa e volta para a Home */}
         {isSearchRoute && (
-          <div className="md:hidden flex items-center gap-2 bg-[#2c3440] rounded-full px-4 py-2 flex-1">
-            <Search className="w-4 h-4 text-lb-muted shrink-0" />
+          <form
+            onSubmit={submitSearch}
+            className="md:hidden flex items-center gap-2 bg-[#2c3440] rounded-full px-4 py-2 flex-1"
+          >
+            <button type="submit" aria-label={t('search_placeholder')} className="shrink-0 cursor-pointer">
+              <Search className="w-4 h-4 text-lb-muted" />
+            </button>
             <input
               type="text"
               autoFocus
@@ -226,26 +317,53 @@ export const Header: React.FC = () => {
               onChange={(e) =>
                 setSearchParams(e.target.value ? { q: e.target.value } : {}, { replace: true })
               }
-              placeholder="Search films…"
-              className="flex-1 min-w-0 bg-transparent text-sm text-white placeholder-lb-muted focus:outline-none"
+              placeholder={t('search_placeholder')}
+              className="no-focus-ring flex-1 min-w-0 bg-transparent text-sm text-white placeholder-lb-muted focus:outline-none"
             />
-          </div>
+            {searchParam && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchParams({}, { replace: true });
+                  navigate('/');
+                }}
+                aria-label="Clear search"
+                className="shrink-0 text-lb-muted hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </form>
         )}
 
         {/* Right Navigation (oculto no mobile em páginas de detalhe e na busca) */}
         <div className={`${overBackdrop || isSearchRoute || isProfileArea ? 'hidden md:flex' : 'flex'}${isMainPage ? ' ml-auto md:ml-0' : ''} items-center gap-3 md:gap-5 text-xs font-bold uppercase tracking-wider`}>
           {/* User Profile Link & Avatar (or Sign in when logged out) */}
           {!isAuthenticated ? (
-            <Link
-              to="/signin"
-              className={`hidden md:block transition-colors ${
-                location.pathname === '/signin' || location.pathname === '/signup'
-                  ? 'text-white font-bold'
-                  : 'text-lb-text hover:text-white'
-              }`}
-            >
-              Sign in
-            </Link>
+            <div className="flex items-center gap-3">
+              {/* Seletor de idioma — APENAS para visitantes (deslogados).
+                  Após o login, o idioma só é alterado em Settings. */}
+              <button
+                type="button"
+                onClick={toggleLanguage}
+                aria-label="Language / Idioma"
+                title={language === 'pt-BR' ? 'English (US)' : 'Português (Brasil)'}
+                className="text-[11px] text-[#9ab] hover:text-white border border-white/10 rounded px-2 py-1 flex items-center gap-1 bg-white/5 cursor-pointer transition-colors"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>{language === 'pt-BR' ? 'PT' : 'EN'}</span>
+              </button>
+              <Link
+                to="/signin"
+                className={`hidden md:block transition-colors ${
+                  location.pathname === '/signin' || location.pathname === '/signup'
+                    ? 'text-white font-bold'
+                    : 'text-lb-text hover:text-white'
+                }`}
+              >
+                {t('nav_sign_in')}
+              </Link>
+            </div>
           ) : (
           <div ref={userMenuRef} className="relative">
             <button
@@ -264,13 +382,13 @@ export const Header: React.FC = () => {
             </button>
 
             {isUserMenuOpen && (
-              <div className="absolute left-0 top-9 w-48 bg-lb-surface border border-lb-elevated rounded shadow-2xl py-1 z-50 text-xs normal-case">
+              <div className="absolute left-0 top-9 w-48 bg-lb-surface border border-lb-elevated rounded shadow-2xl py-1 z-50 text-xs normal-case mw-pop-in">
                 <Link
                   to={`/${displayUsername}`}
                   className="flex items-center gap-2 px-4 py-2 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
                   <User className="w-3.5 h-3.5 text-lb-green" />
-                  <span>Profile</span>
+                  <span>{t('nav_profile')}</span>
                 </Link>
                 <Link
                   to={`/${displayUsername}/diary`}
@@ -300,7 +418,7 @@ export const Header: React.FC = () => {
                   className="flex items-center gap-2 px-4 py-2 text-lb-text hover:text-white hover:bg-lb-elevated"
                 >
                   <Settings className="w-3.5 h-3.5 text-lb-muted" />
-                  <span>Settings</span>
+                  <span>{t('nav_settings')}</span>
                 </Link>
                 <button
                   type="button"
@@ -311,7 +429,7 @@ export const Header: React.FC = () => {
                   className="w-full flex items-center gap-2 px-4 py-2 text-lb-text hover:text-white hover:bg-lb-elevated cursor-pointer text-left"
                 >
                   <LogOut className="w-3.5 h-3.5 text-red-400" />
-                  <span>Sign out</span>
+                  <span>{t('nav_sign_out')}</span>
                 </button>
               </div>
             )}
@@ -356,26 +474,50 @@ export const Header: React.FC = () => {
           {/* Search Icon & Typeahead — desktop only (no mobile a busca vive na BottomNav/rota /search) */}
           <div ref={searchRef} className="relative hidden md:block">
             {isSearchExpanded ? (
-              <div className="flex items-center h-7 bg-white rounded-full px-2.5 w-36 sm:w-44">
+              <form
+                onSubmit={submitSearch}
+                className="flex items-center h-7 bg-white rounded-full px-2.5 w-36 sm:w-44"
+              >
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder={t('search_placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') submitSearch(e);
+                    if (e.key === 'Escape') {
+                      setIsSearchOpen(false);
+                      setIsSearchExpanded(false);
+                      setSearchQuery('');
+                    }
+                  }}
                   autoFocus
                   className="no-focus-ring flex-1 min-w-0 h-full bg-transparent text-xs text-gray-900 placeholder-gray-500 border-0 outline-none p-0"
                 />
                 {searchQuery && (
                   <button
-                    onClick={() => setSearchQuery('')}
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                      setIsSearchOpen(false);
+                      // Na página de resultados, o X volta para a tela inicial
+                      if (isSearchRoute) navigate('/');
+                    }}
                     aria-label="Clear search"
-                    className="ml-1 shrink-0 text-gray-400 hover:text-gray-700"
+                    className="ml-1 shrink-0 text-gray-400 hover:text-gray-700 cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 )}
-                <Search className="w-3.5 h-3.5 text-gray-400 ml-2 shrink-0" />
-              </div>
+                <button
+                  type="submit"
+                  aria-label={t('search_placeholder')}
+                  className="ml-2 shrink-0 text-gray-400 hover:text-gray-700 cursor-pointer"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                </button>
+              </form>
             ) : (
               <button
                 onClick={() => setIsSearchExpanded(true)}
@@ -389,10 +531,12 @@ export const Header: React.FC = () => {
 
             {/* Typeahead Dropdown */}
             {isSearchOpen && (
-              <div className="absolute right-0 top-9 w-72 sm:w-80 bg-lb-surface border border-lb-elevated rounded shadow-2xl overflow-hidden z-50">
+              <div className="absolute right-0 top-9 w-72 sm:w-80 bg-lb-surface border border-lb-elevated rounded shadow-2xl overflow-hidden z-50 mw-pop-in">
                 <div className="px-3 py-1.5 bg-lb-bg border-b border-lb-elevated text-[10px] uppercase font-bold text-lb-muted flex justify-between">
-                  <span>Results for "{searchQuery}"</span>
-                  {isSearching && <span className="text-lb-green animate-pulse">Searching</span>}
+                  <span>
+                    {t('search_showing_matches')} “{searchQuery}”
+                  </span>
+                  {isSearching && <span className="text-lb-green animate-pulse">{t('search_searching')}</span>}
                 </div>
                 <div className="max-h-72 overflow-y-auto divide-y divide-lb-elevated/60 normal-case">
                   {searchResults.map((m) => (
@@ -416,6 +560,14 @@ export const Header: React.FC = () => {
                     </button>
                   ))}
                 </div>
+                {/* Ver todos os resultados → página /search */}
+                <button
+                  type="button"
+                  onClick={() => submitSearch()}
+                  className="w-full text-center py-2 bg-lb-bg border-t border-lb-elevated text-[10px] uppercase font-bold tracking-wider text-lb-green hover:bg-lb-elevated transition-colors cursor-pointer"
+                >
+                  {t('search_view_all')}
+                </button>
               </div>
             )}
           </div>
@@ -494,7 +646,7 @@ export const Header: React.FC = () => {
 
       {/* Mobile-only (área de perfil): faixa de 4 abas Profile / Diary / Lists / Watchlist */}
       {isProfileArea && (
-        <nav aria-label="Perfil" className="md:hidden grid grid-cols-4 text-center">
+        <nav aria-label="Perfil" className="md:hidden hidden max-md:grid grid-cols-4 text-center">
           {([
             { key: 'profile', label: 'Profile', to: `/${profileAreaUser}` },
             { key: 'diary', label: 'Diary', to: `/${profileAreaUser}/diary` },
@@ -513,7 +665,7 @@ export const Header: React.FC = () => {
               >
                 <span>{tab.label}</span>
                 <span
-                  className={`h-[3px] w-full rounded-full ${active ? 'bg-[#00e054]' : 'bg-transparent'}`}
+                  className={`h-[3px] w-full rounded-full transition-colors duration-250 ease-out ${active ? 'bg-[#00e054]' : 'bg-transparent'}`}
                 />
               </button>
             );
@@ -521,28 +673,35 @@ export const Header: React.FC = () => {
         </nav>
       )}
 
-      {/* Mobile-only (páginas principais): faixa de 4 abas Films / Series / Reviews / Lists */}
+      {/* Mobile-only (páginas principais): faixa de 4 abas Films / Series / Reviews / Lists
+          com barra verde DESLIZANTE embaixo da aba ativa (.tab-indicator).
+          As rotas/cliques continuam os mesmos (navigate(tab.to)); só a aparência
+          mudou. O wrapper cuida de esconder a faixa no desktop. */}
       {isMainPage && (
-        <nav aria-label="Seções" className="md:hidden grid grid-cols-4 text-center">
-          {tabs.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => navigate(tab.to)}
-                className={`flex flex-col items-center gap-1.5 pb-1 pt-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer ${
-                  active ? 'text-white' : 'text-lb-muted'
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`h-[3px] w-full rounded-full ${active ? 'bg-[#00e054]' : 'bg-transparent'}`}
-                />
-              </button>
-            );
-          })}
-        </nav>
+        <div className="md:hidden hidden max-md:block">
+          <nav
+            ref={tabsContainerRef}
+            aria-label="Seções"
+            className="main-tabs-container"
+          >
+            {tabs.map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => navigate(tab.to)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`main-tab-btn${active ? ' active' : ''}`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+            {/* Barra verde deslizante (posição/largura via JS) */}
+            <span ref={indicatorRef} className="tab-indicator" aria-hidden="true" />
+          </nav>
+        </div>
       )}
     </header>
   );
