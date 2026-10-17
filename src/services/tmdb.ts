@@ -174,6 +174,11 @@ export interface TMDBPersonMovieCredit {
   job?: string;
   department?: string;
   genre_ids?: number[];
+  /**
+   * 'tv' quando o crédito veio de `tv_credits` (série). Ausente/`movie` = filme.
+   * Usado para rotear o clique para /tv/{id} na página de pessoa.
+   */
+  media_type?: 'movie' | 'tv';
 }
 
 export interface TMDBPersonMovieCredits {
@@ -184,11 +189,13 @@ export interface TMDBPersonMovieCredits {
 
 /**
  * Pessoa + filmografia numa única chamada
- * (`/person/{id}?append_to_response=movie_credits`) — usada pela página de
- * perfil (abas Bio / Ator / cargos de equipe).
+ * (`/person/{id}?append_to_response=movie_credits,tv_credits`) — usada pela
+ * página de perfil (abas Bio / Ator / cargos de equipe, incluindo Criador).
  */
 export interface TMDBPersonDetails extends TMDBPerson {
   movie_credits?: TMDBPersonMovieCredits;
+  /** Créditos em SÉRIES — trazem os criadores (job 'Creator') e o elenco de TV */
+  tv_credits?: TMDBPersonMovieCredits;
 }
 
 export interface TMDBResponse<T> {
@@ -562,16 +569,35 @@ export const tmdb = {
    */
   async getPersonDetails(id: number): Promise<TMDBPersonDetails> {
     const person = await fetchFromTMDB<TMDBPersonDetails>(`/person/${id}`, {
-      append_to_response: 'movie_credits',
+      append_to_response: 'movie_credits,tv_credits',
     });
+    // SÉRIES: a API devolve `name`/`first_air_date` (e não title/release_date).
+    // Normaliza e marca media_type para o clique abrir /tv/{id} — sem isto o
+    // criador de uma série não tem onde aparecer na página de pessoa.
+    const normalizeTv = (list?: TMDBPersonMovieCredit[]) =>
+      (list ?? []).map((c) => {
+        const raw = c as unknown as { name?: string; original_name?: string; first_air_date?: string };
+        return {
+          ...c,
+          title: c.title || raw.name || '',
+          original_title: c.original_title || raw.original_name || raw.name || '',
+          release_date: c.release_date || raw.first_air_date || '',
+          media_type: 'tv' as const,
+        };
+      });
+    if (person.tv_credits) {
+      person.tv_credits.cast = normalizeTv(person.tv_credits.cast);
+      person.tv_credits.crew = normalizeTv(person.tv_credits.crew);
+    }
     if (tmdbLanguage !== 'en-US' && !person.biography) {
       try {
         const en = await fetchFromTMDB<TMDBPersonDetails>(`/person/${id}`, {
           language: 'en-US',
-          append_to_response: 'movie_credits',
+          append_to_response: 'movie_credits,tv_credits',
         });
         if (!person.biography) person.biography = en.biography;
         if (!person.movie_credits && en.movie_credits) person.movie_credits = en.movie_credits;
+        if (!person.tv_credits && en.tv_credits) person.tv_credits = en.tv_credits;
       } catch {
         /* mantém vazio — a Bio mostra aviso de indisponível */
       }
@@ -1017,11 +1043,21 @@ export const tmdb = {
     show.runtime = Array.isArray(ert) && ert.length ? ert[0] : 0;
     const createdBy = (showAny.created_by as { id: number; name: string }[] | undefined) || [];
     if (show.credits && createdBy.length > 0) {
-      const existing = new Set(show.credits.crew.map((c) => c.id));
       for (const c of createdBy) {
-        if (!existing.has(c.id)) {
-          show.credits.crew.unshift({ id: c.id, name: c.name, job: 'Creator', department: 'Production', profile_path: null });
-        }
+        // O criador costuma JÁ estar no crew com outro cargo (ex.: "Executive
+        // Producer"). Deduplicar só por id deixava a série sem nenhum crédito
+        // "Creator" — e o cabeçalho (que procura Director/Creator) ficava sem
+        // nome. Aqui a entrada existente é PROMOVIDA a Creator.
+        const existente = show.credits.crew.find((m) => m.id === c.id);
+        if (existente) existente.job = 'Creator';
+        else
+          show.credits.crew.unshift({
+            id: c.id,
+            name: c.name,
+            job: 'Creator',
+            department: 'Production',
+            profile_path: null,
+          });
       }
     }
     const normList = (r: TMDBMovie[]) =>

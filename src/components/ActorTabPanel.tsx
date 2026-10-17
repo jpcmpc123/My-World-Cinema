@@ -73,6 +73,11 @@ export const ActorTabPanel: React.FC<ActorTabPanelProps> = ({
 
   const listed = showAllFilms ? visibleFilms : visibleFilms.slice(0, INITIAL_VISIBLE);
 
+  // Quantos FILMES e quantas SÉRIES há nesta aba (o rótulo de contagem muda
+  // quando a lista é só de séries — caso da aba "Criador").
+  const seriesCount = visibleFilms.reduce((n, f) => n + (f.media_type === 'tv' ? 1 : 0), 0);
+  const filmCount = visibleFilms.length - seriesCount;
+
   // ---- % assistida desta lista (ícone de olho azul da barra de status) -----
   const watchedPct = useMemo(() => {
     if (visibleFilms.length === 0) return 0;
@@ -80,11 +85,12 @@ export const ActorTabPanel: React.FC<ActorTabPanelProps> = ({
     return Math.round((watched / visibleFilms.length) * 100);
   }, [visibleFilms, isMovieWatched]);
 
-  // Card de pôster (grade de 4 colunas e lista compacta)
+  // Card de pôster (grade de 4 colunas e lista compacta).
+  // Série (media_type 'tv') abre /tv/{id}; filme abre /film/{id}.
   const posterCard = (film: TMDBPersonMovieCredit, className = '') => (
     <Link
       key={film.id}
-      to={`/film/${film.id}`}
+      to={`${film.media_type === 'tv' ? '/tv' : '/film'}/${film.id}`}
       className={`person-film-card relative block ${className}`}
     >
       {film.poster_path ? (
@@ -148,10 +154,13 @@ export const ActorTabPanel: React.FC<ActorTabPanelProps> = ({
 
   return (
     <>
-      {/* Sub-barra de status: N FILMS + % assistida */}
+      {/* Sub-barra de status: N FILMS/SÉRIES + % assistida */}
       <div className="flex items-center justify-between px-3 py-2.5 text-[0.78rem] text-[#9ab]">
         <span className="uppercase tracking-[0.05em]">
-          {visibleFilms.length} {t('person_films_label')}
+          {seriesCount > 0 && filmCount === 0
+            ? `${seriesCount} ${t('person_series_label')}`
+            : `${filmCount} ${t('person_films_label')}`}
+          {filmCount > 0 && seriesCount > 0 ? ` + ${seriesCount} ${t('person_series_label')}` : ''}
         </span>
         <span className="flex items-center gap-1.5">
           <Eye className="w-3.5 h-3.5 text-[#40bcf4]" aria-hidden="true" />
@@ -168,7 +177,7 @@ export const ActorTabPanel: React.FC<ActorTabPanelProps> = ({
               {posterCard(f, 'w-16 flex-none')}
               <div className="min-w-0">
                 <Link
-                  to={`/film/${f.id}`}
+                  to={`${f.media_type === 'tv' ? '/tv' : '/film'}/${f.id}`}
                   className="block text-sm font-semibold text-white truncate"
                 >
                   {f.title}

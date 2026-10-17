@@ -166,6 +166,7 @@ const en = {
   // Perfil de pessoa (/actor/:id) — abas por função (estilo app Letterboxd)
   person_tab_bio: 'Bio',
   person_tab_actor: 'Actor',
+  person_tab_creator: 'Creator',
   person_tab_producer: 'Producer',
   person_tab_writer: 'Writer',
   person_tab_director: 'Director',
@@ -174,6 +175,8 @@ const en = {
   person_tab_cinematography: 'Cinematography',
   person_tab_editor: 'Editor',
   person_films_label: 'films',
+  person_series_label: 'series',
+  person_series_created: 'Series created by',
   person_bio_empty: 'No biography available for this person yet.',
   person_not_found: 'Person not found',
   person_load_error: 'Could not load this person. Please try again later.',
@@ -712,6 +715,7 @@ const pt: Record<TranslationKey, string> = {
   // Perfil de pessoa — abas por função
   person_tab_bio: 'Bio',
   person_tab_actor: 'Ator',
+  person_tab_creator: 'Criador',
   person_tab_producer: 'Produção',
   person_tab_writer: 'Roteiro',
   person_tab_director: 'Direção',
@@ -720,6 +724,8 @@ const pt: Record<TranslationKey, string> = {
   person_tab_cinematography: 'Fotografia',
   person_tab_editor: 'Montagem',
   person_films_label: 'filmes',
+  person_series_label: 'séries',
+  person_series_created: 'Séries criadas por',
   person_bio_empty: 'Ainda não há biografia disponível para esta pessoa.',
   person_not_found: 'Pessoa não encontrada',
   person_load_error: 'Não foi possível carregar esta pessoa. Tente novamente mais tarde.',

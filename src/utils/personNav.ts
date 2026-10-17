@@ -17,6 +17,7 @@
 /** Funções suportadas como aba no perfil de pessoa. */
 export type PersonRole =
   | 'Actor'
+  | 'Creator'
   | 'Producer'
   | 'Writer'
   | 'Director'
@@ -28,6 +29,7 @@ export type PersonRole =
 /** Ordem de prioridade das abas de função (a aba Bio vem sempre antes). */
 export const PERSON_ROLE_ORDER: PersonRole[] = [
   'Actor',
+  'Creator',
   'Producer',
   'Writer',
   'Director',
@@ -39,6 +41,8 @@ export const PERSON_ROLE_ORDER: PersonRole[] = [
 
 /** Jobs do TMDB que pertencem a cada aba de equipe. */
 export const PERSON_ROLE_JOBS: Record<Exclude<PersonRole, 'Actor'>, string[]> = {
+  /** Criador de série (job injetado por getTVDetails) */
+  Creator: ['Creator'],
   Producer: ['Producer', 'Co-Producer', 'Associate Producer', 'Line Producer'],
   Writer: ['Writer', 'Screenplay', 'Story'],
   Director: ['Director'],

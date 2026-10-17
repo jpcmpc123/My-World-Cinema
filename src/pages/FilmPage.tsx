@@ -334,7 +334,10 @@ export const FilmPage: React.FC = () => {
                   <span className="letterboxd-credits whitespace-nowrap mr-3 inline">
                     {t(isTv ? 'created_by' : 'directed_by')}{' '}
                     <Link
-                      to={openPersonProfile(director.id, 'Director')}
+                      to={openPersonProfile(
+                        director.id,
+                        !isTv ? 'Director' : director.job === 'Creator' ? 'Creator' : 'Writer',
+                      )}
                       className="letterboxd-credits-name hover:text-lb-blue underline underline-offset-2 decoration-white/40 hover:decoration-lb-blue transition-colors"
                     >
                       {director.name}
@@ -360,6 +363,9 @@ export const FilmPage: React.FC = () => {
               <h1 className="font-sans font-extrabold text-[23px] text-white leading-[1.2] tracking-tight mb-5">
                 {movie.title}
               </h1>
+              {/* Mesma formatação da página de FILMES: ano • crédito na 1a linha,
+                  nome em negrito na 2a, e a mesma fileira de pílulas (trailer /
+                  duração / classificação). Séries usam o rótulo "Criado por". */}
               <p className="text-[11px] tracking-wider uppercase text-[#9ab] mt-1">
                 {releaseYear}
                 {releaseYear && director ? ' \u2022 ' : ''}
@@ -367,14 +373,19 @@ export const FilmPage: React.FC = () => {
               </p>
               {director && (
                 <Link
-                  to={openPersonProfile(director.id, isTv ? 'Writer' : 'Director')}
+                  // Cargo de origem vira a aba inicial do perfil: criador de
+                  // série abre em "Criador" (antes caía em "Roteiro").
+                  to={openPersonProfile(
+                    director.id,
+                    !isTv ? 'Director' : director.job === 'Creator' ? 'Creator' : 'Writer',
+                  )}
                   className="text-sm font-semibold text-[#def] block mt-0.5"
                 >
                   {director.name}
                 </Link>
               )}
 
-              {/* Trailer pill + minutos/temporadas */}
+              {/* Trailer pill + minutos (séries usam a mesma linha, sem temporadas) */}
               <div className="flex items-center gap-3 mt-2.5">
                 <a
                   href={trailerUrl}
@@ -385,15 +396,10 @@ export const FilmPage: React.FC = () => {
                   <Play className="w-2.5 h-2.5 fill-[#def] text-[#def]" />
                   {t('trailer')}
                 </a>
-                {!isTv && movie.runtime ? (
+                {movie.runtime ? (
                   <span className="text-xs text-[#9ab]">{movie.runtime} {t('mins')}</span>
                 ) : null}
                 {certification && <CertBadge cert={certification} small />}
-                {isTv && numberOfSeasons ? (
-                  <span className="text-xs text-[#9ab]">
-                    {numberOfSeasons} season{numberOfSeasons === 1 ? '' : 's'}
-                  </span>
-                ) : null}
               </div>
             </div>
 

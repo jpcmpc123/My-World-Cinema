@@ -108,9 +108,39 @@ export const TabViewPager: React.FC = () => {
     }));
   }
 
+  // Aba VIZINHA revelada pelo arrasto em andamento (null = nenhuma). O painel
+  // fora da tela vive colapsado (.tab-panel-collapsed: max-height 0 + hidden) e
+  // as abas nunca visitadas nem são montadas — sem isto o dedo puxa o trilho e
+  // revela uma faixa PRETA em vez do conteúdo da aba ao lado.
+  const [peek, setPeek] = useState<number | null>(null);
+
+  /** Monta e EXPANDE a aba vizinha na direção do arrasto, para ela entrar
+      visível pela lateral junto com o dedo. */
+  const peekNeighbor = (dir: 1 | -1) => {
+    const neighbor = activeIndex + dir;
+    // Borda (primeira/última aba): não existe vizinha para revelar
+    if (neighbor < 0 || neighbor >= PANELS.length) {
+      setPeek(null);
+      return;
+    }
+    setPeek((prev) => (prev === neighbor ? prev : neighbor));
+    setPager((prev) =>
+      prev.mounted[neighbor]
+        ? prev
+        : { ...prev, mounted: prev.mounted.map((wasMounted, i) => wasMounted || i === neighbor) },
+    );
+  };
+
   // Troca de aba volta ao topo (mesmo comportamento da barra de perfil de pessoa)
   useLayoutEffect(() => {
     window.scrollTo({ top: 0 });
+  }, [activeIndex]);
+
+  // A aba revelada pelo arrasto virou a ativa: a marca de "vizinha" já cumpriu
+  // sua função. Limpar aqui (e não no pointerup) evita colapsar o painel por um
+  // frame entre o fim do gesto e a troca de rota.
+  useLayoutEffect(() => {
+    setPeek(null);
   }, [activeIndex]);
 
   // Fim da animação: colapsa o painel que saiu (fallback por tempo, caso o
@@ -223,8 +253,12 @@ export const TabViewPager: React.FC = () => {
     // Movimento vertical: é scroll da página, o arrasto lateral é cancelado
     if (d.axis === 'v') {
       dragRef.current = null;
+      setPeek(null);
       return;
     }
+    // Arrasto lateral: revela (monta + expande) a aba que está entrando.
+    // Arrastar para a direita traz a aba ANTERIOR; para a esquerda, a SEGUINTE.
+    peekNeighbor(totalX > 0 ? -1 : 1);
     suppressClickRef.current = true;
     const dt = Math.max(1, e.timeStamp - d.lastT);
     d.velocity = (e.clientX - d.lastX) / dt;
@@ -243,6 +277,7 @@ export const TabViewPager: React.FC = () => {
     const d = dragRef.current;
     dragRef.current = null;
     if (!d || d.axis !== 'h' || cancelled) {
+      setPeek(null);
       if (d?.axis === 'h') {
         setTrackOffset(null);
         // Sem click depois de cancelamento: não deixa a flag engolir o próximo
@@ -269,6 +304,11 @@ export const TabViewPager: React.FC = () => {
     if (target !== activeIndex) {
       // replace: o swipe não empilha histórico (o Voltar sai do app, não percorre abas)
       navigate(TAB_PANEL_PATHS[target], { replace: true });
+      // A aba revelada passa a ser a ativa logo abaixo; `peek` é limpo no efeito
+      // que observa a troca de rota (limpar aqui colapsaria o painel por 1 frame).
+    } else {
+      // Sem troca de aba: a vizinha revelada volta a ficar colapsada
+      setPeek(null);
     }
   };
 
@@ -301,8 +341,10 @@ export const TabViewPager: React.FC = () => {
       >
         {PANELS.map((panel, i) => {
           const isActive = i === pager.active;
-          // O painel que está saindo continua EXPANDIDO durante a animação
-          const expanded = isActive || pager.leaving === i;
+          // O painel que está saindo continua EXPANDIDO durante a animação, e a
+          // aba vizinha revelada pelo arrasto (peek) também: só assim o conteúdo
+          // dela entra pela lateral em vez de deixar a faixa preta.
+          const expanded = isActive || pager.leaving === i || peek === i;
           return (
             <div
               key={panel.key}

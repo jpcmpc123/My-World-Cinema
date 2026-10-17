@@ -44,6 +44,7 @@ const SORT_OPTIONS: { value: SortKey; label: TranslationKey }[] = [
 
 const ROLE_LABEL_KEY: Record<PersonRole, TranslationKey> = {
   Actor: 'person_tab_actor',
+  Creator: 'person_tab_creator',
   Producer: 'person_tab_producer',
   Writer: 'person_tab_writer',
   Director: 'person_tab_director',
@@ -55,6 +56,7 @@ const ROLE_LABEL_KEY: Record<PersonRole, TranslationKey> = {
 
 const ROLE_CRUMB_KEY: Record<PersonRole, TranslationKey> = {
   Actor: 'person_films_starring',
+  Creator: 'person_series_created',
   Producer: 'person_films_produced',
   Writer: 'person_films_written',
   Director: 'person_films_directed',
@@ -201,10 +203,13 @@ export function ActorPage() {
   }, [person]);
 
   // ---- Equipe: agrupada por job (nunca misturada com atuação) --------------
+  // FILMES e SÉRIES entram na MESMA lista de cada cargo (é o que permite a aba
+  // "Criador" existir: o job 'Creator' só aparece em tv_credits).
   const crewByRole = useMemo(() => {
     const lists = new Map<PersonRole, TMDBPersonMovieCredit[]>();
     const seen = new Map<PersonRole, Set<number>>();
-    for (const credit of person?.movie_credits?.crew ?? []) {
+    const crew = [...(person?.movie_credits?.crew ?? []), ...(person?.tv_credits?.crew ?? [])];
+    for (const credit of crew) {
       const role = personRoleFromJob(credit.job);
       if (!role) continue;
       let ids = seen.get(role);
@@ -212,7 +217,7 @@ export function ActorPage() {
         ids = new Set<number>();
         seen.set(role, ids);
       }
-      if (ids.has(credit.id)) continue; // mesmo filme, jobs equivalentes
+      if (ids.has(credit.id)) continue; // mesmo título, jobs equivalentes
       ids.add(credit.id);
       const list = lists.get(role) ?? [];
       list.push(credit);
@@ -253,9 +258,16 @@ export function ActorPage() {
   const tabLabelsKey = tabs.map((tab) => tab.label).join('|');
 
   // ---- Abertura CONTEXTUAL: cai na aba do cargo clicado -------------------
+  // ATENÇÃO à ordem das dependências: `person` chega sozinho (só o perfil, sem
+  // a filmografia) antes do segundo fetch que anexa movie_credits/tv_credits.
+  // Se a aba fosse decidida na primeira passada, `tabs` teria apenas Bio e a
+  // escolha cairia na primeira aba de função disponível — era isso que jogava
+  // o clique em "Criador" (série) para "Roteiro" (filmes).
   const initedForRef = useRef<number | null>(null);
   useEffect(() => {
     if (!person) return;
+    // Ainda sem filmografia: espera o próximo render para decidir a aba.
+    if (!person.movie_credits && !person.tv_credits) return;
     if (initedForRef.current === person.id) return; // só na troca de pessoa
     initedForRef.current = person.id;
     const preferred = requestedRole ?? personRoleFromDepartment(person.known_for_department);
