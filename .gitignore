@@ -13,8 +13,8 @@ dist-ssr
 *.local
 
 # Environment
-# .env (commitado propositalmente: chaves VITE_ sao publicas, vao no bundle)
-
+.env
+.env.*
 !.env.example
 
 # Editor directories and files
@@ -28,13 +28,9 @@ dist-ssr
 *.sln
 *.sw?
 
-
 .npm-cache-tmp/
 page.html
 .preview*.png
 .freebuff/
 .tmp-probe/
-
-.env
-.env.*
-!.env.example
+.tmp-dev/

@@ -7,9 +7,20 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { tmdb, type TMDBMovie } from '../services/tmdb';
 import {
   animateElasticIndicator,
+  followTabIndicator,
+  placeTabIndicator,
   type IndicatorPos,
 } from '../utils/tabIndicator';
 import { isMainTabRoute } from '../utils/tabRoutes';
+import { TAB_SWIPE_EVENT, type TabSwipeDetail } from '../utils/tabSwipe';
+import {
+  TAB_SWIPE_CLAIM_EVENT,
+  TAB_SWIPE_FINISH_EVENT,
+  TAB_SWIPE_MOVE_EVENT,
+  type TabSwipeClaimDetail,
+  type TabSwipeFinishDetail,
+  type TabSwipeMoveDetail,
+} from '../utils/tabSwipeCommand';
 
 export const Header: React.FC = () => {
   const { user, openLogModal } = useApp();
@@ -175,6 +186,12 @@ export const Header: React.FC = () => {
   // de abas do perfil de pessoa, na ActorPage).
   // ---------------------------------------------------------------------------
   const prevPosRef = useRef<IndicatorPos>({ left: 0, width: 0 });
+  /**
+   * O gesto na faixa de abas virou arrasto lateral: o `click` que o navegador
+   * dispara ao soltar abriria a aba onde o dedo encostou e desfaria a troca
+   * feita pelo swipe (mesma proteção que o TabViewPager faz no conteúdo).
+   */
+  const suppressBarClickRef = useRef(false);
 
   // Chave estável com os rótulos: trocar o idioma (PT/EN) muda a largura dos
   // botões e exige uma nova medição.
@@ -213,6 +230,183 @@ export const Header: React.FC = () => {
       window.removeEventListener('orientationchange', remeasure);
     };
   }, []);
+
+  // ---------------------------------------------------------------------------
+  // A barra verde ACOMPANHA O DEDO no swipe lateral entre abas (mobile).
+  //
+  // Quem move o conteúdo é o TabViewPager (src/components/TabViewPager.tsx),
+  // que translada o trilho direto no DOM. Ele publica o deslocamento do gesto em
+  // TAB_SWIPE_EVENT e aqui a barra é redesenhada na MESMA fração do caminho — o
+  // CENTRO dela anda junto com a tela e a barra estica no meio do gesto, sem
+  // nunca adiantar em relação ao conteúdo (ver followTabIndicator).
+  //
+  // Sem transição CSS durante o gesto (o dedo manda, frame a frame). Ao soltar:
+  //   • trocou de aba → a barra fica onde o dedo parou e o elástico de 2 fases
+  //     da troca de rota (efeito acima, em [activeTab]) fecha a sobra;
+  //   • não trocou     → o elástico devolve a barra para a aba atual.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const tabButtons = () =>
+      Array.from(tabsContainerRef.current?.querySelectorAll<HTMLElement>('.main-tab-btn') ?? []);
+    const rectOf = (el: HTMLElement): IndicatorPos => ({
+      left: el.offsetLeft,
+      width: el.offsetWidth,
+    });
+
+    const onSwipe = (event: Event) => {
+      const detail = (event as CustomEvent<TabSwipeDetail>).detail;
+      const indicator = indicatorRef.current;
+      if (!indicator || !detail) return;
+
+      // Arrasto lateral em andamento: o `click` do fim do gesto não pode abrir
+      // a aba onde o dedo encostou (senão desfaz a troca feita pelo swipe).
+      if (!detail.end) suppressBarClickRef.current = true;
+
+      const buttons = tabButtons();
+      const fromIndex = buttons.findIndex((btn) => btn.classList.contains('active'));
+      if (fromIndex < 0) return;
+
+      // Dedo soltou: ou a troca de rota assume (committed), ou a barra volta.
+      const targetIdx = (): number => {
+        const dir = detail.shift > 0 ? -1 : 1;
+        const i = fromIndex + dir;
+        return i < 0 || i >= buttons.length ? fromIndex : i;
+      };
+      /** Para qual aba o DEDO está apontando (usa o deslocamento JÁ com a
+          resistência de borda aplicada pelo pager, então bate com o trilho). */
+      const fingerPos = (): IndicatorPos => {
+        const rect = rectOf(buttons[targetIdx()]);
+        // Mesma régua do gesto: 1 painel de conteúdo = 1 aba de distância.
+        const t = Math.abs(detail.shift) / Math.max(1, detail.width);
+        const clamped = t < 0 ? 0 : t > 1 ? 1 : t;
+        const from = rectOf(buttons[fromIndex]);
+        const left = from.left + (rect.left - from.left) * clamped;
+        const width = from.width + (rect.width - from.width) * clamped;
+        return { left, width };
+      };
+      if (detail.end) {
+        if (!detail.committed) {
+          // Arrasto que NÃO troca de aba: a barra volta para a aba atual com o
+          // elástico (comportamento que já estava certo).
+          const back = buttons[fromIndex];
+          if (back) animateElasticIndicator(back, indicator, prevPosRef.current);
+          return;
+        }
+        // Arrasto que TROCA de aba: o destaque (texto branco) só acende quando a
+        // ROTA mudar — este efeito nunca o antecipa.
+        //
+        // A barra, porém, não pode simplesmente ficar onde o dedo parou: o
+        // `followTabIndicator` a desenha com o elástico do MEIO do gesto (mais
+        // larga que a coluna) e o pager agora fecha a sobra do painel na hora,
+        // sem animação. Ancorar o dedo aqui deixava a barra larga/fora de lugar
+        // "presa" até o efeito de [activeTab] assumir — mais um salto. Então:
+        // 1) fixa a posição do dedo como ponto de partida REAL (sem animação);
+        // 2) deixa o efeito de [activeTab], que roda no MESMO frame da troca de
+        //    rota, aplicar o elástico de 2 fases a partir dali.
+        // Nenhum passo anda para trás: a barra segue de onde o dedo estava até a
+        // aba nova.
+        placeTabIndicator(indicator, fingerPos().left, fingerPos().width);
+        return;
+      }
+
+      // Arrastar para a esquerda (shift < 0) revela a aba SEGUINTE; para a
+      // direita, a ANTERIOR.
+      const toIndex = fromIndex + (detail.shift > 0 ? -1 : 1);
+      // Borda (primeira/última aba): não há vizinha, a barra fica na aba atual
+      if (toIndex < 0 || toIndex >= buttons.length) return;
+
+      const from = rectOf(buttons[fromIndex]);
+      const to = rectOf(buttons[toIndex]);
+      // RÉGUA: a largura de UM painel de conteúdo. O trilho precisa andar essa
+      // distância inteira para a aba vizinha ficar visível; então a fração da
+      // barra é |deslocamento| / largura do painel. Medir pela distância entre
+      // as abas (1/4 disso) fazia a barra pular para a aba seguinte com a tela
+      // ainda na metade do caminho.
+      const panel = detail.width > 0 ? detail.width : window.innerWidth;
+      if (panel <= 0) return;
+
+      followTabIndicator(
+        indicator,
+        from,
+        to,
+        Math.min(1, Math.abs(detail.shift) / panel),
+        prevPosRef.current,
+      );
+    };
+
+    window.addEventListener(TAB_SWIPE_EVENT, onSwipe);
+    return () => window.removeEventListener(TAB_SWIPE_EVENT, onSwipe);
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // O gesto também pode COMEÇAR NA FAIXA DE ABAS — que é o caminho natural: o
+  // dedo encosta no topo e arrasta. A faixa não tem trilho para mover nem
+  // lógica de commit, então o Header só REPASSA o gesto ao TabViewPager, dono
+  // do swipe. É o pager que captura o ponteiro (setPointerCapture), e é isso
+  // que impede o Chrome de disparar `pointercancel` no primeiro movimento
+  // horizontal e matar o arrasto antes de a barra verde se mexer.
+  // ---------------------------------------------------------------------------
+  const barPointerIdRef = useRef<number | null>(null);
+
+  const onBarPointerDown = (e: React.PointerEvent<HTMLElement>) => {
+    if (!e.isPrimary) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (!indicatorRef.current) return; // faixa de abas não está na tela
+    if (barPointerIdRef.current !== null) return; // já existe dono para o gesto
+    barPointerIdRef.current = e.pointerId;
+    suppressBarClickRef.current = false;
+    // O pager decide se aceita (ex.: ignora durante a animação de troca de aba)
+    window.dispatchEvent(
+      new CustomEvent<TabSwipeClaimDetail>(TAB_SWIPE_CLAIM_EVENT, {
+        detail: {
+          pointerId: e.pointerId,
+          clientX: e.clientX,
+          clientY: e.clientY,
+          pointerType: e.pointerType,
+          target: e.target as Element | null,
+        },
+      }),
+    );
+  };
+
+  const onBarPointerMove = (e: React.PointerEvent<HTMLElement>) => {
+    if (barPointerIdRef.current !== e.pointerId) return;
+    // Clique-and-arrastar de mouse: botão solto encerra o gesto
+    if (e.pointerType === 'mouse' && e.buttons === 0) {
+      onBarPointerFinish(false);
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent<TabSwipeMoveDetail>(TAB_SWIPE_MOVE_EVENT, {
+        detail: {
+          pointerId: e.pointerId,
+          clientX: e.clientX,
+          clientY: e.clientY,
+          timeStamp: e.timeStamp,
+          pointerType: e.pointerType,
+        },
+      }),
+    );
+  };
+
+  const onBarPointerFinish = (cancelled: boolean) => {
+    if (barPointerIdRef.current === null) return;
+    barPointerIdRef.current = null;
+    window.dispatchEvent(
+      new CustomEvent<TabSwipeFinishDetail>(TAB_SWIPE_FINISH_EVENT, { detail: { cancelled } }),
+    );
+    // Sem `click` depois de um cancelamento: não deixa a flag engolir o próximo
+    if (cancelled) window.setTimeout(() => (suppressBarClickRef.current = false), 0);
+  };
+
+  /** Click sobrando de um arrasto na faixa não deve trocar de aba */
+  const onBarClickCapture = (e: React.MouseEvent<HTMLElement>) => {
+    if (suppressBarClickRef.current) {
+      suppressBarClickRef.current = false;
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
 
   // Mobile-only: botão de opções nas páginas de detalhe (compartilhar)
   const handleShare = async () => {
@@ -680,6 +874,11 @@ export const Header: React.FC = () => {
             ref={tabsContainerRef}
             aria-label={t('nav_sections')}
             className="main-tabs-container"
+            onPointerDown={onBarPointerDown}
+            onPointerMove={onBarPointerMove}
+            onPointerUp={() => onBarPointerFinish(false)}
+            onPointerCancel={() => onBarPointerFinish(true)}
+            onClickCapture={onBarClickCapture}
           >
             {tabs.map((tab) => {
               const active = activeTab === tab.key;
